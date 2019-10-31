@@ -1,0 +1,120 @@
+<!doctype>
+<html>
+<head></head>
+<body>
+    <script>
+        var audioCtx, osc;
+        function initializeOscilator(freq = 500) {
+            console.log("Oscilator Initialized");
+            audioCtx = new AudioContext();
+            osc = audioCtx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.connect(audioCtx.destination);
+        }
+        const Get = e => document.getElementById(e);
+        document.addEventListener("DOMContentLoaded", function(event) {
+            console.log("DOM Initialized");
+            let slider = Get("frequencySlider");
+            let play = Get("play");
+            let stop = Get("stop");
+
+            let oscType = {
+                square: Get("square"),
+                sine: Get("sine"),
+                sawtooth: Get("sawtooth"),
+                triangle: Get("triangle")
+            }
+
+            Object.keys(oscType).forEach( function(e) {
+                console.log(oscType[e])
+                oscType[e].addEventListener("click", function(el) {
+                    osc.type = e;
+                });
+            })
+
+            stop.addEventListener("click", function(e) {
+                osc.stop();
+            })
+            play.addEventListener("click", function(e) {
+                initializeOscilator(slider.value);
+                osc.start();
+                initializeOsciloscope();
+            })
+            slider.addEventListener("mousedown", function(e) {
+                slider.addEventListener("mousemove", handleFrequence, true);
+            })
+            slider.addEventListener("mouseup", function(e){
+                slider.removeEventListener("mousemove", handleFrequence, true);
+            })
+
+            function handleFrequence(e) {
+                osc.frequency.setValueAtTime(e.srcElement.value, audioCtx.currentTime);
+                draw();
+            }
+            function initializeOsciloscope(e) {
+                var analyser = audioCtx.createAnalyser();
+
+                analyser.fftSize = 2048;
+                var bufferLength = analyser.frequencyBinCount;
+                var dataArray = new Uint8Array(bufferLength);
+                analyser.getByteTimeDomainData(dataArray);
+
+                // draw an oscilloscope of the current audio source
+
+                function draw() {
+                    var WIDTH = 500;
+                    var HEIGHT = 350;
+                    var canvas = document.getElementById('canvas');
+                    var canvasCtx = canvas.getContext('2d');
+                    drawVisual = requestAnimationFrame(draw);
+
+                    analyser.getByteTimeDomainData(dataArray);
+
+                    canvasCtx.fillStyle = 'rgb(200, 200, 200)';
+                    canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+
+                    canvasCtx.lineWidth = 2;
+                    canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
+
+                    canvasCtx.beginPath();
+
+                    var sliceWidth = WIDTH * 1.0 / bufferLength;
+                    var x = 0;
+
+                    for(var i = 0; i < bufferLength; i++) {
+                
+                        var v = dataArray[i] / 128.0;
+                        var y = v * HEIGHT/2;
+
+                        if(i === 0) {
+                        canvasCtx.moveTo(x, y);
+                        } else {
+                        canvasCtx.lineTo(x, y);
+                        }
+
+                        x += sliceWidth;
+                    }
+
+                    canvasCtx.lineTo(canvas.width, canvas.height/2);
+                    canvasCtx.stroke();
+                };
+
+                draw();
+            }
+        })
+    </script>
+    <div class="containerFrequency">
+        <input style="width:500px" type="range" min="20" max="1000" value="600" class="slider" id="frequencySlider">
+        <button id="play">&#9658;</button>
+        <button id="stop">&#9632;</button>
+    </div>
+    <div class="oscType">
+        <button id="sine">sine</button>
+        <button id="square">square</button>
+        <button id="sawtooth">sawtooth</button>
+        <button id="triangle">triangle</button>
+    </div>
+    <canvas id="canvas" width="500" height="350"></canvas>
+</body>
+</html>
