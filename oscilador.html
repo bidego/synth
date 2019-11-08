@@ -1,120 +1,146 @@
 <!doctype>
 <html>
-<head></head>
+<head>
+    <style>
+    input[type=range][orient=vertical]
+    {
+        writing-mode: bt-lr; /* IE */
+        -webkit-appearance: slider-vertical; /* WebKit */
+        width: 8px;
+        height: 120px;
+        padding: 0 5px;
+    }
+
+    .slider {
+        width: 500px;
+    }
+    .containerFrequency {
+        float:right;
+    }
+    .sliderFrequency {
+        display:block;
+    }
+    .oscType,.botonera {
+        display: inline;
+    }
+    .sliderVolume {
+            float:right;
+    }
+    </style>
+</head>
 <body>
     <script>
-        var audioCtx, osc;
-        function initializeOscilator(freq = 500) {
-            console.log("Oscilator Initialized");
-            audioCtx = new AudioContext();
-            osc = audioCtx.createOscillator();
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            osc.connect(audioCtx.destination);
-        }
+        var AudioContext = window.AudioContext || window.webkitAudioContext;
         const Get = e => document.getElementById(e);
-        document.addEventListener("DOMContentLoaded", function(event) {
-            console.log("DOM Initialized");
-            let slider = Get("frequencySlider");
-            let play = Get("play");
-            let stop = Get("stop");
+        
+        class Oscilator {
 
-            let oscType = {
-                square: Get("square"),
-                sine: Get("sine"),
-                sawtooth: Get("sawtooth"),
-                triangle: Get("triangle")
+            static count = 0;
+            constructor() {
+                this.audioCtx,this.osc, this.gainNode;
+                Oscilator.increaseCount();
+                this.renderView();
             }
 
-            Object.keys(oscType).forEach( function(e) {
-                console.log(oscType[e])
-                oscType[e].addEventListener("click", function(el) {
-                    osc.type = e;
-                });
-            })
-
-            stop.addEventListener("click", function(e) {
-                osc.stop();
-            })
-            play.addEventListener("click", function(e) {
-                initializeOscilator(slider.value);
-                osc.start();
-                initializeOsciloscope();
-            })
-            slider.addEventListener("mousedown", function(e) {
-                slider.addEventListener("mousemove", handleFrequence, true);
-            })
-            slider.addEventListener("mouseup", function(e){
-                slider.removeEventListener("mousemove", handleFrequence, true);
-            })
-
-            function handleFrequence(e) {
-                osc.frequency.setValueAtTime(e.srcElement.value, audioCtx.currentTime);
-                draw();
+            static increaseCount() {
+                Oscilator.count ++;
             }
-            function initializeOsciloscope(e) {
-                var analyser = audioCtx.createAnalyser();
 
-                analyser.fftSize = 2048;
-                var bufferLength = analyser.frequencyBinCount;
-                var dataArray = new Uint8Array(bufferLength);
-                analyser.getByteTimeDomainData(dataArray);
-
-                // draw an oscilloscope of the current audio source
-
-                function draw() {
-                    var WIDTH = 500;
-                    var HEIGHT = 350;
-                    var canvas = document.getElementById('canvas');
-                    var canvasCtx = canvas.getContext('2d');
-                    drawVisual = requestAnimationFrame(draw);
-
-                    analyser.getByteTimeDomainData(dataArray);
-
-                    canvasCtx.fillStyle = 'rgb(200, 200, 200)';
-                    canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
-
-                    canvasCtx.lineWidth = 2;
-                    canvasCtx.strokeStyle = 'rgb(0, 0, 0)';
-
-                    canvasCtx.beginPath();
-
-                    var sliceWidth = WIDTH * 1.0 / bufferLength;
-                    var x = 0;
-
-                    for(var i = 0; i < bufferLength; i++) {
-                
-                        var v = dataArray[i] / 128.0;
-                        var y = v * HEIGHT/2;
-
-                        if(i === 0) {
-                        canvasCtx.moveTo(x, y);
-                        } else {
-                        canvasCtx.lineTo(x, y);
-                        }
-
-                        x += sliceWidth;
-                    }
-
-                    canvasCtx.lineTo(canvas.width, canvas.height/2);
-                    canvasCtx.stroke();
-                };
-
-                draw();
+            static getCount() {
+                return Oscilator.count || 0;
             }
-        })
+
+            renderView() {
+                this.container = document.createElement("div");
+                this.container.innerHTML = this.getView();
+                let body = document.querySelector("body");
+                console.log(body)
+                body.appendChild(this.container);
+                this.addListeners();
+            }
+            addListeners() {
+                this.slider = Get("frequencySlider" + Oscilator.getCount());
+                this.volume = Get("volumeSlider" + Oscilator.getCount());
+                this.play = Get("play" + Oscilator.getCount());
+                this.stop = Get("stop" + Oscilator.getCount());
+
+                this.oscType = {
+                    square: Get("square" + Oscilator.getCount()),
+                    sine: Get("sine" + Oscilator.getCount()),
+                    sawtooth: Get("sawtooth" + Oscilator.getCount()),
+                    triangle: Get("triangle" + Oscilator.getCount())
+                }
+                for(let e in this.oscType) {
+                    console.log(this.oscType)
+                    this.oscType[e].addEventListener("click", function(el) {
+                        this.osc.type = e;
+                        console.log(el);
+                        Object.keys(this.oscType).forEach(x=>this.oscType[x].setAttribute("style",""))
+                        el.srcElement.setAttribute("style", "color:#F00")
+                    }.bind(this));
+                }
+                this.stop.addEventListener("click", function(e) {
+                    this.osc.stop();
+                }.bind(this))
+                this.play.addEventListener("click", function(e) {
+                    this.initializeOscilator(this.slider.value);
+                    this.osc.start();
+                }.bind(this))
+                this.slider.addEventListener("mousedown", function(e) {
+                    this.slider.addEventListener("mousemove", this.handleFrequence.bind(this), true);
+                }.bind(this))
+                this.slider.addEventListener("mouseup", function(e){
+                    this.slider.removeEventListener("mousemove", this.handleFrequence.bind(this), true);
+                }.bind(this))
+
+                this.volume.addEventListener("mousedown", function(e) {
+                    this.volume.addEventListener("mousemove", this.handleVolume.bind(this), true);
+                }.bind(this))
+                this.volume.addEventListener("mouseup", function(e){
+                    this.volume.removeEventListener("mousemove", this.handleVolume.bind(this), true);
+                }.bind(this))
+            }
+
+            getView() {
+                return `<div class="containerFrequency">
+                    <input class="slider sliderFrequency" type="range" min="20" max="1000" value="600" id="frequencySlider${Oscilator.getCount()}">
+                    <div class="botonera">
+                        <button id="play${Oscilator.getCount()}">&#9658;</button>
+                        <button id="stop${Oscilator.getCount()}">&#9632;</button>
+                    </div>
+                    <div class="oscType">
+                        <button style="color:#F00" id="sine${Oscilator.getCount()}">sine</button>
+                        <button id="square${Oscilator.getCount()}">square</button>
+                        <button id="sawtooth${Oscilator.getCount()}">sawtooth</button>
+                        <button id="triangle${Oscilator.getCount()}">triangle</button>
+                    </div>
+                </div>
+                <input class="slider sliderVolume" orient="vertical" type="range" min="0" max="1000" value="100" id="volumeSlider${Oscilator.getCount()}">`;
+            }
+
+            initializeOscilator(freq = 500, vol = 0.1) {
+                console.log("Oscilator Initialized");
+                this.audioCtx = new AudioContext();
+                this.gainNode = this.audioCtx.createGain();
+                this.osc = this.audioCtx.createOscillator();
+                this.osc.type = 'sine';
+                this.osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+                this.osc.connect(this.gainNode);
+                this.gainNode.gain.setValueAtTime(vol, this.audioCtx.currentTime);
+                this.gainNode.connect(this.audioCtx.destination);
+            }
+            handleFrequence(e) {
+                this.osc.frequency.setValueAtTime(e.srcElement.value, this.audioCtx.currentTime);
+            }
+            handleVolume(e) {
+                this.gainNode.gain.setValueAtTime(this.limit(e.srcElement.value/1000), this.audioCtx.currentTime);
+            }
+
+            limit = n => n >= 1 ? 1 : n;
+
+        }
+
     </script>
-    <div class="containerFrequency">
-        <input style="width:500px" type="range" min="20" max="1000" value="600" class="slider" id="frequencySlider">
-        <button id="play">&#9658;</button>
-        <button id="stop">&#9632;</button>
-    </div>
-    <div class="oscType">
-        <button id="sine">sine</button>
-        <button id="square">square</button>
-        <button id="sawtooth">sawtooth</button>
-        <button id="triangle">triangle</button>
-    </div>
-    <canvas id="canvas" width="500" height="350"></canvas>
+    <button onclick="new Oscilator()">Agregar OSC</button>
 </body>
 </html>
