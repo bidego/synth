@@ -1,32 +1,7 @@
 <!doctype>
 <html>
 <head>
-    <style>
-    input[type=range][orient=vertical]
-    {
-        writing-mode: bt-lr; /* IE */
-        -webkit-appearance: slider-vertical; /* WebKit */
-        width: 8px;
-        height: 120px;
-        padding: 0 5px;
-    }
-
-    .slider {
-        width: 500px;
-    }
-    .containerFrequency {
-        float:right;
-    }
-    .sliderFrequency {
-        display:block;
-    }
-    .oscType,.botonera {
-        display: inline;
-    }
-    .sliderVolume {
-            float:right;
-    }
-    </style>
+    <link href="./oscilator.css" rel="stylesheet" type="text/css">
 </head>
 <body>
     <script src="./oscilator.js"></script>
@@ -34,6 +9,6 @@
         var AudioContext = window.AudioContext || window.webkitAudioContext;
         const Get = e => document.getElementById(e);
     </script>
-    <button onclick="new Oscilator()">Agregar OSC</button>
+    <button onclick="new Oscilator()">OSC++</button>
 </body>
 </html>

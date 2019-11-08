@@ -1,0 +1,36 @@
+input[type=range][orient=vertical]
+{
+    writing-mode: bt-lr; /* IE */
+    -webkit-appearance: slider-vertical; /* WebKit */
+    width: 8px;
+    height: 80px;
+    padding: 0 5px;
+}
+.slider {
+    width: 300px;
+}
+.container {
+    margin:10px;
+    border-radius: 5px;
+    background-color: #DDDDDD;
+    float:right;
+}
+.containerFrequency {
+    float:right;
+}
+.containerFrequency footer {
+    float:right;
+}
+.sliderFrequency {
+    display:block;
+}
+.modulo {
+    margin: 5px;
+}
+.oscType,.botonera {
+    display: inline;
+}
+
+.sliderVolume {
+        float:right;
+}

@@ -1,21 +1,20 @@
+AUDIO_CTX = new AudioContext();
 class Oscilator {
-
+    static version = "0.1v";
     static count = 0;
     constructor() {
-        this.audioCtx,this.osc, this.gainNode;
+        this.osc, this.gainNode;
         Oscilator.increaseCount();
         this.id = Oscilator.getCount();
         this.renderView();
+        this.initializeOscilator(this.slider.value, this.volume.value);
     }
-
     static increaseCount() {
         Oscilator.count ++;
     }
-
     static getCount() {
         return Oscilator.count || 0;
     }
-
     renderView() {
         this.container = document.createElement("div");
         this.container.innerHTML = this.getView();
@@ -46,11 +45,12 @@ class Oscilator {
             }.bind(this));
         }
         this.stop.addEventListener("click", function(e) {
-            this.osc.stop();
+            this.gainNode.disconnect(AUDIO_CTX.destination);
+            //this.osc.stop();
         }.bind(this))
         this.play.addEventListener("click", function(e) {
-            this.initializeOscilator(this.slider.value, this.volume.value/1000);
-            this.osc.start();
+            this.gainNode.connect(AUDIO_CTX.destination);
+            //this.osc.start();
         }.bind(this))
         this.slider.addEventListener("mousedown", function(e) {
             this.slider.addEventListener("mousemove", this.handleFrequence.bind(this), true);
@@ -66,52 +66,50 @@ class Oscilator {
             this.volume.removeEventListener("mousemove", this.handleVolume.bind(this), true);
         }.bind(this))
     }
-
     getView() {
-        return `<div class="containerFrequency">
-            <input class="slider sliderFrequency" type="range" min="20" max="1000" value="600" id="frequencySlider${Oscilator.getCount()}">
-            <div class="botonera">
-                <button id="play${Oscilator.getCount()}">&#9658;</button>
-                <button id="stop${Oscilator.getCount()}">&#9632;</button>
+        return `<div class="container">
+            <div class="containerFrequency">
+                <input class="slider sliderFrequency" type="range" min="20" max="1000" step="1" value="600" id="frequencySlider${Oscilator.getCount()}" list="tickmarks">
+                <div class="modulo botonera">
+                    <button id="play${Oscilator.getCount()}">&#9658;</button>
+                    <button id="stop${Oscilator.getCount()}">&#9632;</button>
+                </div>
+                <div class="modulo oscType">
+                    <button style="color:#F00" id="sine${Oscilator.getCount()}">sine</button>
+                    <button id="square${Oscilator.getCount()}">square</button>
+                    <button id="sawtooth${Oscilator.getCount()}">sawtooth</button>
+                    <button id="triangle${Oscilator.getCount()}">triangle</button>
+                </div>
+                <div class="modulo">
+                    <input type="text" id="volumeView${Oscilator.getCount()}" size="5"></input>db
+                    <input type="text" id="frequencyView${Oscilator.getCount()}" size="5"></input>hz
+                </div>
+                <footer>Synth ${Oscilator.version}</footer>
             </div>
-            <div class="oscType">
-                <button style="color:#F00" id="sine${Oscilator.getCount()}">sine</button>
-                <button id="square${Oscilator.getCount()}">square</button>
-                <button id="sawtooth${Oscilator.getCount()}">sawtooth</button>
-                <button id="triangle${Oscilator.getCount()}">triangle</button>
-            </div>
-            <div>
-                <div id="volumeView${Oscilator.getCount()}"></div>
-                <div id="frequencyView${Oscilator.getCount()}"></div>
-            </div>
-        </div>
-        <input class="slider sliderVolume" orient="vertical" type="range" min="0" max="500" value="100" id="volumeSlider${Oscilator.getCount()}">`;
+            <input class="slider sliderVolume" orient="vertical" type="range" min="0" max="0.2" step="0.001" value="0.1" id="volumeSlider${Oscilator.getCount()}">
+        </div>`;
     }
-
     initializeOscilator(freq = 500, vol = 0.1) {
         console.log("Oscilator Initialized");
-        this.audioCtx = new AudioContext();
-        this.gainNode = this.audioCtx.createGain();
-        this.osc = this.audioCtx.createOscillator();
+        this.gainNode = AUDIO_CTX.createGain();
+        this.osc = AUDIO_CTX.createOscillator();
         this.osc.type = this.waveType || 'sine';
-        this.osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+        this.osc.frequency.setValueAtTime(freq, AUDIO_CTX.currentTime);
         this.osc.connect(this.gainNode);
-        this.gainNode.gain.setValueAtTime(vol, this.audioCtx.currentTime);
-        this.gainNode.connect(this.audioCtx.destination);
-        Get(`frequencyView${this.id}`).innerHTML = `${freq}hz`;
-        Get(`volumeView${this.id}`).innerHTML = `${vol}db`;
+        this.gainNode.gain.setValueAtTime(vol, AUDIO_CTX.currentTime);
+        this.osc.start();
+        Get(`frequencyView${this.id}`).value =`${freq}hz`;
+        Get(`volumeView${this.id}`).value = `${vol}db`;
     }
     handleFrequence(e) {
         this.frequencyValue = e.srcElement.value;
-        this.osc.frequency.setValueAtTime(this.frequencyValue, this.audioCtx.currentTime);
-        Get(`frequencyView${this.id}`).innerHTML = `${this.frequencyValue}hz`;
+        this.osc.frequency.setValueAtTime(this.frequencyValue, AUDIO_CTX.currentTime);
+        Get(`frequencyView${this.id}`).value = this.frequencyValue;
     }
     handleVolume(e) {
-        this.volumeValue = this.limit(e.srcElement.value/1000);
-        this.gainNode.gain.setValueAtTime(this.volumeValue, this.audioCtx.currentTime);
-        Get(`volumeView${this.id}`).innerHTML = `${this.volumeValue}db`;
+        this.volumeValue = this.limit(e.srcElement.value);
+        this.gainNode.gain.setValueAtTime(this.volumeValue, AUDIO_CTX.currentTime);
+        Get(`volumeView${this.id}`).value = this.volumeValue;
     }
-
     limit = n => n >= 0.5 ? 0.5 : n;
-
 }
