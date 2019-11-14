@@ -1,0 +1,44 @@
+input[type=range][orient=vertical]
+{
+    writing-mode: bt-lr; /* IE */
+    /*-webkit-appearance: slider-vertical; /* WebKit */
+    width: 80px;
+    height: 8px;
+    padding: 0 5px;
+    transform: rotate(-90deg);
+    transform-origin: 75px 5px;
+    -webkit-appearance: none;
+    background-color: #EEE;
+}
+.slider {
+    width: 300px;
+    -webkit-appearance: none;
+    height: 8px;
+    margin: 10px;
+    background-color: #EEE;
+}
+.container {
+    margin:10px;
+    border-radius: 5px;
+    background-color: #DDDDDD;
+    float:right;
+}
+.containerFrequency {
+    float:right;
+}
+.containerFrequency footer {
+    float:right;
+}
+.sliderFrequency {
+    display:block;
+}
+.modulo {
+    margin: 5px;
+}
+.oscType,.botonera {
+    display: inline;
+}
+
+.sliderVolume {
+        float:right;
+}

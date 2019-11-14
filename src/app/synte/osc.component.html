@@ -1,0 +1,21 @@
+<div class="container">
+    <div class="containerFrequency">
+        <input #sliderFrequency (mousemove)="handleFrequency($event)" class="slider sliderFrequency" type="range" min="20" max="1000" step="1" value="600" id="frequencySlider${Oscilator.getCount()}" list="tickmarks">
+        <div class="modulo botonera">
+            <button (click)="connectGainNode($event)" #play>&#9658;</button>
+            <button (click)="disconnectGainNode($event)" #stop>&#9632;</button>
+        </div>
+        <div (click)="toggleWaveType($event)" class="modulo oscType">
+            <button #sine value="sine" style="color:#F00">sine</button>
+            <button #square value="square">square</button>
+            <button #sawtooth value="sawtooth">sawtooth</button>
+            <button #triangle value="triangle">triangle</button>
+        </div>
+        <div class="modulo">
+            <input type="text" (change)="handleVolume($event)" #volumeView size="5" />db
+            <input type="text" (change)="handleFrequency($event)" #frequencyView size="5" />hz
+        </div>
+        <footer>Synth {{ version }}</footer>
+    </div>
+    <input #sliderVolume (mousemove)="handleVolume($event)" class="slider sliderVolume" orient="vertical" type="range" min="0" max="0.2" step="0.001" value="0.1">
+</div>
