@@ -3,7 +3,8 @@ import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
 import { SoundService } from './services/sound.service';
-import { OscComponent } from './synth/osc.component';
+import { ComponentFactory } from './services/component.factory';
+import { OscComponent } from './synte/osc.component';
 
 @NgModule({
   declarations: [
@@ -15,8 +16,10 @@ import { OscComponent } from './synth/osc.component';
   ],
   providers: [
     SoundService,
-    AudioContext
+    AudioContext,
+    ComponentFactory
   ],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
+  entryComponents: [OscComponent]
 })
 export class AppModule { }

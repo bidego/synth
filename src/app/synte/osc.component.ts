@@ -86,10 +86,10 @@ export class OscComponent implements OnInit, AfterContentInit {
     }
     handleFrequency(e) {
         this.frequencyValue = e.value || e.srcElement.value;
-        if (e.srcElement.range != "range")
+        if (e.srcElement.type != "range")
             this.sliderFrequency.nativeElement.value = this.frequencyValue;
         else
-            this.frequencyView.nativeElement.value = this.frequencyValue
+            this.frequencyView.nativeElement.value = this.frequencyValue;
         this.osc.frequency.setValueAtTime(this.frequencyValue, this.audioCtx.currentTime);
     }
     handleVolume(e) {
