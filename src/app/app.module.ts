@@ -4,7 +4,7 @@ import { NgModule } from '@angular/core';
 import { AppComponent } from './app.component';
 import { SoundService } from './services/sound.service';
 import { ComponentFactory } from './services/component.factory';
-import { OscComponent } from './synte/osc.component';
+import { OscComponent } from './synth/osc.component';
 
 @NgModule({
   declarations: [

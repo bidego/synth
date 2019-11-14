@@ -1,7 +1,5 @@
-import { Component, ViewChild, ElementRef, OnInit, Inject, ViewContainerRef } from '@angular/core';
+import { Component, ViewChild, ElementRef, Inject, ViewContainerRef } from '@angular/core';
 import { ComponentFactory } from './services/component.factory';
-
-
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',

@@ -4,7 +4,7 @@ import {
     Inject,
     ReflectiveInjector
 } from '@angular/core'
-import { OscComponent } from '../synte/osc.component'
+import { OscComponent } from '../synth/osc.component'
 
 @Injectable()
 export class ComponentFactory {
