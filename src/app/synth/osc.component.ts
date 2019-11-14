@@ -6,15 +6,13 @@ const newLocal = 100;
   templateUrl: './osc.component.html',
   styleUrls: ['./osc.component.css']
 })
-export class OscComponent implements OnInit, AfterContentInit {
-    version = "0.1v";
-    private static COUNT = 0;
-    private osc;
-    slider;
-    volume;
-    gainNode;
-    frequencyValue;
-    volumeValue;
+export class OscComponent implements AfterContentInit {
+    public version:String = "0.1v";
+    private static COUNT:number = 0;
+    private osc: OscillatorNode;
+    private gainNode: GainNode;
+    private frequencyValue:number;
+    private volumeValue:number;
     waveType;
     @ViewChild("frequencyView", { static: false })
     private frequencyView:ElementRef;
@@ -40,11 +38,11 @@ export class OscComponent implements OnInit, AfterContentInit {
     constructor(private audioCtx:AudioContext) {
         OscComponent.increaseCount();
     }
-    ngOnInit() {
+    ngAfterContentInit() {
         this.initializeOscilator();
     }
     static increaseCount() {
-        OscComponent.COUNT++;
+        OscComponent.COUNT;
     }
     static getCount() {
         return OscComponent.COUNT || 0;
@@ -61,11 +59,11 @@ export class OscComponent implements OnInit, AfterContentInit {
                 el.nativeElement.setAttribute("style", "");
         });
     }
-    ngAfterContentInit(){
-    }
 
     connectGainNode(event) {
         try {
+            this.osc.frequency.setValueAtTime(this.sliderFrequency.nativeElement.value, this.audioCtx.currentTime);
+            this.gainNode.gain.setValueAtTime(this.sliderVolume.nativeElement.value, this.audioCtx.currentTime);
             this.osc.start();
         } catch (e) {
             // No hacer nada, ya esta corriendo el clock. Mejorar
@@ -75,15 +73,14 @@ export class OscComponent implements OnInit, AfterContentInit {
     disconnectGainNode(event) {
         this.gainNode.disconnect(this.audioCtx.destination)
     }
-    initializeOscilator(freq = 500, vol = 0.1) {
+    initializeOscilator() {
         console.log("Oscilator Initialized");
         this.gainNode = this.audioCtx.createGain();
         this.osc = this.audioCtx.createOscillator();
         this.osc.type = this.waveType || 'sine';
-        this.osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
         this.osc.connect(this.gainNode);
-        this.gainNode.gain.setValueAtTime(vol, this.audioCtx.currentTime);
     }
+
     handleFrequency(e) {
         this.frequencyValue = e.value || e.srcElement.value;
         if (e.srcElement.type != "range")
