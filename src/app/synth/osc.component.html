@@ -19,24 +19,7 @@
             <input type="text" (change)="handleFrequency($event)" #frequencyView size="5" />hz
             <label>Key: </label>
             <select #triggerKey (change)="handleKeyChange($event)">
-                <option value="q">Q</option>
-                <option value="w">W</option>
-                <option value="e">E</option>
-                <option value="r">R</option>
-                <option value="t">T</option>
-                <option value="y">Y</option>
-                <option value="u">U</option>
-                <option value="i">I</option>
-                <option value="o">O</option>
-                <option value="a">A</option>
-                <option value="s">S</option>
-                <option value="d">D</option>
-                <option value="f">F</option>
-                <option value="g">G</option>
-                <option value="h">H</option>
-                <option value="j">J</option>
-                <option value="k">K</option>
-                <option value="l">L</option>
+                <option *ngFor="let key of keys" [value]="key">{{ key.toUpperCase() }}</option>
             </select>
             <label>Note: </label>
             <select #note (change)="handleNoteChange($event)">

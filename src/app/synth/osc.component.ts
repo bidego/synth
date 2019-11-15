@@ -35,10 +35,12 @@ export class OscComponent implements OnInit, AfterContentInit {
     private sawtooth:ElementRef;
     
     private triggerKeyValue:String;
-    private notes: Array<NoteModel>;
+    public notes: Array<NoteModel>;
+    public keys: Array<String>; 
     constructor(private audioCtx:AudioContext, private soundService: SoundService) {
         OscComponent.increaseCount();
         this.notes = this.soundService.notes;
+        this.keys = [ "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "a", "s", "d", "f", "g", "h", "j", "k", "l"];
     }
     ngOnInit() {
     }
