@@ -9,7 +9,12 @@ export class ListenKeys {
   }
 
   @HostListener('window:keydown', ['$event'])
-  eventKeys(evt) {
+  eventKeyDown(evt) {
+    this.numberOfKeys++;
+    this.soundService.emiteEventKey(evt);
+  }
+  @HostListener('window:keyup', ['$event'])
+  eventKeysUp(evt) {
     this.numberOfKeys++;
     this.soundService.emiteEventKey(evt);
   }

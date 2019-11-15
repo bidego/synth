@@ -38,7 +38,8 @@ export class OscComponent implements OnInit, AfterContentInit {
     
     private triggerKeyValue:String;
     public notes: Array<NoteModel>;
-    public keys: Array<String>; 
+    public keys: Array<String>;
+
     constructor(private audioCtx:AudioContext, private soundService: SoundService) {
         OscComponent.increaseCount();
         this.notes = this.soundService.notes;
@@ -83,8 +84,12 @@ export class OscComponent implements OnInit, AfterContentInit {
         this.me.nativeElement.setAttribute("style", "background-color: #F88")
     }
     disconnectGainNode(event) {
-        this.gainNode.disconnect(this.audioCtx.destination)
-        this.me.nativeElement.setAttribute("style", "")
+        try {
+            this.gainNode.disconnect(this.audioCtx.destination)
+            this.me.nativeElement.setAttribute("style", "")
+        } catch {
+            // TODO: Se dispara el callback handleKeys al inicio
+        }
     }
     initializeOscilator() {
         console.log("Oscilator Initialized");
@@ -112,10 +117,13 @@ export class OscComponent implements OnInit, AfterContentInit {
         this.gainNode.gain.setValueAtTime(this.volumeValue, this.audioCtx.currentTime);
     }
     handleKeys(e:KeyboardEvent) {
-        let triggerValue = this.triggerKeyValue || this.triggerKey ? this.triggerKey.nativeElement.selectedOptions[0].value : null;
-        if (e && e.key && e.key && e.key == triggerValue) {
-            this.connectGainNode(e);
-            setTimeout(this.disconnectGainNode.bind(this),100);
+        if (e && e.type == "keydown") {
+            let triggerValue = this.triggerKeyValue || this.triggerKey ? this.triggerKey.nativeElement.selectedOptions[0].value : null;
+            if (e && e.key && e.key && e.key == triggerValue) {
+                this.connectGainNode(e);
+            }
+        } else {
+            this.disconnectGainNode(null);
         }
     }
     handleKeyChange(event) {
