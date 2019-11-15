@@ -15,6 +15,8 @@ export class OscComponent implements OnInit, AfterContentInit {
     private frequencyValue:number;
     private volumeValue:number;
     waveType;
+    @ViewChild("osc", { static: false })
+    private me:ElementRef;
     @ViewChild("frequencyView", { static: false })
     private frequencyView:ElementRef;
     @ViewChild("volumeView", { static: false })
@@ -77,10 +79,12 @@ export class OscComponent implements OnInit, AfterContentInit {
         } catch (e) {
             // No hacer nada, ya esta corriendo el clock. Mejorar
         }
-        this.gainNode.connect(this.audioCtx.destination)
+        this.gainNode.connect(this.audioCtx.destination);
+        this.me.nativeElement.setAttribute("style", "background-color: #F88")
     }
     disconnectGainNode(event) {
         this.gainNode.disconnect(this.audioCtx.destination)
+        this.me.nativeElement.setAttribute("style", "")
     }
     initializeOscilator() {
         console.log("Oscilator Initialized");
