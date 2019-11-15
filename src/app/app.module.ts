@@ -17,6 +17,7 @@ import { ListenKeys } from './directives/listen.keys';
     BrowserModule
   ],
   providers: [
+    ListenKeys,
     SoundService,
     AudioContext,
     ComponentFactory

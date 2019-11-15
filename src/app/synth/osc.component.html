@@ -17,6 +17,17 @@
         <div class="modulo">
             <input type="text" (change)="handleVolume($event)" #volumeView size="5" />db
             <input type="text" (change)="handleFrequency($event)" #frequencyView size="5" />hz
+            <select #triggerKey (change)="handleNoteChange($event)">
+                <option value="a">A</option>
+                <option value="s">S</option>
+                <option value="d">D</option>
+                <option value="f">F</option>
+                <option value="g">G</option>
+                <option value="h">H</option>
+                <option value="j">J</option>
+                <option value="k">K</option>
+                <option value="l">L</option>
+            </select>
         </div>
         <footer>Synth {{ version }}</footer>
     </div>

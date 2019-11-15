@@ -1,12 +1,17 @@
 import { Directive, HostListener } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { SoundService } from '../services/sound.service';
 
 @Directive({selector: 'div[handlekeys]'})
 export class ListenKeys {
-  numberOfKeys = 0;
+  private numberOfKeys:number = 0;
+  constructor(private soundService: SoundService) {
+  }
 
   @HostListener('window:keyup', ['$event'])
   eventKeys(evt) {
-    console.log(evt);
-    console.log('div', evt.target, 'number of clicks:', this.numberOfKeys++);
+    this.numberOfKeys++;
+    this.soundService.emiteEventKey(evt);
   }
+    
 }

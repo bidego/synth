@@ -1,5 +1,6 @@
 import { Component, ViewChild, ElementRef, Inject, ViewContainerRef } from '@angular/core';
 import { ComponentFactory } from './services/component.factory';
+import { OscComponent } from './synth/osc.component';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -15,4 +16,8 @@ export class AppComponent {
   addOscilator() {
     this._factory.addDynamicComponent();
   }
+
+  get oscsCount(): number {
+    return OscComponent.getCount();
+  } 
 }

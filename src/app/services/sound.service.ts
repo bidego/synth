@@ -1,7 +1,10 @@
 import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 @Injectable()
 export class SoundService {
+    private keyUp: BehaviorSubject<KeyboardEvent> = new BehaviorSubject(null);
+
     public notes = [
     {
         name: 'C',
@@ -16,10 +19,12 @@ export class SoundService {
         position: 4,
         frequency: 293.66
     }]
-    public audioCtx = new (window['AudioContext'] || window['webkitAudioContext'])();
-    private gainNode = this.audioCtx.createGain();
-    public play(freq, time, delay) {
-        const oscillator = this.audioCtx.createOscillator();
+    constructor(private audioCtx:AudioContext){
+    }
+    private gainNode:GainNode = this.audioCtx.createGain();
+    
+    public play(freq, time, delay):void {
+        const oscillator:OscillatorNode = this.audioCtx.createOscillator();
         oscillator.connect(this.gainNode);
         this.gainNode.connect(this.audioCtx.destination);
         oscillator.type = 'sine'; 
@@ -27,4 +32,11 @@ export class SoundService {
         oscillator.start(this.audioCtx.currentTime + delay);
         oscillator.stop(this.audioCtx.currentTime + delay + time);
     }
+    get listenKey(){
+        return this.keyUp.asObservable();
+    }
+    public emiteEventKey(evt:KeyboardEvent):void{
+        this.keyUp.next(evt);
+    }
+
 }
