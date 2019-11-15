@@ -117,13 +117,16 @@ export class OscComponent implements OnInit, AfterContentInit {
         this.gainNode.gain.setValueAtTime(this.volumeValue, this.audioCtx.currentTime);
     }
     handleKeys(e:KeyboardEvent) {
-        if (e && e.type == "keydown") {
+        if (e && e.key) {
             let triggerValue = this.triggerKeyValue || this.triggerKey ? this.triggerKey.nativeElement.selectedOptions[0].value : null;
-            if (e && e.key && e.key && e.key == triggerValue) {
-                this.connectGainNode(e);
+            if (e.type == "keydown") {
+                if (e.key == triggerValue) {
+                    this.connectGainNode(e);
+                }
+            } else {
+                if (e.key == triggerValue) 
+                    this.disconnectGainNode(null);
             }
-        } else {
-            this.disconnectGainNode(null);
         }
     }
     handleKeyChange(event) {
