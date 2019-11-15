@@ -1,11 +1,16 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
+export class NoteModel {
+    name:String;
+    position:number;
+    frequency:number;
+}
 @Injectable()
 export class SoundService {
     private keyUp: BehaviorSubject<KeyboardEvent> = new BehaviorSubject(null);
 
-    public notes = [
+    public notes:Array<NoteModel> = [
     {
         name: 'C',
         position: 4,
@@ -18,6 +23,42 @@ export class SoundService {
         name: 'D',
         position: 4,
         frequency: 293.66
+    },{
+        name: 'Eb',
+        position: 4,
+        frequency: 311.13
+    },{
+        name: 'E',
+        position: 4,
+        frequency: 329.53
+    },{
+        name: 'F',
+        position: 4,
+        frequency: 349.23
+    },{
+        name: 'F#',
+        position: 4,
+        frequency: 369.99
+    },{
+        name: 'G',
+        position: 4,
+        frequency: 391.99
+    },{
+        name: 'Ab',
+        position: 4,
+        frequency: 415.30
+    },{
+        name: 'A',
+        position: 4,
+        frequency: 440
+    },{
+        name: 'Bb',
+        position: 4,
+        frequency: 466.16
+    },{
+        name: 'B',
+        position: 4,
+        frequency: 493.88
     }]
     constructor(private audioCtx:AudioContext){
     }

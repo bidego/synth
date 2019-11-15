@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterContentInit } from '@angular/core';
-import { SoundService } from '../services/sound.service';
+import { SoundService, NoteModel } from '../services/sound.service';
 
 const newLocal = 100;
 @Component({
@@ -33,9 +33,12 @@ export class OscComponent implements OnInit, AfterContentInit {
     private triangle:ElementRef;
     @ViewChild("sawtooth", { static: false })
     private sawtooth:ElementRef;
-
+    
+    private triggerKeyValue:String;
+    private notes: Array<NoteModel>;
     constructor(private audioCtx:AudioContext, private soundService: SoundService) {
         OscComponent.increaseCount();
+        this.notes = this.soundService.notes;
     }
     ngOnInit() {
     }
@@ -103,13 +106,20 @@ export class OscComponent implements OnInit, AfterContentInit {
         this.gainNode.gain.setValueAtTime(this.volumeValue, this.audioCtx.currentTime);
     }
     handleKeys(e:KeyboardEvent) {
-        if (e && e.key && e.key && e.key == this.triggerKey.nativeElement.selectedOptions[0].value) {
+        let triggerValue = this.triggerKeyValue || this.triggerKey ? this.triggerKey.nativeElement.selectedOptions[0].value : null;
+        if (e && e.key && e.key && e.key == triggerValue) {
             this.connectGainNode(e);
             setTimeout(this.disconnectGainNode.bind(this),100);
         }
     }
+    handleKeyChange(event) {
+        this.triggerKeyValue = event.srcElement.value;
+    }
     handleNoteChange(event) {
-        this.triggerKey.nativeElement.selectedOptions = [ event.srcElement ];
+        let { value:note } = event.srcElement;
+        this.sliderFrequency.nativeElement.value = note;
+        this.frequencyView.nativeElement.value = note;
+        
     }
     limit = n => n >= 0.5 ? 0.5 : n;
 

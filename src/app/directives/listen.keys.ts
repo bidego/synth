@@ -8,7 +8,7 @@ export class ListenKeys {
   constructor(private soundService: SoundService) {
   }
 
-  @HostListener('window:keyup', ['$event'])
+  @HostListener('window:keydown', ['$event'])
   eventKeys(evt) {
     this.numberOfKeys++;
     this.soundService.emiteEventKey(evt);

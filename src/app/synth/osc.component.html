@@ -17,7 +17,17 @@
         <div class="modulo">
             <input type="text" (change)="handleVolume($event)" #volumeView size="5" />db
             <input type="text" (change)="handleFrequency($event)" #frequencyView size="5" />hz
-            <select #triggerKey (change)="handleNoteChange($event)">
+            <label>Key: </label>
+            <select #triggerKey (change)="handleKeyChange($event)">
+                <option value="q">Q</option>
+                <option value="w">W</option>
+                <option value="e">E</option>
+                <option value="r">R</option>
+                <option value="t">T</option>
+                <option value="y">Y</option>
+                <option value="u">U</option>
+                <option value="i">I</option>
+                <option value="o">O</option>
                 <option value="a">A</option>
                 <option value="s">S</option>
                 <option value="d">D</option>
@@ -27,6 +37,10 @@
                 <option value="j">J</option>
                 <option value="k">K</option>
                 <option value="l">L</option>
+            </select>
+            <label>Note: </label>
+            <select #note (change)="handleNoteChange($event)">
+                <option *ngFor="let note of notes" [value]="note.frequency">{{note.name}}</option>
             </select>
         </div>
         <footer>Synth {{ version }}</footer>
