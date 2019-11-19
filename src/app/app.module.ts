@@ -6,6 +6,7 @@ import { SoundService } from './services/sound.service';
 import { ComponentFactory } from './services/component.factory';
 import { OscComponent } from './synth/osc.component';
 import { ListenKeys } from './directives/listen.keys';
+import { SocketService } from './services/socket.service';
 
 @NgModule({
   declarations: [
@@ -20,7 +21,8 @@ import { ListenKeys } from './directives/listen.keys';
     ListenKeys,
     SoundService,
     AudioContext,
-    ComponentFactory
+    ComponentFactory,
+    SocketService
   ],
   bootstrap: [AppComponent],
   entryComponents: [OscComponent]
