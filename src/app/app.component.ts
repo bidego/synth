@@ -14,11 +14,14 @@ export class AppComponent {
   title = 'syntotec-app';
   
   action = Action;
-  user: any;
+  user: 'any';
   messages: any[] = [];
   messageContent: string;
   ioConnection: any;
 
+  @ViewChild("sliderTempo", { static: false })
+  private sliderTempo:ElementRef;
+  
   @ViewChild("container", { static:false })
   private container:ElementRef;
   constructor(private _factory:ComponentFactory,
@@ -39,6 +42,15 @@ export class AppComponent {
         this.messages.push(message);
       });
 
+    this.socketService.onEvent(Event.NOTIFY_OSC)
+      .subscribe((message) => {
+        console.log(message);
+        this.digestOscilator();
+    });
+    this.socketService.onEvent(Event.NEW_MESSAGE)
+      .subscribe((message) => {
+        console.log(`MSG: ${JSON.stringify(message)}`);
+    });
     this.socketService.onEvent(Event.CONNECT)
       .subscribe(() => {
         console.log('connected');
@@ -62,32 +74,26 @@ export class AppComponent {
     this.messageContent = null;
   }
 
-  public sendNotification(params: any, action: Action): void {
-    let message: any;
-
-    if (action === Action.JOINED) {
-      message = {
-        from: this.user,
-        action: action
-      }
-    } else if (action === Action.RENAME) {
-      message = {
-        action: action,
-        content: {
-          username: this.user.name,
-          previousUsername: params.previousUsername
-        }
-      };
-    }
-
-    this.socketService.send(message);
-  }
-
   addOscilator() {
+    this._factory.addDynamicComponent();
+    this.sendMessage('pepe');
+  }
+  digestOscilator() {
     this._factory.addDynamicComponent();
   }
 
   get oscsCount(): number {
     return OscComponent.getCount();
-  } 
+  }
+  
+  handleTempo(event):void {
+    this.socketService.tempo = event.srcElement.value;
+  }
+
+  renderBeats() {
+    if (this.sliderTempo) {
+      return this.sliderTempo.nativeElement.value || this.socketService.tempo;
+    }
+    return null;
+  }
 }
