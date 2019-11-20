@@ -3,5 +3,6 @@ export class OscModel {
     public hz:number;
     public gain:number;
     public key:string;
+    public note:string;
     public waveType: OscillatorType;
 }

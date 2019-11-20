@@ -23,7 +23,7 @@
             </select>
             <label>Note: </label>
             <select #note (change)="handleNoteChange($event)">
-                <option *ngFor="let note of notes" [value]="note.frequency">{{note.name}}</option>
+                <option *ngFor="let note of notes" [value]="note.name">{{note.name}}</option>
             </select>
         </div>
         <footer>Synth {{ version }}</footer>

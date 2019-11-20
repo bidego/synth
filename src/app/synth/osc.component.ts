@@ -30,6 +30,8 @@ export class OscComponent implements OnInit, AfterContentInit, AfterViewInit {
     private sliderVolume:ElementRef;
     @ViewChild("triggerKey", { static: false })
     private triggerKey:ElementRef;
+    @ViewChild("note", { static: false })
+    private noteCombo:ElementRef;
     @ViewChild("sine", { static: false })
     private sine:ElementRef;
     @ViewChild("square", { static: false })
@@ -61,15 +63,17 @@ export class OscComponent implements OnInit, AfterContentInit, AfterViewInit {
         .subscribe((msg) => {
             let { data:osc } = msg.body.feed;
             if (osc.id == this.oscParams.id) {
-                this.oscParams = osc
+                this.oscParams = osc;
                 this.digestFrequency();
                 this.digestVolume();
                 this.digestWaveType();
+                this.digestHandleKeyChange();
+                this.digestNoteChange();
             }
         });
         this.socket$.onEvent(Event.NOTIFY_KEY_EVENT)
         .subscribe((msg) => {
-            this.digesKeys(msg.data);
+            this.digestKeys(msg.data);
         });
 
     }
@@ -188,7 +192,7 @@ export class OscComponent implements OnInit, AfterContentInit, AfterViewInit {
             }
         }
     }
-    digesKeys(e: {type:string,key:string}) {
+    digestKeys(e: {type:string,key:string}) {
         let triggerValue = this.triggerKeyValue || this.triggerKey ? this.triggerKey.nativeElement.selectedOptions[0].value : null;
         if (e.key == triggerValue) {
             if (e.type == "keydown") {
@@ -198,18 +202,33 @@ export class OscComponent implements OnInit, AfterContentInit, AfterViewInit {
             }
             setTimeout(() => {
                 this.socket$.emit(Event.KEY_EVENT, { type: e.type, key: e.key});
-            }, Math.floor(1000/60*this.socket$.tempo));
+            }, Math.floor(1000*260/this.socket$.tempo));
             
         }
 
     }
     handleKeyChange(event) {
         this.triggerKeyValue = event.srcElement.value;
+        this.oscParams.key = event.srcElement.value;
+        this.socket$.emit(Event.OSC_CHANGE, this.oscParams);
+    }
+    digestHandleKeyChange() {
+        this.triggerKey.nativeElement.value = this.oscParams.key;
+        this.triggerKeyValue = this.oscParams.key;
     }
     handleNoteChange(event) {
         let { value:note } = event.srcElement;
-        this.sliderFrequency.nativeElement.value = note;
-        this.frequencyView.nativeElement.value = note;        
+        let frequency:number = this.notes.find(e=>e.name==note).frequency;
+        this.sliderFrequency.nativeElement.value = frequency;
+        this.frequencyView.nativeElement.value = frequency;
+        this.oscParams.hz = frequency;
+        this.oscParams.note = note;
+        this.socket$.emit(Event.OSC_CHANGE, this.oscParams);
+    }
+    digestNoteChange() {
+        this.sliderFrequency.nativeElement.value = this.oscParams.hz;
+        this.frequencyView.nativeElement.value = this.oscParams.hz;
+        this.noteCombo.nativeElement.value = this.oscParams.note;
     }
     limit = n => n >= 0.5 ? 0.5 : n;
 }
