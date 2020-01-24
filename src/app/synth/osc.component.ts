@@ -10,7 +10,7 @@ import { ThrowStmt } from '@angular/compiler';
   templateUrl: './osc.component.html',
   styleUrls: ['./osc.component.css']
 })
-export class OscComponent implements OnInit, AfterContentInit, AfterViewInit {
+export class OscComponent implements AfterContentInit, AfterViewInit {
     public version:String = "0.1v";
     private static COUNT:number = 0;
     private osc: OscillatorNode;
@@ -55,9 +55,7 @@ export class OscComponent implements OnInit, AfterContentInit, AfterViewInit {
         this.notes = this.soundService.notes;
         this.keys = [ "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "a", "s", "d", "f", "g", "h", "j", "k", "l"];
     }
-    ngOnInit() {
-        this.initSocketEvents();
-    }
+
     private initSocketEvents(): void {
         this.socket$.onEvent(Event.NOTIFY_OSC_CHANGE)
         .subscribe((msg) => {
@@ -80,9 +78,11 @@ export class OscComponent implements OnInit, AfterContentInit, AfterViewInit {
     
     ngAfterContentInit() {
         this.initializeOscilator();
+
         this.soundService.listenKey.subscribe(e => this.handleKeys(e));
     }
     ngAfterViewInit() {
+        this.initSocketEvents();
         this.oscParams.hz = this.sliderFrequency.nativeElement.value;
         this.oscParams.gain = this.sliderVolume.nativeElement.value
         this.oscParams.waveType = this.osc.type;
@@ -193,8 +193,7 @@ export class OscComponent implements OnInit, AfterContentInit, AfterViewInit {
         }
     }
     digestKeys(e: {type:string,key:string}) {
-        let triggerValue = this.triggerKeyValue || this.triggerKey ? this.triggerKey.nativeElement.selectedOptions[0].value : null;
-        if (e.key == triggerValue) {
+        if (e.key == this.triggerKeyValue) {
             if (e.type == "keydown") {
                 this.connectGainNode(e);
             }else {

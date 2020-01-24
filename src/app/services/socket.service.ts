@@ -4,7 +4,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Event } from '../models/events.model';
 
-const SERVER_URL = 'http://localhost:8080';
+const SERVER_URL = 'http://localhost:8090';
 
 @Injectable()
 export class SocketService {
