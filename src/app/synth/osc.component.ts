@@ -1,5 +1,7 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterContentInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, AfterContentInit, AfterViewInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { SoundService, NoteModel } from '../services/sound.service';
+import { OscConfig, WaveType } from '../services/presets';
 
 const newLocal = 100;
 @Component({
@@ -7,7 +9,7 @@ const newLocal = 100;
   templateUrl: './osc.component.html',
   styleUrls: ['./osc.component.css']
 })
-export class OscComponent implements OnInit, AfterContentInit {
+export class OscComponent implements OnInit, AfterContentInit, AfterViewInit, OnDestroy {
     public version:String = "0.1v";
     private static COUNT:number = 0;
     private osc: OscillatorNode;
@@ -15,6 +17,9 @@ export class OscComponent implements OnInit, AfterContentInit {
     private frequencyValue:number;
     private volumeValue:number;
     waveType;
+    // Configuracion inicial (presets), se aplica cuando la vista esta lista
+    public config: OscConfig;
+    private keySub: Subscription;
     @ViewChild("osc", { static: false })
     private me:ElementRef;
     @ViewChild("frequencyView", { static: false })
@@ -27,6 +32,8 @@ export class OscComponent implements OnInit, AfterContentInit {
     private sliderVolume:ElementRef;
     @ViewChild("triggerKey", { static: false })
     private triggerKey:ElementRef;
+    @ViewChild("note", { static: false })
+    private noteSelect:ElementRef;
     @ViewChild("sine", { static: false })
     private sine:ElementRef;
     @ViewChild("square", { static: false })
@@ -49,7 +56,37 @@ export class OscComponent implements OnInit, AfterContentInit {
     }
     ngAfterContentInit() {
         this.initializeOscilator();
-        this.soundService.listenKey.subscribe(e => this.handleKeys(e));
+        this.keySub = this.soundService.listenKey.subscribe(e => this.handleKeys(e));
+    }
+    ngAfterViewInit() {
+        if (this.config)
+            this.applyConfig(this.config);
+    }
+    ngOnDestroy() {
+        this.keySub.unsubscribe();
+        this.disconnectGainNode(null);
+        try {
+            this.osc.stop();
+        } catch (e) {
+            // Nunca arranco
+        }
+        OscComponent.COUNT--;
+    }
+    applyConfig(c: OscConfig) {
+        this.setWaveType(c.wave);
+        this.frequencyValue = c.frequency;
+        this.sliderFrequency.nativeElement.value = c.frequency;
+        this.frequencyView.nativeElement.value = c.frequency;
+        this.osc.frequency.value = c.frequency;
+        this.volumeValue = this.limit(c.volume);
+        this.sliderVolume.nativeElement.value = this.volumeValue;
+        this.volumeView.nativeElement.value = this.volumeValue;
+        this.gainNode.gain.value = this.volumeValue;
+        this.triggerKey.nativeElement.value = c.key;
+        this.triggerKeyValue = c.key;
+        const note = this.notes.find(n => Math.abs(n.frequency - c.frequency) < 0.01);
+        if (note)
+            this.noteSelect.nativeElement.value = String(note.frequency);
     }
     static increaseCount() {
         OscComponent.COUNT++;
@@ -59,16 +96,14 @@ export class OscComponent implements OnInit, AfterContentInit {
     }
 
     toggleWaveType(event) {
-        let { srcElement } = event;
-        const selected = [ "style", "color: #F00" ];
-        const deselected = [ "style", "" ];
+        this.setWaveType(event.srcElement.value);
+    }
+
+    setWaveType(type: WaveType) {
         const waveTypes = [ this.sine, this.sawtooth, this.triangle, this.square];
-        this.osc.type = srcElement.value;
+        this.osc.type = type;
         waveTypes.forEach( function waveTypeReducer(el) {
-            if (srcElement.value == el.nativeElement.value) 
-                el.nativeElement.setAttribute(...selected);
-            else 
-                el.nativeElement.setAttribute(...deselected);
+            el.nativeElement.setAttribute("style", type == el.nativeElement.value ? "color: #F00" : "");
         });
     }
 

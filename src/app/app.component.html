@@ -4,6 +4,11 @@
     {{ title }}!
   </h1>
   <button (click)="addOscilator()" #addOsc>OSC ++</button>
+  <button (click)="clearOscilators()">Clear</button>
+  <div class="presets">
+    Presets:
+    <button *ngFor="let preset of presets" (click)="loadPreset(preset)" [title]="preset.description">{{ preset.name }}</button>
+  </div>
 </div>
 <div class="container">
 </div>
