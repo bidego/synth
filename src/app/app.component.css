@@ -1,0 +1,12 @@
+.presets, .fx {
+  margin: 8px;
+}
+.presetGroup {
+  margin: 0 10px;
+}
+.presetGroup b {
+  margin-right: 4px;
+}
+.fx label {
+  margin: 0 8px;
+}

@@ -6,8 +6,18 @@
   <button (click)="addOscilator()" #addOsc>OSC ++</button>
   <button (click)="clearOscilators()">Clear</button>
   <div class="presets">
-    Presets:
-    <button *ngFor="let preset of presets" (click)="loadPreset(preset)" [title]="preset.description">{{ preset.name }}</button>
+    <span *ngFor="let group of categories" class="presetGroup">
+      <b>{{ group.name }}</b>
+      <button *ngFor="let preset of group.presets" (click)="loadPreset(preset)" [title]="preset.description">{{ preset.name }}</button>
+    </span>
+  </div>
+  <div class="fx">
+    <b>FX</b>
+    <label *ngFor="let k of fxKnobs">
+      {{ k.label }}
+      <input type="range" min="0" [max]="k.max" [step]="k.step" [value]="sound.fx[k.name]"
+        (input)="setFx(k.name, $event.target.value)">
+    </label>
   </div>
 </div>
 <div class="container">

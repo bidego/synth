@@ -42,3 +42,23 @@ input[type=range][orient=vertical]
 .sliderVolume {
         float:right;
 }
+.patch {
+    margin: 5px;
+    font-size: 12px;
+}
+.patch summary {
+    cursor: pointer;
+}
+.knobs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px 12px;
+}
+.knob {
+    display: flex;
+    flex-direction: column;
+}
+.knob input[type=range] {
+    width: 100px;
+    margin: 2px 0;
+}

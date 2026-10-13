@@ -3,7 +3,7 @@
         <input #sliderFrequency
             (mousemove)="handleFrequency($event)"
             class="slider sliderFrequency"
-            type="range" min="20" max="1000" step="1" value="600">
+            type="range" min="20" max="5000" step="1" value="600">
         <div class="modulo botonera">
             <button (click)="connectGainNode($event)" #play>&#9658;</button>
             <button (click)="disconnectGainNode($event)" #stop>&#9632;</button>
@@ -26,6 +26,35 @@
                 <option *ngFor="let note of notes" [value]="note.frequency">{{note.name}}</option>
             </select>
         </div>
+        <details class="patch">
+            <summary>Patch</summary>
+            <div class="knobs">
+                <label *ngFor="let k of knobs" class="knob">
+                    <span>{{ k.label }}</span>
+                    <input type="range" [min]="k.min" [max]="k.max" [step]="k.step" [value]="params[k.name]"
+                        (input)="setParam(k.name, $event.target.value)">
+                    <output>{{ params[k.name] }}{{ k.unit }}</output>
+                </label>
+                <label class="knob">
+                    <span>Filter</span>
+                    <select (change)="setParam('filterType', $event.target.value)">
+                        <option *ngFor="let t of filterTypes" [value]="t" [selected]="t == params.filterType">{{ t }}</option>
+                    </select>
+                </label>
+                <label class="knob">
+                    <span>LFO &rarr;</span>
+                    <select (change)="setParam('lfoTarget', $event.target.value)">
+                        <option *ngFor="let t of lfoTargets" [value]="t" [selected]="t == params.lfoTarget">{{ t }}</option>
+                    </select>
+                </label>
+                <label class="knob">
+                    <span>LFO depth</span>
+                    <input type="range" min="0" [max]="lfoDepthRange.max" [step]="lfoDepthRange.step" [value]="params.lfoDepth"
+                        (input)="setParam('lfoDepth', $event.target.value)">
+                    <output>{{ params.lfoDepth }}{{ lfoDepthRange.unit }}</output>
+                </label>
+            </div>
+        </details>
         <footer>Synth {{ version }}</footer>
     </div>
     <input #sliderVolume
