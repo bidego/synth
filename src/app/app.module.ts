@@ -5,12 +5,14 @@ import { AppComponent } from './app.component';
 import { SoundService } from './services/sound.service';
 import { ComponentFactory } from './services/component.factory';
 import { OscComponent } from './synth/osc.component';
+import { VisualizerComponent } from './synth/visualizer.component';
 import { ListenKeys } from './directives/listen.keys';
 
 @NgModule({
   declarations: [
     AppComponent,
     OscComponent,
+    VisualizerComponent,
     ListenKeys
   ],
   imports: [

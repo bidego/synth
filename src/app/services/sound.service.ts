@@ -63,6 +63,16 @@ export class SoundService {
     constructor(private audioCtx:AudioContext){
     }
     private gainNode:GainNode = this.audioCtx.createGain();
+    // Todos los osciladores pasan por este analyser antes de salir a los parlantes
+    public readonly analyser:AnalyserNode = this.createMasterAnalyser();
+
+    private createMasterAnalyser():AnalyserNode {
+        const analyser = this.audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        analyser.smoothingTimeConstant = 0.8;
+        analyser.connect(this.audioCtx.destination);
+        return analyser;
+    }
     
     public play(freq, time, delay):void {
         const oscillator:OscillatorNode = this.audioCtx.createOscillator();

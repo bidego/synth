@@ -80,12 +80,12 @@ export class OscComponent implements OnInit, AfterContentInit {
         } catch (e) {
             // No hacer nada, ya esta corriendo el clock. Mejorar
         }
-        this.gainNode.connect(this.audioCtx.destination);
+        this.gainNode.connect(this.soundService.analyser);
         this.me.nativeElement.setAttribute("style", "background-color: #F88")
     }
     disconnectGainNode(event) {
         try {
-            this.gainNode.disconnect(this.audioCtx.destination)
+            this.gainNode.disconnect(this.soundService.analyser)
             this.me.nativeElement.setAttribute("style", "")
         } catch {
             // TODO: Se dispara el callback handleKeys al inicio
