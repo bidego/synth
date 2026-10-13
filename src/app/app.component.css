@@ -1,12 +1,40 @@
+.app {
+  text-align: center;
+  padding: 0 16px 20px;
+}
+h1 {
+  margin: 10px 0 4px;
+}
 .presets, .fx {
-  margin: 8px;
+  display: inline-block;
+  margin: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(10, 10, 20, 0.72);
 }
 .presetGroup {
   margin: 0 10px;
+  display: inline-block;
 }
 .presetGroup b {
   margin-right: 4px;
 }
+.presets button {
+  background: rgba(40, 44, 70, 0.85);
+  color: #ddd;
+  border: 1px solid #444a70;
+  border-radius: 3px;
+  margin: 1px;
+  cursor: pointer;
+}
+.presets button.on {
+  background: #ff5a8a;
+  border-color: #ff5a8a;
+  color: #fff;
+}
 .fx label {
   margin: 0 8px;
+}
+app-piano {
+  margin: 16px 0;
 }

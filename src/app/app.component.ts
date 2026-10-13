@@ -1,8 +1,8 @@
-import { Component, ViewChild, ElementRef, Inject, ViewContainerRef } from '@angular/core';
-import { ComponentFactory } from './services/component.factory';
-import { PRESETS, Preset, DEFAULT_FX, FxConfig } from './services/presets';
+import { Component } from '@angular/core';
+import { PRESETS, Preset } from './services/presets';
 import { SoundService } from './services/sound.service';
-import { OscComponent } from './synth/osc.component';
+import { SynthEngine } from './services/synth.engine';
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -24,29 +24,16 @@ export class AppComponent {
     { name: 'delayFeedback', label: 'Feedback', max: 0.9, step: 0.01 },
     { name: 'reverbMix', label: 'Reverb', max: 1, step: 0.01 }
   ];
-  @ViewChild("container", { static:false })
-  private container:ElementRef;
-  constructor(private _factory:ComponentFactory, public sound:SoundService,@Inject(ViewContainerRef) viewContainerRef) {
-    _factory.setRootViewContainerRef(viewContainerRef);
-  }
-  addOscilator() {
-    this._factory.addDynamicComponent();
-  }
 
-  loadPreset(preset: Preset) {
-    this.sound.setFx({ ...DEFAULT_FX, ...preset.fx });
-    this._factory.loadPreset(preset);
-  }
+  constructor(public sound: SoundService, public engine: SynthEngine) {}
 
-  clearOscilators() {
-    this._factory.clear();
+  loadPreset(preset: Preset, event: Event) {
+    this.engine.loadPatch(preset);
+    // Que el foco no quede en el boton: la barra espaciadora/enter no debe re-dispararlo
+    (event.target as HTMLElement).blur();
   }
 
   setFx(name: string, value) {
     this.sound.setFx({ [name]: parseFloat(value) });
   }
-
-  get oscsCount(): number {
-    return OscComponent.getCount();
-  } 
 }

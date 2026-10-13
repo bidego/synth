@@ -1,0 +1,67 @@
+:host {
+    display: block;
+}
+.piano {
+    position: relative;
+    height: 150px;
+    margin: 0 auto;
+    user-select: none;
+}
+.key {
+    position: absolute;
+    top: 0;
+    height: 150px;
+    box-sizing: border-box;
+    border-radius: 0 0 5px 5px;
+    background: #eee;
+    color: #333;
+    cursor: pointer;
+    text-align: center;
+}
+.key.black {
+    height: 92px;
+    background: #222;
+    color: #ddd;
+    z-index: 2;
+    border: 1px solid #000;
+}
+.key.on {
+    background: #ff5a8a;
+    box-shadow: 0 0 18px #ff5a8a;
+}
+.key.black.on {
+    background: #c01e53;
+}
+.lbl, .note {
+    position: absolute;
+    left: 0;
+    right: 0;
+    font-size: 11px;
+}
+.lbl.top, .legend .top {
+    color: #2a7bd6;
+}
+.lbl.bottom, .legend .bottom {
+    color: #e08a1e;
+}
+.key.black .lbl.top { color: #7db4f5; }
+.key.black .lbl.bottom { color: #f5b567; }
+.lbl.top { bottom: 46px; font-weight: bold; font-size: 13px; }
+.lbl.bottom { bottom: 30px; font-weight: bold; font-size: 13px; }
+.key.black .lbl.top { bottom: 40px; }
+.key.black .lbl.bottom { bottom: 22px; }
+.note {
+    bottom: 6px;
+    opacity: 0.55;
+}
+.key.black .note {
+    display: none;
+}
+.legend {
+    width: fit-content;
+    margin: 8px auto 0;
+    padding: 2px 12px;
+    border-radius: 6px;
+    background: rgba(10, 10, 20, 0.72);
+    font-size: 12px;
+}

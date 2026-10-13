@@ -105,7 +105,7 @@ export class VisualizerComponent implements AfterViewInit, OnDestroy {
             let sum = 0;
             for (let j = 0; j < binsPerBar; j++) sum += spectrum[i * binsPerBar + j];
             const h = (sum / binsPerBar / 255) * height * 0.5;
-            ctx.fillStyle = `hsla(${(this.hue + i * 4) % 360}, 100%, 50%, 0.35)`;
+            ctx.fillStyle = `hsla(${(this.hue + i * 4) % 360}, 100%, 50%, 0.2)`;
             // Espejado arriba y abajo
             ctx.fillRect(i * barWidth, height - h, barWidth - 2, h);
             ctx.fillRect(i * barWidth, 0, barWidth - 2, h);

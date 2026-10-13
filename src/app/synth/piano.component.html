@@ -1,0 +1,14 @@
+<div class="piano" [style.width.px]="width" (mouseleave)="up()">
+    <div *ngFor="let key of keys"
+        class="key" [class.black]="key.black" [class.on]="engine.isHeld(key.offset)"
+        [style.left.px]="key.left" [style.width.px]="key.width"
+        (mousedown)="down(key)" (mouseup)="up()">
+        <span class="lbl top">{{ label(key.top) }}</span>
+        <span class="lbl bottom">{{ label(key.bottom) }}</span>
+        <span class="note">{{ name(key) }}</span>
+    </div>
+</div>
+<div class="legend">
+    <span class="top">fila de arriba</span> /
+    <span class="bottom">fila de abajo</span> &middot; &uarr;&darr; cambian la octava
+</div>

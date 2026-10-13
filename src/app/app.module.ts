@@ -3,15 +3,17 @@ import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
 import { SoundService } from './services/sound.service';
-import { ComponentFactory } from './services/component.factory';
-import { OscComponent } from './synth/osc.component';
+import { SynthEngine } from './services/synth.engine';
+import { SynthPanelComponent } from './synth/synth-panel.component';
+import { PianoComponent } from './synth/piano.component';
 import { VisualizerComponent } from './synth/visualizer.component';
 import { ListenKeys } from './directives/listen.keys';
 
 @NgModule({
   declarations: [
     AppComponent,
-    OscComponent,
+    SynthPanelComponent,
+    PianoComponent,
     VisualizerComponent,
     ListenKeys
   ],
@@ -22,9 +24,8 @@ import { ListenKeys } from './directives/listen.keys';
     ListenKeys,
     SoundService,
     AudioContext,
-    ComponentFactory
+    SynthEngine
   ],
-  bootstrap: [AppComponent],
-  entryComponents: [OscComponent]
+  bootstrap: [AppComponent]
 })
 export class AppModule { }

@@ -11,27 +11,26 @@ export interface EnvConfig {
 
 export interface FilterConfig {
     type: FilterType;
-    cutoff: number;     // Hz
+    cutoff: number;     // Hz, medido en el Do central
     q: number;          // resonancia
     envAmount: number;  // Hz que suma la envolvente de filtro al disparar
     envDecay: number;   // s que tarda en volver al cutoff
+    track: number;      // 0..1: cuanto sigue el cutoff a la nota tocada
 }
 
 export interface LfoConfig {
     rate: number;       // Hz
-    depth: number;      // pitch: cents, filter: Hz, amp: fraccion del volumen (0..1)
+    depth: number;      // pitch: cents, filter: Hz, amp: 0..1
     target: LfoTarget;
 }
 
-export interface OscConfig {
+/** Un oscilador del patch. Cada nota tocada lo instancia. */
+export interface LayerConfig {
     wave: WaveType;
-    frequency: number;
-    volume: number;
-    key: string;
-    detune?: number;    // cents
-    env?: EnvConfig;
-    filter?: FilterConfig;
-    lfo?: LfoConfig;
+    ratio: number;      // multiplicador de frecuencia (octavas, armonicos, parciales)
+    detune: number;     // cents
+    volume: number;     // 0..1 relativo dentro del patch
+    env?: EnvConfig;    // envolvente propia; si no hay se usa la del patch
 }
 
 export interface FxConfig {
@@ -41,186 +40,132 @@ export interface FxConfig {
     reverbMix: number;      // 0..1
 }
 
-export interface Preset {
+export interface Patch {
     name: string;
     category: string;
     description: string;
+    layers: Array<LayerConfig>;
+    env: EnvConfig;
+    filter: FilterConfig;
+    lfo: LfoConfig;
+    level: number;          // volumen del patch
+    octave: number;         // octava inicial del teclado
     fx?: Partial<FxConfig>;
-    oscs: Array<OscConfig>;
 }
+export type Preset = Patch;
 
 export const DEFAULT_ENV: EnvConfig = { attack: 0.005, decay: 0.1, sustain: 1, release: 0.05 };
-export const DEFAULT_FILTER: FilterConfig = { type: 'lowpass', cutoff: 18000, q: 0.7, envAmount: 0, envDecay: 0.3 };
+export const DEFAULT_FILTER: FilterConfig = { type: 'lowpass', cutoff: 18000, q: 0.7, envAmount: 0, envDecay: 0.3, track: 0.5 };
 export const DEFAULT_LFO: LfoConfig = { rate: 5, depth: 0, target: 'pitch' };
 export const DEFAULT_FX: FxConfig = { delayTime: 0.3, delayFeedback: 0.35, delayMix: 0, reverbMix: 0 };
 
+export const clonePatch = (p: Patch): Patch => JSON.parse(JSON.stringify(p));
+
 // --- Helpers para escribir presets legibles ---
-
-const NOTE_INDEX = { 'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11 };
-
-/** 'C#4' | 'Bb3' -> Hz */
-export function note(name: string): number {
-    const [, letter, accidental, octave] = /^([A-G])([#b]?)(-?\d)$/.exec(name);
-    const shift = accidental === '#' ? 1 : accidental === 'b' ? -1 : 0;
-    const midi = (parseInt(octave, 10) + 1) * 12 + NOTE_INDEX[letter] + shift;
-    return 440 * Math.pow(2, (midi - 69) / 12);
-}
 
 const env = (attack: number, decay: number, sustain: number, release: number): EnvConfig =>
     ({ attack, decay, sustain, release });
-const filter = (type: FilterType, cutoff: number, q: number, envAmount = 0, envDecay = 0.3): FilterConfig =>
-    ({ type, cutoff, q, envAmount, envDecay });
+const filter = (type: FilterType, cutoff: number, q: number, envAmount = 0, envDecay = 0.3, track = 0.5): FilterConfig =>
+    ({ type, cutoff, q, envAmount, envDecay, track });
 const lfo = (rate: number, depth: number, target: LfoTarget): LfoConfig => ({ rate, depth, target });
+const layer = (wave: WaveType, o: Partial<LayerConfig> = {}): LayerConfig =>
+    ({ wave, ratio: 1, detune: 0, volume: 0.5, ...o });
 
-/** Un oscilador de un preset; `ratio` multiplica la frecuencia (armonicos / parciales). */
-const layer = (key: string, noteName: string, o: Partial<OscConfig>, ratio = 1): OscConfig =>
-    ({ wave: 'sawtooth', volume: 0.06, ...o, key, frequency: note(noteName) * ratio });
-
-/** Cada nota se apila `detunes.length` veces con distinto detune (efecto supersaw/coro). */
-const stack = (keys: string[], notes: string[], o: Partial<OscConfig>, detunes: number[]): OscConfig[] =>
-    keys.reduce((acc, key, i) =>
-        acc.concat(detunes.map(d => layer(key, notes[i], { ...o, detune: d }))), [] as OscConfig[]);
-
-/** Un acorde por tecla: cada nota del acorde con un detune levemente distinto. */
-const chords = (chordMap: { [key: string]: string[] }, o: Partial<OscConfig>, spread: number[]): OscConfig[] =>
-    Object.keys(chordMap).reduce((acc, key) =>
-        acc.concat(chordMap[key].map((n, i) => layer(key, n, { ...o, detune: spread[i % spread.length] }))), [] as OscConfig[]);
+const patch = (name: string, category: string, description: string, o: Partial<Patch>): Patch => ({
+    name, category, description,
+    layers: [layer('sawtooth')],
+    env: DEFAULT_ENV,
+    filter: DEFAULT_FILTER,
+    lfo: DEFAULT_LFO,
+    level: 0.3,
+    octave: 0,
+    ...o
+});
 
 export const PRESETS: Array<Preset> = [
-    {
-        name: 'Supersaw Lead',
-        category: 'Lead',
-        description: 'A/S/D/F = Do, Mi, Sol, Do agudo. Sierras desafinadas, filtro con barrido y vibrato',
-        fx: { delayTime: 0.375, delayFeedback: 0.4, delayMix: 0.25, reverbMix: 0.2 },
-        oscs: stack(['a', 's', 'd', 'f'], ['C4', 'E4', 'G4', 'C5'], {
-            volume: 0.05,
-            env: env(0.01, 0.3, 0.7, 0.25),
-            filter: filter('lowpass', 3500, 3, 2500, 0.35),
-            lfo: lfo(5.5, 10, 'pitch')
-        }, [-10, 10])
-    },
-    {
-        name: 'Analog Brass',
-        category: 'Brass',
-        description: 'A/S/D/F = Do, Sol, Do, Mi. Ataque lento y apertura de filtro tipo metales',
-        fx: { reverbMix: 0.18 },
-        oscs: stack(['a', 's', 'd', 'f'], ['C3', 'G3', 'C4', 'E4'], {
-            volume: 0.06,
-            env: env(0.08, 0.2, 0.75, 0.15),
-            filter: filter('lowpass', 800, 2, 3500, 0.25)
-        }, [-6, 6])
-    },
-    {
-        name: 'Warm Pad',
-        category: 'Pad',
-        description: 'A = Do maj7, S = La min7. Ataque y release largos, el filtro respira solo',
-        fx: { delayTime: 0.5, delayFeedback: 0.4, delayMix: 0.2, reverbMix: 0.6 },
-        oscs: chords({
-            a: ['C3', 'E3', 'G3', 'B3'],
-            s: ['A2', 'C3', 'E3', 'G3']
-        }, {
-            volume: 0.05,
-            env: env(1.2, 1, 0.8, 2),
-            filter: filter('lowpass', 1100, 1),
-            lfo: lfo(0.2, 400, 'filter')
-        }, [-6, 0, 6, 0])
-    },
-    {
-        name: 'Strings Ensemble',
-        category: 'Pad',
-        description: 'A = Do, S = Fa, D = Sol (acordes mayores). Cuerdas con ataque suave',
-        fx: { reverbMix: 0.5 },
-        oscs: chords({
-            a: ['C3', 'E3', 'G3'],
-            s: ['F3', 'A3', 'C4'],
-            d: ['G3', 'B3', 'D4']
-        }, {
-            volume: 0.05,
-            env: env(0.6, 0.5, 0.85, 1.2),
-            filter: filter('lowpass', 2500, 0.8),
-            lfo: lfo(5, 6, 'pitch')
-        }, [-8, 0, 8])
-    },
-    {
-        name: 'Acid Bass',
-        category: 'Bass',
-        description: 'A/S/D/F = Do, Mib, Fa, Sol graves. Resonancia alta y barrido corto (303)',
-        fx: { delayTime: 0.22, delayFeedback: 0.4, delayMix: 0.25 },
-        oscs: stack(['a', 's', 'd', 'f'], ['C2', 'Eb2', 'F2', 'G2'], {
-            volume: 0.12,
-            env: env(0.003, 0.15, 0.4, 0.08),
-            filter: filter('lowpass', 400, 12, 2500, 0.18)
-        }, [0])
-    },
-    {
-        name: 'Wobble Bass',
-        category: 'Bass',
-        description: 'A/S/D = Do, Fa, Sol graves. Un LFO mueve el filtro (dubstep)',
-        fx: { reverbMix: 0.1 },
-        oscs: stack(['a', 's', 'd'], ['C2', 'F2', 'G2'], {
-            volume: 0.1,
-            env: env(0.005, 0.1, 0.9, 0.1),
-            filter: filter('lowpass', 500, 10),
-            lfo: lfo(2, 700, 'filter')
-        }, [-8, 8])
-    },
-    {
-        name: 'Electric Piano',
-        category: 'Keys',
-        description: 'A/S/D/F = Do, Mi, Sol, Do agudo. Tono + armonico corto, con tremolo',
-        fx: { reverbMix: 0.25 },
-        oscs: ['a', 's', 'd', 'f'].reduce((acc, key, i) => {
-            const n = ['C4', 'E4', 'G4', 'C5'][i];
-            return acc.concat([
-                layer(key, n, {
-                    wave: 'triangle', volume: 0.1, env: env(0.005, 1.2, 0.1, 0.4),
-                    lfo: lfo(4.5, 0.3, 'amp')
-                }),
-                layer(key, n, { wave: 'sine', volume: 0.04, env: env(0.003, 0.25, 0, 0.2) }, 2)
-            ]);
-        }, [] as OscConfig[])
-    },
-    {
-        name: 'Glass Bell',
-        category: 'Keys',
-        description: 'A/S/D = Do, Mi, Sol agudos. Parciales inarmonicos que decaen distinto',
-        fx: { delayTime: 0.45, delayFeedback: 0.45, delayMix: 0.3, reverbMix: 0.55 },
-        oscs: ['a', 's', 'd'].reduce((acc, key, i) => {
-            const n = ['C5', 'E5', 'G5'][i];
-            return acc.concat([
-                layer(key, n, { wave: 'sine', volume: 0.08, env: env(0.002, 2.5, 0, 1.5) }, 1),
-                layer(key, n, { wave: 'sine', volume: 0.04, env: env(0.002, 1.2, 0, 0.8) }, 2.76),
-                layer(key, n, { wave: 'sine', volume: 0.02, env: env(0.002, 0.5, 0, 0.4) }, 5.4)
-            ]);
-        }, [] as OscConfig[])
-    },
-    {
-        name: 'Church Organ',
-        category: 'Keys',
-        description: 'A/S/D = Do, Mi, Sol. Tres barras de armonicos con efecto Leslie',
-        fx: { reverbMix: 0.45 },
-        oscs: ['a', 's', 'd'].reduce((acc, key, i) => {
-            const n = ['C4', 'E4', 'G4'][i];
-            return acc.concat([1, 2, 3].map((ratio, j) => layer(key, n, {
-                wave: 'sine',
-                volume: [0.07, 0.05, 0.03][j],
-                env: env(0.01, 0.05, 1, 0.08),
-                lfo: lfo(6.5, 0.25, 'amp')
-            }, ratio)));
-        }, [] as OscConfig[])
-    },
-    {
-        name: 'Sci-Fi Siren',
-        category: 'FX',
-        description: 'A = sirena, S = onda cuadrada que respira, D = barrido lento grave',
-        fx: { delayTime: 0.33, delayFeedback: 0.5, delayMix: 0.35, reverbMix: 0.3 },
-        oscs: [
-            layer('a', 'A4', { wave: 'sawtooth', volume: 0.05, env: env(0.05, 0.1, 1, 0.3), lfo: lfo(2.5, 700, 'pitch') }),
-            layer('s', 'A5', {
-                wave: 'square', volume: 0.04, env: env(0.01, 0.1, 1, 0.2),
-                filter: filter('bandpass', 1500, 8), lfo: lfo(7, 1200, 'filter')
-            }),
-            layer('d', 'A3', { wave: 'sawtooth', volume: 0.06, env: env(0.3, 0.2, 1, 1), lfo: lfo(0.5, 1200, 'pitch') })
-        ]
-    }
+    patch('Supersaw Lead', 'Lead', 'Tres sierras desafinadas, filtro con barrido y vibrato', {
+        layers: [layer('sawtooth', { detune: -14, volume: 0.4 }), layer('sawtooth', { volume: 0.4 }), layer('sawtooth', { detune: 14, volume: 0.4 })],
+        env: env(0.01, 0.3, 0.7, 0.25),
+        filter: filter('lowpass', 3500, 3, 2500, 0.35),
+        lfo: lfo(5.5, 10, 'pitch'),
+        fx: { delayTime: 0.375, delayFeedback: 0.4, delayMix: 0.25, reverbMix: 0.2 }
+    }),
+    patch('Chiptune', 'Lead', 'Cuadradas a lo consola de 8 bits, con vibrato rapido', {
+        layers: [layer('square', { volume: 0.4 }), layer('square', { ratio: 2, volume: 0.15, detune: 6 })],
+        env: env(0.002, 0.1, 0.6, 0.05),
+        lfo: lfo(6.5, 15, 'pitch'),
+        fx: { delayTime: 0.15, delayFeedback: 0.3, delayMix: 0.2 }
+    }),
+    patch('Analog Brass', 'Brass', 'Ataque lento y apertura de filtro tipo metales', {
+        layers: [layer('sawtooth', { detune: -6 }), layer('sawtooth', { detune: 6 })],
+        env: env(0.08, 0.2, 0.75, 0.15),
+        filter: filter('lowpass', 800, 2, 3500, 0.25),
+        fx: { reverbMix: 0.18 }
+    }),
+    patch('Warm Pad', 'Pad', 'Ataque y release largos, el filtro respira solo', {
+        layers: [layer('sawtooth', { detune: -7, volume: 0.35 }), layer('sawtooth', { detune: 7, volume: 0.35 }), layer('triangle', { ratio: 0.5, volume: 0.4 })],
+        env: env(1.2, 1, 0.8, 2),
+        filter: filter('lowpass', 1100, 1),
+        lfo: lfo(0.2, 400, 'filter'),
+        fx: { delayTime: 0.5, delayFeedback: 0.4, delayMix: 0.2, reverbMix: 0.6 }
+    }),
+    patch('Strings Ensemble', 'Pad', 'Cuerdas con ataque suave y vibrato lento', {
+        layers: [layer('sawtooth', { detune: -9, volume: 0.35 }), layer('sawtooth', { volume: 0.35 }), layer('sawtooth', { detune: 9, volume: 0.35 })],
+        env: env(0.6, 0.5, 0.85, 1.2),
+        filter: filter('lowpass', 2500, 0.8),
+        lfo: lfo(5, 6, 'pitch'),
+        fx: { reverbMix: 0.5 }
+    }),
+    patch('Acid Bass', 'Bass', 'Resonancia alta y barrido corto (303)', {
+        layers: [layer('sawtooth', { volume: 0.7 })],
+        env: env(0.003, 0.15, 0.4, 0.08),
+        filter: filter('lowpass', 500, 12, 2500, 0.18, 0.3),
+        octave: -1,
+        level: 0.35,
+        fx: { delayTime: 0.22, delayFeedback: 0.4, delayMix: 0.25 }
+    }),
+    patch('Wobble Bass', 'Bass', 'Un LFO mueve el filtro (dubstep)', {
+        layers: [layer('sawtooth', { detune: -8, volume: 0.5 }), layer('sawtooth', { detune: 8, volume: 0.5 })],
+        env: env(0.005, 0.1, 0.9, 0.1),
+        filter: filter('lowpass', 500, 10, 0, 0.3, 0.3),
+        lfo: lfo(2, 700, 'filter'),
+        octave: -1,
+        fx: { reverbMix: 0.1 }
+    }),
+    patch('Electric Piano', 'Keys', 'Tono + armonico corto, con tremolo', {
+        layers: [layer('triangle', { volume: 0.6, env: env(0.005, 1.2, 0.1, 0.4) }), layer('sine', { ratio: 2, volume: 0.25, env: env(0.003, 0.25, 0, 0.2) })],
+        lfo: lfo(4.5, 0.3, 'amp'),
+        fx: { reverbMix: 0.25 }
+    }),
+    patch('Pluck', 'Keys', 'Sierra con barrido de filtro muy corto', {
+        layers: [layer('sawtooth', { volume: 0.5 }), layer('square', { detune: 5, volume: 0.3 })],
+        env: env(0.002, 0.25, 0, 0.2),
+        filter: filter('lowpass', 1200, 3, 4000, 0.15),
+        fx: { delayTime: 0.28, delayFeedback: 0.35, delayMix: 0.25, reverbMix: 0.2 }
+    }),
+    patch('Glass Bell', 'Keys', 'Parciales inarmonicos que decaen distinto', {
+        layers: [
+            layer('sine', { volume: 0.5, env: env(0.002, 2.5, 0, 1.5) }),
+            layer('sine', { ratio: 2.76, volume: 0.25, env: env(0.002, 1.2, 0, 0.8) }),
+            layer('sine', { ratio: 5.4, volume: 0.12, env: env(0.002, 0.5, 0, 0.4) })
+        ],
+        octave: 1,
+        fx: { delayTime: 0.45, delayFeedback: 0.45, delayMix: 0.3, reverbMix: 0.55 }
+    }),
+    patch('Church Organ', 'Keys', 'Barras de armonicos con efecto Leslie', {
+        layers: [
+            layer('sine', { ratio: 0.5, volume: 0.3 }), layer('sine', { volume: 0.5 }),
+            layer('sine', { ratio: 2, volume: 0.35 }), layer('sine', { ratio: 3, volume: 0.2 }),
+            layer('sine', { ratio: 4, volume: 0.12 })
+        ],
+        env: env(0.01, 0.05, 1, 0.08),
+        lfo: lfo(6.5, 0.25, 'amp'),
+        fx: { reverbMix: 0.45 }
+    }),
+    patch('Sci-Fi Siren', 'FX', 'Pitch LFO enorme: cada nota es una sirena', {
+        layers: [layer('sawtooth', { volume: 0.5 }), layer('square', { ratio: 2, detune: 12, volume: 0.25 })],
+        env: env(0.05, 0.1, 1, 0.3),
+        lfo: lfo(2.5, 700, 'pitch'),
+        fx: { delayTime: 0.33, delayFeedback: 0.5, delayMix: 0.35, reverbMix: 0.3 }
+    })
 ];

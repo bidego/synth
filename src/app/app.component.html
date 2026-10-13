@@ -1,14 +1,12 @@
 <app-visualizer></app-visualizer>
-<div handlekeys style="text-align:center">
-  <h1>
-    {{ title }}!
-  </h1>
-  <button (click)="addOscilator()" #addOsc>OSC ++</button>
-  <button (click)="clearOscilators()">Clear</button>
+<div handlekeys class="app">
+  <h1>{{ title }}</h1>
   <div class="presets">
     <span *ngFor="let group of categories" class="presetGroup">
       <b>{{ group.name }}</b>
-      <button *ngFor="let preset of group.presets" (click)="loadPreset(preset)" [title]="preset.description">{{ preset.name }}</button>
+      <button *ngFor="let preset of group.presets"
+        [class.on]="engine.patch.name == preset.name"
+        (click)="loadPreset(preset, $event)" [title]="preset.description">{{ preset.name }}</button>
     </span>
   </div>
   <div class="fx">
@@ -19,7 +17,6 @@
         (input)="setFx(k.name, $event.target.value)">
     </label>
   </div>
+  <app-piano></app-piano>
+  <app-synth-panel></app-synth-panel>
 </div>
-<div class="container">
-</div>
-<div>Oscs: {{ oscsCount }}</div>
