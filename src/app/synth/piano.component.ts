@@ -79,10 +79,21 @@ export class PianoComponent implements OnInit {
         return offset - rowStart;
     }
 
-    down(key: PianoKey) {
-        this.engine.noteOn('mouse', key.offset);
+    /**
+     * Pointer events: sirven para mouse, lapiz y pantallas tactiles (varios dedos a la vez).
+     * La velocidad depende de donde se toca la tecla: arriba suave, abajo fuerte.
+     */
+    down(key: PianoKey, event: PointerEvent) {
+        const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+        const along = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+        this.engine.noteOnMidi(this.pointerId(event), this.engine.baseMidi + key.offset, 0.25 + 0.75 * along);
     }
-    up() {
-        this.engine.noteOff('mouse');
+
+    up(event: PointerEvent) {
+        this.engine.noteOff(this.pointerId(event));
+    }
+
+    private pointerId(event: PointerEvent): string {
+        return 'ptr' + event.pointerId;
     }
 }

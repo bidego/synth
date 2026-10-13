@@ -1,8 +1,9 @@
-<div class="piano" [style.width.px]="width" (mouseleave)="up()">
+<div class="piano" [style.width.px]="width">
     <div *ngFor="let key of keys"
         class="key" [class.black]="key.black" [class.on]="engine.isHeld(key.offset)"
         [style.left.px]="key.left" [style.width.px]="key.width"
-        (mousedown)="down(key)" (mouseup)="up()">
+        (pointerdown)="down(key, $event)" (pointerup)="up($event)"
+        (pointerleave)="up($event)" (pointercancel)="up($event)">
         <span class="lbl top">{{ label(key.top) }}</span>
         <span class="lbl bottom">{{ label(key.bottom) }}</span>
         <span class="note">{{ name(key) }}</span>
@@ -10,5 +11,5 @@
 </div>
 <div class="legend">
     <span class="top">fila de arriba</span> /
-    <span class="bottom">fila de abajo</span> &middot; &uarr;&darr; octava &middot; espacio = sustain
+    <span class="bottom">fila de abajo</span> &middot; toca mas abajo en la tecla = mas fuerte &middot; &uarr;&darr; octava &middot; espacio = sustain
 </div>

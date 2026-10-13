@@ -6,6 +6,7 @@
     height: 150px;
     margin: 0 auto;
     user-select: none;
+    touch-action: none;   /* en pantallas tactiles el dedo toca teclas, no desplaza la pagina */
 }
 .key {
     position: absolute;
