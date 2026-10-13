@@ -27,6 +27,14 @@ export class LooperComponent implements OnInit, OnDestroy {
         clearInterval(this.timer);
     }
 
+    onImport(event: Event) {
+        const input = event.target as HTMLInputElement;
+        if (input.files && input.files[0])
+            this.looper.importFile(input.files[0]);
+        // Permite volver a elegir el mismo archivo
+        input.value = '';
+    }
+
     get gridSize(): string {
         return 100 / this.looper.loopBeats + '% 100%';
     }

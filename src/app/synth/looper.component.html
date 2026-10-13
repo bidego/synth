@@ -14,15 +14,31 @@
         </label>
         <span class="group">
             Compases
-            <button *ngFor="let b of barOptions" [class.on]="looper.bars == b" (click)="looper.bars = b">{{ b }}</button>
+            <button *ngFor="let b of barOptions" [class.on]="looper.bars == b" (click)="looper.setBars(b)">{{ b }}</button>
         </span>
         <span class="group">
             Quantize
-            <button *ngFor="let q of quantizes" [class.on]="looper.quantize == q.value" (click)="looper.quantize = q.value">{{ q.label }}</button>
+            <button *ngFor="let q of quantizes" [class.on]="looper.quantize == q.value" (click)="looper.setQuantize(q.value)">{{ q.label }}</button>
         </span>
-        <label><input type="checkbox" [checked]="looper.metronome" (change)="looper.metronome = $event.target.checked"> Metronomo</label>
-        <label><input type="checkbox" [checked]="looper.countIn" (change)="looper.countIn = $event.target.checked"> Cuenta previa</label>
+        <label><input type="checkbox" [checked]="looper.metronome" (change)="looper.setFlag('metronome', $event.target.checked)"> Metronomo</label>
+        <label><input type="checkbox" [checked]="looper.countIn" (change)="looper.setFlag('countIn', $event.target.checked)"> Cuenta previa</label>
         <button (click)="looper.addTrack()" title="Nueva pista (usa el sonido actual)">+ Pista</button>
+    </div>
+
+    <div class="project">
+        <b>Proyecto</b>
+        <input type="text" placeholder="nombre" maxlength="40" [value]="looper.projectName"
+            (input)="looper.projectName = $event.target.value" (keydown.enter)="looper.saveNamed()">
+        <button (click)="looper.saveNamed()" title="Guardar en este navegador">Guardar</button>
+        <span class="saved" *ngFor="let s of looper.saved">
+            <button (click)="looper.loadNamed(s.name)" title="Cargar">{{ s.name }} <small>{{ s.tracks }}p</small></button><button (click)="looper.deleteNamed(s.name)" title="Borrar">&times;</button>
+        </span>
+        <button (click)="looper.exportFile()" title="Descargar el proyecto como archivo">Exportar .json</button>
+        <label class="file">Importar<input type="file" accept=".json,application/json" (change)="onImport($event)"></label>
+        <button (click)="looper.exportAudio()" [disabled]="looper.exporting" title="Graba un loop completo a un archivo de audio">
+            {{ looper.exporting ? 'Exportando...' : 'Exportar audio' }}
+        </button>
+        <span class="msg" *ngIf="looper.message">{{ looper.message }}</span>
     </div>
 
     <div class="hint" *ngIf="!looper.tracks.length">

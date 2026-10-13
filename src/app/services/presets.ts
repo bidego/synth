@@ -179,3 +179,70 @@ export const PRESETS: Array<Preset> = [
         fx: { delayTime: 0.33, delayFeedback: 0.5, delayMix: 0.35, reverbMix: 0.3 }
     })
 ];
+
+// --- Validacion de datos externos (archivos importados, localStorage) ---
+
+const num = (v: any, min: number, max: number, fallback: number): number =>
+    typeof v == 'number' && isFinite(v) ? Math.max(min, Math.min(max, v)) : fallback;
+const oneOf = <T>(v: any, options: Array<T>, fallback: T): T => options.indexOf(v) >= 0 ? v : fallback;
+const text = (v: any, fallback: string, max = 60): string => typeof v == 'string' ? v.slice(0, max) : fallback;
+
+function sanitizeEnv(e: any, fallback: EnvConfig): EnvConfig {
+    e = e && typeof e == 'object' ? e : {};
+    return {
+        attack: num(e.attack, 0, 10, fallback.attack),
+        decay: num(e.decay, 0.005, 10, fallback.decay),
+        sustain: num(e.sustain, 0, 1, fallback.sustain),
+        release: num(e.release, 0.01, 10, fallback.release)
+    };
+}
+
+/** Devuelve un Patch seguro: cualquier valor faltante, de tipo erroneo o fuera de rango se corrige. */
+export function sanitizePatch(raw: any): Patch {
+    const r = raw && typeof raw == 'object' ? raw : {};
+    const waves: Array<WaveType> = ['sine', 'square', 'sawtooth', 'triangle'];
+    const layersRaw = Array.isArray(r.layers) && r.layers.length ? r.layers.slice(0, 6) : [{}];
+    const f = r.filter && typeof r.filter == 'object' ? r.filter : {};
+    const l = r.lfo && typeof r.lfo == 'object' ? r.lfo : {};
+    const lfoTarget = oneOf<LfoTarget>(l.target, ['pitch', 'filter', 'amp'], 'pitch');
+    const fx = r.fx && typeof r.fx == 'object' ? r.fx : {};
+    return {
+        name: text(r.name, 'Patch'),
+        category: text(r.category, 'Custom'),
+        description: text(r.description, '', 200),
+        kind: r.kind == 'drums' ? 'drums' : 'synth',
+        drumStyle: oneOf<'808' | 'punch'>(r.drumStyle, ['808', 'punch'], 'punch'),
+        layers: layersRaw.map((x: any) => {
+            x = x && typeof x == 'object' ? x : {};
+            return {
+                wave: oneOf<WaveType>(x.wave, waves, 'sawtooth'),
+                ratio: num(x.ratio, 0.25, 8, 1),
+                detune: num(x.detune, -1200, 1200, 0),
+                volume: num(x.volume, 0, 1, 0.5),
+                env: x.env ? sanitizeEnv(x.env, DEFAULT_ENV) : undefined
+            };
+        }),
+        env: sanitizeEnv(r.env, DEFAULT_ENV),
+        filter: {
+            type: oneOf<FilterType>(f.type, ['lowpass', 'highpass', 'bandpass'], 'lowpass'),
+            cutoff: num(f.cutoff, 20, 20000, DEFAULT_FILTER.cutoff),
+            q: num(f.q, 0.1, 30, DEFAULT_FILTER.q),
+            envAmount: num(f.envAmount, 0, 20000, 0),
+            envDecay: num(f.envDecay, 0.005, 10, DEFAULT_FILTER.envDecay),
+            track: num(f.track, 0, 1, DEFAULT_FILTER.track)
+        },
+        lfo: {
+            rate: num(l.rate, 0.05, 40, DEFAULT_LFO.rate),
+            depth: num(l.depth, 0, lfoTarget == 'amp' ? 1 : 6000, 0),
+            target: lfoTarget
+        },
+        level: num(r.level, 0, 0.8, 0.3),
+        octave: Math.round(num(r.octave, -3, 3, 0)),
+        fx: {
+            delayTime: num(fx.delayTime, 0, 1, DEFAULT_FX.delayTime),
+            delayFeedback: num(fx.delayFeedback, 0, 0.9, DEFAULT_FX.delayFeedback),
+            delayMix: num(fx.delayMix, 0, 1, 0),
+            reverbMix: num(fx.reverbMix, 0, 1, 0)
+        }
+    };
+}

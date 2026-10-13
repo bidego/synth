@@ -14,6 +14,8 @@ export class SoundService {
     public input:GainNode;
     // Todo el audio pasa por este analyser antes de salir a los parlantes
     public analyser:AnalyserNode;
+    // Copia del mix final para poder grabarlo a un archivo de audio
+    public recordDest:MediaStreamAudioDestinationNode;
     public fx:FxConfig = { ...DEFAULT_FX };
     private delay:DelayNode;
     private feedback:GainNode;
@@ -59,6 +61,8 @@ export class SoundService {
         this.reverbWet.connect(sum);
         sum.connect(compressor);
         compressor.connect(this.analyser);
+        this.recordDest = ctx.createMediaStreamDestination();
+        compressor.connect(this.recordDest);
         this.analyser.connect(ctx.destination);
     }
 
