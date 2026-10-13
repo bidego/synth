@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { PRESETS, Preset } from './services/presets';
 import { SoundService } from './services/sound.service';
 import { SynthEngine } from './services/synth.engine';
+import { MidiService } from './services/midi.service';
 
 @Component({
   selector: 'app-root',
@@ -25,7 +26,7 @@ export class AppComponent {
     { name: 'reverbMix', label: 'Reverb', max: 1, step: 0.01 }
   ];
 
-  constructor(public sound: SoundService, public engine: SynthEngine) {}
+  constructor(public sound: SoundService, public engine: SynthEngine, public midi: MidiService) {}
 
   loadPreset(preset: Preset, event: Event) {
     this.engine.loadPatch(preset);

@@ -3,6 +3,7 @@ import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
 import { SoundService } from './services/sound.service';
+import { MidiService } from './services/midi.service';
 import { SynthEngine } from './services/synth.engine';
 import { SynthPanelComponent } from './synth/synth-panel.component';
 import { PianoComponent } from './synth/piano.component';
@@ -24,7 +25,8 @@ import { ListenKeys } from './directives/listen.keys';
     ListenKeys,
     SoundService,
     AudioContext,
-    SynthEngine
+    SynthEngine,
+    MidiService
   ],
   bootstrap: [AppComponent]
 })

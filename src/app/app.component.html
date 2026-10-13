@@ -17,6 +17,11 @@
         (input)="setFx(k.name, $event.target.value)">
     </label>
   </div>
+  <div class="midi" [class.on]="midi.devices.length">
+    <b>MIDI</b> {{ midi.message }}
+    <span *ngIf="midi.lastEvent">&middot; {{ midi.lastEvent }}</span>
+    <span *ngIf="engine.sustain">&middot; sustain</span>
+  </div>
   <app-piano></app-piano>
   <app-synth-panel></app-synth-panel>
 </div>

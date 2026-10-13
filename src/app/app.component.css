@@ -38,3 +38,16 @@ h1 {
 app-piano {
   margin: 16px 0;
 }
+.midi {
+  display: inline-block;
+  margin: 4px;
+  padding: 3px 12px;
+  border-radius: 8px;
+  background: rgba(10, 10, 20, 0.72);
+  font-size: 12px;
+  opacity: 0.85;
+}
+.midi.on {
+  opacity: 1;
+  color: #7f7;
+}

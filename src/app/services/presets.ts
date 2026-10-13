@@ -41,6 +41,8 @@ export interface FxConfig {
 }
 
 export interface Patch {
+    kind?: 'synth' | 'drums';   // 'drums': cada nota (por pitch class) dispara un instrumento de percusion
+    drumStyle?: '808' | 'punch';
     name: string;
     category: string;
     description: string;
@@ -161,6 +163,14 @@ export const PRESETS: Array<Preset> = [
         env: env(0.01, 0.05, 1, 0.08),
         lfo: lfo(6.5, 0.25, 'amp'),
         fx: { reverbMix: 0.45 }
+    }),
+    patch('Drum Machine', 'Drums', 'Kit de percusion: Z=bombo, D=caja, V=hat, X/C/B/N/M toms y mas (mismo kit en cada octava)', {
+        kind: 'drums', drumStyle: 'punch', level: 0.5,
+        fx: { reverbMix: 0.12 }
+    }),
+    patch('808 Kit', 'Drums', 'Bombo largo y caja electronica estilo TR-808', {
+        kind: 'drums', drumStyle: '808', level: 0.55,
+        fx: { delayTime: 0.19, delayFeedback: 0.25, delayMix: 0.1, reverbMix: 0.1 }
     }),
     patch('Sci-Fi Siren', 'FX', 'Pitch LFO enorme: cada nota es una sirena', {
         layers: [layer('sawtooth', { volume: 0.5 }), layer('square', { ratio: 2, detune: 12, volume: 0.25 })],
