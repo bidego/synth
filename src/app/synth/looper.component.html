@@ -1,0 +1,48 @@
+<div class="looper">
+    <div class="transport">
+        <button class="rec" [class.on]="looper.recording" (click)="looper.toggleRecord()" title="Grabar (tecla ` )">&#9679; Rec</button>
+        <button [class.on]="looper.playing && !looper.recording" (click)="looper.togglePlay()" title="Play / Stop (Enter)">
+            {{ looper.playing ? '&#9632; Stop' : '&#9654; Play' }}
+        </button>
+        <span class="beats">
+            <i *ngFor="let d of dots" [class.on]="looper.beatInBar == d" [class.count]="looper.countingIn"></i>
+        </span>
+        <label class="bpm">
+            BPM
+            <input type="range" min="40" max="220" step="1" [value]="looper.bpm" (input)="looper.setBpm($event.target.value)">
+            <b>{{ looper.bpm }}</b>
+        </label>
+        <span class="group">
+            Compases
+            <button *ngFor="let b of barOptions" [class.on]="looper.bars == b" (click)="looper.bars = b">{{ b }}</button>
+        </span>
+        <span class="group">
+            Quantize
+            <button *ngFor="let q of quantizes" [class.on]="looper.quantize == q.value" (click)="looper.quantize = q.value">{{ q.label }}</button>
+        </span>
+        <label><input type="checkbox" [checked]="looper.metronome" (change)="looper.metronome = $event.target.checked"> Metronomo</label>
+        <label><input type="checkbox" [checked]="looper.countIn" (change)="looper.countIn = $event.target.checked"> Cuenta previa</label>
+        <button (click)="looper.addTrack()" title="Nueva pista (usa el sonido actual)">+ Pista</button>
+    </div>
+
+    <div class="hint" *ngIf="!looper.tracks.length">
+        Apreta <b>Rec</b> (o la tecla <b>`</b>) y toca: se graba en loop. Segui tocando para sumar capas encima;
+        <b>+ Pista</b> crea otra pista con otro sonido.
+    </div>
+
+    <div class="track" *ngFor="let t of looper.tracks" [class.armed]="looper.armedId == t.id" [class.muted]="t.muted">
+        <button class="arm" [class.on]="looper.armedId == t.id" (click)="looper.arm(t)" title="Grabar en esta pista">R</button>
+        <span class="name">{{ t.name }} <small>{{ t.patch.name }}</small></span>
+        <div class="roll" [style.backgroundSize]="gridSize">
+            <i class="note" *ngFor="let n of t.notes"
+                [style.left.%]="n.start / looper.loopBeats * 100" [style.width.%]="noteWidth(n)"
+                [style.bottom.%]="noteBottom(t, n)"></i>
+            <i class="playhead" *ngIf="looper.playing" [style.left.%]="looper.position * 100"></i>
+        </div>
+        <input type="range" min="0" max="1" step="0.01" [value]="t.volume" (input)="looper.setVolume(t, $event.target.value)" title="Volumen">
+        <button [class.on]="t.muted" (click)="looper.toggleMute(t)" title="Silenciar">M</button>
+        <button (click)="looper.undoTake(t)" title="Deshacer la ultima pasada">&#8630;</button>
+        <button (click)="looper.clearTrack(t)" title="Borrar las notas">Limpiar</button>
+        <button (click)="looper.removeTrack(t)" title="Quitar pista">&times;</button>
+    </div>
+</div>

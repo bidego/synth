@@ -6,7 +6,7 @@
       <b>{{ group.name }}</b>
       <button *ngFor="let preset of group.presets"
         [class.on]="engine.patch.name == preset.name"
-        (click)="loadPreset(preset, $event)" [title]="preset.description">{{ preset.name }}</button>
+        (click)="loadPreset(preset)" [title]="preset.description">{{ preset.name }}</button>
     </span>
   </div>
   <div class="fx">
@@ -23,5 +23,6 @@
     <span *ngIf="engine.sustain">&middot; sustain</span>
   </div>
   <app-piano></app-piano>
+  <app-looper></app-looper>
   <app-synth-panel></app-synth-panel>
 </div>

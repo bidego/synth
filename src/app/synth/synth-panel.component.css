@@ -93,3 +93,9 @@ button.on {
 .level input {
     width: 90px;
 }
+
+.drumsNote {
+    margin-top: 8px;
+    font-size: 12px;
+    opacity: 0.8;
+}

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { PRESETS, Preset } from './services/presets';
 import { SoundService } from './services/sound.service';
 import { SynthEngine } from './services/synth.engine';
@@ -28,10 +28,17 @@ export class AppComponent {
 
   constructor(public sound: SoundService, public engine: SynthEngine, public midi: MidiService) {}
 
-  loadPreset(preset: Preset, event: Event) {
+  loadPreset(preset: Preset) {
     this.engine.loadPatch(preset);
-    // Que el foco no quede en el boton: la barra espaciadora/enter no debe re-dispararlo
-    (event.target as HTMLElement).blur();
+  }
+
+  // Tras un clic con el mouse el foco no debe quedarse en el boton: los atajos (Enter, `, espacio)
+  // y las teclas de notas tienen que seguir llegando
+  @HostListener('document:click', ['$event'])
+  releaseButtonFocus(event: Event) {
+    const target = event.target as HTMLElement;
+    if (target && target.tagName == 'BUTTON')
+      target.blur();
   }
 
   setFx(name: string, value) {

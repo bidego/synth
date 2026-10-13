@@ -17,7 +17,10 @@
         <span class="voices">Voces: {{ engine.voiceCount }}</span>
     </div>
 
-    <div class="sections">
+    <div class="drumsNote" *ngIf="p.kind == 'drums'">
+        Kit de percusion: cada tecla es un instrumento (nombre en el teclado). Grabalo con el looper para armar ritmos.
+    </div>
+    <div class="sections" *ngIf="p.kind != 'drums'">
         <section class="osc">
             <h4>Osc <button (click)="addLayer()" title="Agregar capa">+</button></h4>
             <div class="layer" *ngFor="let l of p.layers; let i = index">
