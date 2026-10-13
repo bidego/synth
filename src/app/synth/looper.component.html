@@ -35,8 +35,13 @@
         </span>
         <button (click)="looper.exportFile()" title="Descargar el proyecto como archivo">Exportar .json</button>
         <label class="file">Importar<input type="file" accept=".json,application/json" (change)="onImport($event)"></label>
-        <button (click)="looper.exportAudio()" [disabled]="looper.exporting" title="Graba un loop completo a un archivo de audio">
-            {{ looper.exporting ? 'Exportando...' : 'Exportar audio' }}
+        <span class="group">
+            Vueltas
+            <button *ngFor="let n of passOptions" [class.on]="looper.exportPasses == n" (click)="looper.exportPasses = n">{{ n }}</button>
+        </span>
+        <button (click)="looper.exportWav()" [disabled]="looper.exporting"
+            [title]="'Renderiza ' + looper.exportPasses + ' vuelta(s) del loop a un WAV sin perdida'">
+            {{ looper.exporting ? 'Exportando...' : 'Exportar WAV' }}
         </button>
         <span class="msg" *ngIf="looper.message">{{ looper.message }}</span>
     </div>

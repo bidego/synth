@@ -27,7 +27,7 @@ export class Voice {
 
     /** `when` agenda el inicio en el tiempo del AudioContext (looper); por defecto, ahora.
      *  `velocity` 0..1 escala el volumen de las capas; `bend` son cents de pitch bend inicial. */
-    constructor(private ctx: AudioContext, destination: AudioNode, patch: Patch, freq: number, velocity = 1, bend = 0, when?: number) {
+    constructor(private ctx: BaseAudioContext, destination: AudioNode, patch: Patch, freq: number, velocity = 1, bend = 0, when?: number) {
         const t = when !== undefined ? when : ctx.currentTime;
         const f = patch.filter;
 

@@ -1,0 +1,24 @@
+<details class="bank">
+    <summary>Bancos de sonido <small>128 instrumentos GM + kits de bateria, con muestras reales</small></summary>
+    <div class="body">
+        <div class="row">
+            <b>Banco</b>
+            <button *ngFor="let f of fonts" [class.on]="font == f.id" (click)="font = f.id">{{ f.label }}</button>
+        </div>
+        <div class="row">
+            <b>Familia</b>
+            <button *ngFor="let name of families; let i = index" [class.on]="family == i" (click)="family = i">{{ name }}</button>
+        </div>
+        <div class="row instruments">
+            <button *ngFor="let p of programs" [class.on]="isCurrent(p)" (click)="pick(p)">{{ names[p] }}</button>
+        </div>
+        <div class="row">
+            <b>Kits de bateria</b>
+            <button *ngFor="let k of kits" [class.on]="isCurrentKit(k.id)" (click)="pickKit(k.id, k.label)">{{ k.label }}</button>
+        </div>
+        <div class="credits">
+            Muestras: <span *ngFor="let c of credits">{{ c }}. </span>
+            Los datos los publica WebAudioFont (S. Surikov); se descargan al elegir un instrumento y quedan guardados en el navegador.
+        </div>
+    </div>
+</details>

@@ -51,3 +51,29 @@ app-piano {
   opacity: 1;
   color: #7f7;
 }
+.loading {
+  display: inline-block;
+  margin: 4px;
+  padding: 3px 12px;
+  border-radius: 8px;
+  background: rgba(10, 10, 20, 0.72);
+  font-size: 12px;
+}
+.loading.error {
+  color: #f88;
+}
+.loading .bar {
+  display: inline-block;
+  width: 120px;
+  height: 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+  background: #333857;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.loading .bar i {
+  display: block;
+  height: 100%;
+  background: #ff5a8a;
+}

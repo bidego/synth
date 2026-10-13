@@ -9,6 +9,7 @@
         (click)="loadPreset(preset)" [title]="preset.description">{{ preset.name }}</button>
     </span>
   </div>
+  <app-bank-browser></app-bank-browser>
   <div class="fx">
     <b>FX</b>
     <label *ngFor="let k of fxKnobs">
@@ -21,6 +22,13 @@
     <b>MIDI</b> {{ midi.message }}
     <span *ngIf="midi.lastEvent">&middot; {{ midi.lastEvent }}</span>
     <span *ngIf="engine.sustain">&middot; sustain</span>
+  </div>
+  <div class="loading" *ngIf="engine.loading as l" [class.error]="l.state == 'error'">
+    <ng-container *ngIf="l.state == 'loading'">
+      Cargando instrumento {{ (l.progress * 100) | number:'1.0-0' }}%
+      <span class="bar"><i [style.width.%]="l.progress * 100"></i></span>
+    </ng-container>
+    <ng-container *ngIf="l.state == 'error'">No se pudo cargar el instrumento ({{ l.message }}). Revisa la conexion.</ng-container>
   </div>
   <app-piano></app-piano>
   <app-looper></app-looper>

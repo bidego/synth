@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { SynthEngine } from '../services/synth.engine';
 import { KEY_SPAN, TOP_ROW, BOTTOM_ROW, defaultLabel, noteName } from '../services/keyboard-map';
 import { DRUM_NAMES } from './drums';
+import { GM_DRUM_SHORT, KIT_NOTE_OFFSET } from '../services/gm';
 
 const WHITE_WIDTH = 46;
 const BLACK_WIDTH = 30;
@@ -66,7 +67,11 @@ export class PianoComponent implements OnInit {
 
     name(key: PianoKey): string {
         const midi = this.engine.baseMidi + key.offset;
-        return this.engine.patch.kind == 'drums' ? DRUM_NAMES[midi % 12] : noteName(midi);
+        switch (this.engine.patch.kind) {
+            case 'drums': return DRUM_NAMES[midi % 12];
+            case 'kit': return GM_DRUM_SHORT[midi - KIT_NOTE_OFFSET] || '';
+            default: return noteName(midi);
+        }
     }
 
     // Indice en la fila de teclas de una nota (o -1 si esa fila no la cubre)

@@ -1,8 +1,11 @@
 import { Injectable, NgZone } from '@angular/core';
 import { SoundService } from './sound.service';
 import { SynthEngine, NoteEvent } from './synth.engine';
-import { Patch, clonePatch, sanitizePatch } from './presets';
+import { Patch, FxConfig, clonePatch, sanitizePatch, sanitizeFx } from './presets';
 import { PlayingVoice, createVoice } from '../synth/voice-factory';
+import { SampleLibrary } from './sample-library';
+import { MasterChain } from './master-chain';
+import { encodeWav } from './wav';
 
 /** Una nota grabada. El tiempo va en beats (negras), no en segundos: cambiar el BPM no la desarma. */
 export interface LoopNote {
@@ -24,9 +27,6 @@ export interface Track {
     out: GainNode;
 }
 
-// TypeScript 3.5 no trae los tipos de MediaRecorder
-declare const MediaRecorder: any;
-
 export interface ProjectTrack {
     name: string;
     patch: Patch;
@@ -44,6 +44,7 @@ export interface Project {
     quantize: number;
     metronome: boolean;
     countIn: boolean;
+    fx?: FxConfig;   // efectos master: sin ellos el proyecto suena distinto al grabado
     tracks: Array<ProjectTrack>;
 }
 
@@ -57,6 +58,11 @@ export interface SavedProject {
 const STORAGE_PROJECTS = 'synth.projects';
 const STORAGE_AUTOSAVE = 'synth.autosave';
 const QUANTIZES = [0, 0.25, 0.5, 1];
+export const BAR_OPTIONS = [1, 2, 4, 8, 16, 32, 64];
+const MAX_NOTES_PER_TRACK = 20000;
+// Un render offline de mas de esto agotaria la memoria del navegador (estereo, float32)
+const MAX_EXPORT_SECONDS = 600;
+const EXPORT_TAIL = 2.5;   // cola de reverb y delay
 const BEATS_PER_BAR = 4;
 const LOOKAHEAD = 0.12;   // s agendados por adelantado
 const TICK_MS = 25;
@@ -83,7 +89,6 @@ export class LooperService {
     public saved: Array<SavedProject> = [];
     public message = '';
 
-    private noteLimit = Infinity;   // beat hasta el que se agendan notas (exportar un solo loop)
     private saveTimer: any;
     private startTime = 0;       // instante (AudioContext) del beat 0 del loop
     private schedFrom = 0;       // hasta donde ya se agendo
@@ -93,9 +98,10 @@ export class LooperService {
     private nextId = 1;
 
     constructor(private audioCtx: AudioContext, private sound: SoundService,
-                private engine: SynthEngine, private zone: NgZone) {
+                private engine: SynthEngine, private zone: NgZone, private library: SampleLibrary) {
         engine.noteEvents.subscribe(e => this.capture(e));
         sound.listenKey.subscribe(e => this.handleKey(e));
+        sound.fxChanged.subscribe(() => this.dirty());
         this.refreshSaved();
         this.restoreAutosave();
     }
@@ -331,7 +337,7 @@ export class LooperService {
                 this.click(this.startTime + k * this.beatDur, ((k % BEATS_PER_BAR) + BEATS_PER_BAR) % BEATS_PER_BAR == 0);
 
         const lo = Math.max(b0, 0);
-        const hi = Math.min(b1, this.noteLimit);
+        const hi = b1;
         if (hi <= lo)
             return;
         this.tracks.forEach(track => {
@@ -339,7 +345,8 @@ export class LooperService {
                 return;
             for (let cycle = Math.floor(lo / L); cycle <= Math.floor(hi / L); cycle++) {
                 track.notes.forEach(n => {
-                    const abs = cycle * L + n.start;
+                    // Si se achico el loop, las notas que quedaron fuera se pliegan (y vuelven al agrandarlo)
+                    const abs = cycle * L + (n.start % L);
                     if (abs >= lo && abs < hi)
                         this.playNote(track, n, this.startTime + abs * this.beatDur);
                 });
@@ -348,7 +355,7 @@ export class LooperService {
     }
 
     private playNote(track: Track, n: LoopNote, when: number) {
-        const voice = createVoice(this.audioCtx, track.out, track.patch, n.midi, n.vel, 0, when);
+        const voice = createVoice(this.audioCtx, track.out, track.patch, n.midi, n.vel, 0, when, this.library);
         voice.release(false, when + n.dur * this.beatDur);
         voice.onEnded = () => this.active.delete(voice);
         this.active.add(voice);
@@ -376,6 +383,7 @@ export class LooperService {
             name: this.projectName,
             bpm: this.bpm, bars: this.bars, quantize: this.quantize,
             metronome: this.metronome, countIn: this.countIn,
+            fx: { ...this.sound.fx },
             tracks: this.tracks.map(t => ({
                 name: t.name, patch: t.patch, notes: t.notes, volume: t.volume, muted: t.muted, takes: t.takes
             }))
@@ -391,12 +399,15 @@ export class LooperService {
         this.stop();
         this.tracks.forEach(t => t.out.disconnect());
         this.tracks = [];
-        this.bars = [1, 2, 4, 8].indexOf(raw.bars) >= 0 ? raw.bars : 2;
+        this.bars = BAR_OPTIONS.indexOf(raw.bars) >= 0 ? raw.bars : 2;
         this.bpm = Math.round(finite(raw.bpm, 40, 220, 100));
         this.quantize = QUANTIZES.indexOf(raw.quantize) >= 0 ? raw.quantize : 0.25;
         this.metronome = raw.metronome !== false;
         this.countIn = raw.countIn !== false;
         this.projectName = typeof raw.name == 'string' ? raw.name.slice(0, 40) : '';
+        // Proyectos viejos no traen efectos: se dejan los actuales
+        if (raw.fx && typeof raw.fx == 'object')
+            this.sound.setFx(sanitizeFx(raw.fx));
         const L = this.loopBeats;
         raw.tracks.slice(0, MAX_TRACKS).forEach((r: any, i: number) => {
             r = r && typeof r == 'object' ? r : {};
@@ -404,7 +415,7 @@ export class LooperService {
             track.volume = finite(r.volume, 0, 1, 1);
             track.muted = r.muted === true;
             track.takes = Math.round(finite(r.takes, 0, 1000, 0));
-            track.notes = (Array.isArray(r.notes) ? r.notes : []).slice(0, 5000)
+            track.notes = (Array.isArray(r.notes) ? r.notes : []).slice(0, MAX_NOTES_PER_TRACK)
                 .filter((n: any) => n && typeof n.midi == 'number' && isFinite(n.midi))
                 .map((n: any) => ({
                     start: finite(n.start, 0, L - 0.001, 0),
@@ -417,6 +428,8 @@ export class LooperService {
         });
         const last = this.tracks[this.tracks.length - 1];
         this.armedId = last ? last.id : null;
+        // Los instrumentos de muestras de las pistas empiezan a bajarse ya
+        this.tracks.forEach(t => this.engine.preload(t.patch));
         return true;
     }
 
@@ -512,41 +525,64 @@ export class LooperService {
         reader.readAsText(file);
     }
 
-    /** Graba un loop completo (con los efectos, mas la cola) a un archivo de audio. */
-    async exportAudio() {
-        if (this.exporting || !this.tracks.some(t => t.notes.length && !t.muted)) {
+    /** Cantidad de vueltas del loop que dura el WAV exportado. */
+    public exportPasses = 1;
+
+    get exportSeconds(): number {
+        return this.loopBeats * this.beatDur * this.exportPasses + EXPORT_TAIL;
+    }
+
+    /**
+     * Renderiza las pistas a un WAV sin perdida. Es un render offline: no corre en tiempo real
+     * (un loop largo se calcula en segundos), no interrumpe lo que se esta tocando y lleva los
+     * mismos efectos que se escuchan.
+     */
+    async exportWav() {
+        const tracks = this.tracks.filter(t => t.notes.length && !t.muted);
+        if (this.exporting || !tracks.length) {
             this.message = 'No hay nada para exportar (pistas vacias o silenciadas)';
             return;
         }
-        const mime = typeof MediaRecorder == 'undefined' ? null
-            : ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm'].find(m => MediaRecorder.isTypeSupported(m));
-        if (!mime) {
-            this.message = 'Este navegador no puede grabar audio';
+        const seconds = this.exportSeconds;
+        if (seconds > MAX_EXPORT_SECONDS) {
+            this.message = 'Dura demasiado (' + Math.round(seconds) + ' s, maximo ' + MAX_EXPORT_SECONDS + '). Baja las repeticiones';
             return;
         }
         this.exporting = true;
-        this.stop();
-        this.message = 'Exportando un loop...';
-        const chunks: Array<Blob> = [];
-        const recorder = new MediaRecorder(this.sound.recordDest.stream, { mimeType: mime });
-        recorder.ondataavailable = e => chunks.push(e.data);
-        const stopped = new Promise(resolve => recorder.onstop = resolve);
-        const metronome = this.metronome;
-        this.metronome = false;
-        this.noteLimit = this.loopBeats;   // una sola vuelta: la cola no debe incluir la segunda
-        this.start(false);
-        recorder.start();
-        const tail = 1.8;                  // cola de reverb y delay
-        await new Promise(resolve => setTimeout(resolve, (this.loopBeats * this.beatDur + tail) * 1000));
-        recorder.stop();
-        await stopped;
-        this.stop();
-        this.noteLimit = Infinity;
-        this.metronome = metronome;
-        this.exporting = false;
-        const name = (this.projectName || 'loop').trim() || 'loop';
-        this.download(new Blob(chunks, { type: mime }), name + (mime.indexOf('ogg') >= 0 ? '.ogg' : '.webm'));
-        this.message = 'Audio exportado';
+        try {
+            this.message = 'Preparando instrumentos...';
+            // Los instrumentos de muestras tienen que estar cargados antes de renderizar
+            await Promise.all(tracks.map(t => this.engine.preload(t.patch)));
+            this.message = 'Renderizando ' + Math.round(seconds) + ' s de audio...';
+            await new Promise(resolve => setTimeout(resolve, 30));   // deja pintar el mensaje
+
+            const rate = this.audioCtx.sampleRate;
+            const offline = new OfflineAudioContext(2, Math.ceil(seconds * rate), rate);
+            const chain = new MasterChain(offline);
+            chain.setFx(this.sound.fx, false);
+            const L = this.loopBeats;
+            const beatDur = this.beatDur;
+            tracks.forEach(track => {
+                const out = offline.createGain();
+                out.gain.value = track.volume * track.patch.level;
+                out.connect(chain.input);
+                for (let pass = 0; pass < this.exportPasses; pass++) {
+                    track.notes.forEach(n => {
+                        const when = (pass * L + (n.start % L)) * beatDur;
+                        const voice = createVoice(offline, out, track.patch, n.midi, n.vel, 0, when, this.library);
+                        voice.release(false, when + n.dur * beatDur);
+                    });
+                }
+            });
+            const rendered = await offline.startRendering();
+            const name = (this.projectName || 'loop').trim() || 'loop';
+            this.download(encodeWav(rendered), name + '.wav');
+            this.message = 'WAV exportado (' + Math.round(seconds) + ' s)';
+        } catch (e) {
+            this.message = 'No se pudo exportar: ' + (e && e.message || e);
+        } finally {
+            this.exporting = false;
+        }
     }
 
     private download(blob: Blob, filename: string) {

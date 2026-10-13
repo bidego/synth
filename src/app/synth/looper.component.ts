@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { LooperService, Track, LoopNote } from '../services/looper.service';
+import { LooperService, Track, LoopNote, BAR_OPTIONS } from '../services/looper.service';
 
 @Component({
     selector: 'app-looper',
@@ -7,7 +7,8 @@ import { LooperService, Track, LoopNote } from '../services/looper.service';
     styleUrls: ['./looper.component.css']
 })
 export class LooperComponent implements OnInit, OnDestroy {
-    public barOptions = [1, 2, 4, 8];
+    public barOptions = BAR_OPTIONS;
+    public passOptions = [1, 2, 4, 8];
     public quantizes = [
         { label: 'Libre', value: 0 },
         { label: '1/4', value: 1 },

@@ -1,98 +1,41 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { FxConfig, DEFAULT_FX } from './presets';
+import { MasterChain } from './master-chain';
 
 @Injectable()
 export class SoundService {
     private keyUp: BehaviorSubject<KeyboardEvent> = new BehaviorSubject(null);
+    private chain: MasterChain;
+    public fx: FxConfig = { ...DEFAULT_FX };
+    // Avisa cuando cambian los efectos (el looper los guarda con el proyecto)
+    public fxChanged = new Subject<void>();
 
-    constructor(private audioCtx:AudioContext){
-        this.buildMasterChain();
-        this.setFx(DEFAULT_FX);
+    constructor(private audioCtx: AudioContext) {
+        this.chain = new MasterChain(audioCtx);
+        this.chain.setFx(this.fx);
     }
-    // Bus al que se conectan todos los osciladores
-    public input:GainNode;
+
+    // Bus al que se conectan todas las voces
+    get input(): GainNode {
+        return this.chain.input;
+    }
+
     // Todo el audio pasa por este analyser antes de salir a los parlantes
-    public analyser:AnalyserNode;
-    // Copia del mix final para poder grabarlo a un archivo de audio
-    public recordDest:MediaStreamAudioDestinationNode;
-    public fx:FxConfig = { ...DEFAULT_FX };
-    private delay:DelayNode;
-    private feedback:GainNode;
-    private delayWet:GainNode;
-    private reverbWet:GainNode;
-
-    // input -> dry ------------------------------> sum -> compresor -> analyser -> destino
-    //       -> delay (con realimentacion) -> wet -> sum
-    //       -> reverb (convolver) --------> wet -> sum
-    private buildMasterChain():void {
-        const ctx = this.audioCtx;
-        this.input = ctx.createGain();
-        const dry = ctx.createGain();
-        const sum = ctx.createGain();
-
-        this.delay = ctx.createDelay(2);
-        this.feedback = ctx.createGain();
-        const delayTone = ctx.createBiquadFilter();
-        delayTone.type = 'lowpass';
-        delayTone.frequency.value = 3500;
-        this.delayWet = ctx.createGain();
-
-        const reverb = ctx.createConvolver();
-        reverb.buffer = this.createImpulse(2.8, 3);
-        this.reverbWet = ctx.createGain();
-
-        // Muchas capas suman volumen: el compresor evita que sature
-        const compressor = ctx.createDynamicsCompressor();
-        this.analyser = ctx.createAnalyser();
-        this.analyser.fftSize = 2048;
-        this.analyser.smoothingTimeConstant = 0.8;
-
-        this.input.connect(dry);
-        dry.connect(sum);
-        this.input.connect(this.delay);
-        this.delay.connect(delayTone);
-        delayTone.connect(this.feedback);
-        this.feedback.connect(this.delay);
-        delayTone.connect(this.delayWet);
-        this.delayWet.connect(sum);
-        this.input.connect(reverb);
-        reverb.connect(this.reverbWet);
-        this.reverbWet.connect(sum);
-        sum.connect(compressor);
-        compressor.connect(this.analyser);
-        this.recordDest = ctx.createMediaStreamDestination();
-        compressor.connect(this.recordDest);
-        this.analyser.connect(ctx.destination);
+    get analyser(): AnalyserNode {
+        return this.chain.analyser;
     }
 
-    // Respuesta al impulso sintetica: ruido estereo con decaimiento exponencial
-    private createImpulse(seconds:number, decay:number):AudioBuffer {
-        const rate = this.audioCtx.sampleRate;
-        const length = Math.floor(rate * seconds);
-        const buffer = this.audioCtx.createBuffer(2, length, rate);
-        for (let ch = 0; ch < 2; ch++) {
-            const data = buffer.getChannelData(ch);
-            for (let i = 0; i < length; i++)
-                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
-        }
-        return buffer;
-    }
-
-    public setFx(fx:Partial<FxConfig>):void {
+    public setFx(fx: Partial<FxConfig>): void {
         Object.assign(this.fx, fx);
-        const t = this.audioCtx.currentTime;
-        this.delay.delayTime.setTargetAtTime(this.fx.delayTime, t, 0.05);
-        this.feedback.gain.setTargetAtTime(Math.min(this.fx.delayFeedback, 0.9), t, 0.05);
-        this.delayWet.gain.setTargetAtTime(this.fx.delayMix, t, 0.05);
-        this.reverbWet.gain.setTargetAtTime(this.fx.reverbMix, t, 0.05);
+        this.chain.setFx(this.fx);
+        this.fxChanged.next();
     }
 
-    get listenKey(){
+    get listenKey() {
         return this.keyUp.asObservable();
     }
-    public emiteEventKey(evt:KeyboardEvent):void{
+    public emiteEventKey(evt: KeyboardEvent): void {
         this.keyUp.next(evt);
     }
-
 }

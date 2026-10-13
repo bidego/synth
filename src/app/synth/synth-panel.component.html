@@ -17,11 +17,14 @@
         <span class="voices">Voces: {{ engine.voiceCount }}</span>
     </div>
 
-    <div class="drumsNote" *ngIf="p.kind == 'drums'">
-        Kit de percusion: cada tecla es un instrumento (nombre en el teclado). Grabalo con el looper para armar ritmos.
+    <div class="drumsNote" *ngIf="p.kind == 'drums' || p.kind == 'kit'">
+        Kit de percusion: cada tecla es una pieza (nombre en el teclado). Grabalo con el looper para armar ritmos.
     </div>
-    <div class="sections" *ngIf="p.kind != 'drums'">
-        <section class="osc">
+    <div class="drumsNote" *ngIf="p.kind == 'sampler'">
+        Instrumento de muestras reales (banco {{ p.sample?.font }}, programa {{ p.sample?.id }}). Abajo se puede ajustar ataque, release, filtro y LFO.
+    </div>
+    <div class="sections" *ngIf="p.kind != 'drums' && p.kind != 'kit'">
+        <section class="osc" *ngIf="p.kind != 'sampler'">
             <h4>Osc <button (click)="addLayer()" title="Agregar capa">+</button></h4>
             <div class="layer" *ngFor="let l of p.layers; let i = index">
                 <div class="waves">

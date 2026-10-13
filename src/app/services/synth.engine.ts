@@ -2,6 +2,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { SoundService } from './sound.service';
 import { Subject } from 'rxjs';
 import { PlayingVoice, createVoice } from '../synth/voice-factory';
+import { SampleLibrary, LoadStatus } from './sample-library';
 import { Patch, PRESETS, DEFAULT_FX, clonePatch } from './presets';
 import { KEY_OFFSETS, BASE_MIDI } from './keyboard-map';
 
@@ -32,7 +33,8 @@ export class SynthEngine {
     public noteEvents = new Subject<NoteEvent>();
     private patchOut: GainNode;
 
-    constructor(private audioCtx: AudioContext, private sound: SoundService, private zone: NgZone) {
+    constructor(private audioCtx: AudioContext, private sound: SoundService, private zone: NgZone,
+                public library: SampleLibrary) {
         this.patchOut = audioCtx.createGain();
         this.patchOut.connect(sound.input);
         this.loadPatch(PRESETS[0]);
@@ -63,6 +65,22 @@ export class SynthEngine {
         this.octave = this.patch.octave;
         this.level = this.patch.level;
         this.sound.setFx({ ...DEFAULT_FX, ...this.patch.fx });
+        this.preload(this.patch);
+    }
+
+    /** Pide al banco el instrumento del patch (si usa muestras); sigue el progreso con `loading`. */
+    preload(patch: Patch): Promise<any> {
+        if ((patch.kind == 'sampler' || patch.kind == 'kit') && patch.sample)
+            return this.library.load(patch.kind == 'kit' ? 'kit' : 'melodic', patch.sample).catch(() => {});
+        return Promise.resolve();
+    }
+
+    /** Estado de carga del instrumento actual (undefined si el patch no usa muestras). */
+    get loading(): LoadStatus | undefined {
+        const p = this.patch;
+        return (p.kind == 'sampler' || p.kind == 'kit') && p.sample
+            ? this.library.status(p.kind == 'kit' ? 'kit' : 'melodic', p.sample)
+            : undefined;
     }
 
     shiftOctave(delta: number) {
@@ -89,7 +107,7 @@ export class SynthEngine {
         this.audioCtx.resume();
         if (this.voices.size >= MAX_VOICES)
             this.voices.values().next().value.release(true);
-        const voice = createVoice(this.audioCtx, this.patchOut, this.patch, midi, velocity, this.bend);
+        const voice = createVoice(this.audioCtx, this.patchOut, this.patch, midi, velocity, this.bend, undefined, this.library);
         // onended de WebAudio llega fuera de la zona: sin esto la pantalla no refresca el contador
         voice.onEnded = () => this.zone.run(() => {
             this.voices.delete(voice);

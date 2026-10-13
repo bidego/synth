@@ -1,8 +1,8 @@
 import { Patch } from '../services/presets';
 
 // Un buffer de ruido compartido por AudioContext
-const noiseCache = new WeakMap<AudioContext, AudioBuffer>();
-function noiseBuffer(ctx: AudioContext): AudioBuffer {
+const noiseCache = new WeakMap<BaseAudioContext, AudioBuffer>();
+function noiseBuffer(ctx: BaseAudioContext): AudioBuffer {
     let buffer = noiseCache.get(ctx);
     if (!buffer) {
         buffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
@@ -22,7 +22,7 @@ export class DrumVoice {
     public onEnded: () => void;
     private nodes: Array<AudioNode> = [];
 
-    constructor(private ctx: AudioContext, destination: AudioNode, patch: Patch, midi: number, velocity: number, when?: number) {
+    constructor(private ctx: BaseAudioContext, destination: AudioNode, patch: Patch, midi: number, velocity: number, when?: number) {
         const t = when !== undefined ? when : ctx.currentTime;
         const is808 = patch.drumStyle == '808';
         const out = ctx.createGain();
@@ -114,7 +114,9 @@ export class DrumVoice {
                 tone('square', 560, 560, 0.01, 0.3, 0.25);
                 tone('square', 845, 845, 0.01, 0.3, 0.25);
         }
-        setTimeout(() => this.dispose(), (t - ctx.currentTime + length) * 1000 + 100);
+        // En un render offline el reloj real no sigue al del audio: no se libera nada, se descarta todo al final
+        if (!(typeof OfflineAudioContext != 'undefined' && ctx instanceof OfflineAudioContext))
+            setTimeout(() => this.dispose(), (t - ctx.currentTime + length) * 1000 + 100);
     }
 
     release(fast = false, when?: number) {}
