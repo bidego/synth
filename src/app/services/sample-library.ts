@@ -53,7 +53,7 @@ const DEFAULT_ENVELOPE: Array<EnvPoint> = [
 
 /**
  * Convierte el archivo de datos (un literal JavaScript) a un objeto SIN ejecutarlo:
- * se transforma a JSON y se parsea. El contenido viene de un servidor externo.
+ * se transforma a JSON y se parsea. Los archivos son datos propios del banco, pero igual se tratan como no confiables.
  */
 export function parsePresetFile(text: string): any {
     if (text.length > MAX_FILE_CHARS)

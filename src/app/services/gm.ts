@@ -7,8 +7,9 @@ export interface BankFont {
     kits: boolean;     // trae baterias GM
 }
 
-// Los datos de muestras los publica WebAudioFont (S. Surikov); aqui solo se leen, no se redistribuyen.
-export const BANK_BASE_URL = 'https://surikov.github.io/webaudiofontdata/sound';
+// Banco propio: los datos de muestras (formato WebAudioFont, S. Surikov) viven en src/assets/sounds y se sirven
+// desde la misma app, sin depender de servidores externos. Se regeneran con scripts/fetch-sounds.sh.
+export const BANK_BASE_URL = 'assets/sounds';
 
 export const BANK_FONTS: Array<BankFont> = [
     { id: 'FluidR3_GM', label: 'FluidR3 GM', credit: 'FluidR3 GM SoundFont, (c) 2000-2002, 2008 Frank Wen (licencia MIT)', kits: true },

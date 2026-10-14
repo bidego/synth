@@ -30,17 +30,15 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
 ## Bancos de sonido y creditos
 
 Ademas de los sintetizadores, la app toca instrumentos de **muestras reales** (128 instrumentos General MIDI y kits de bateria).
-Los datos **no estan en este repositorio**: se descargan desde [WebAudioFont](https://github.com/surikov/webaudiofont)
-(S. Surikov, `surikov.github.io/webaudiofontdata`) la primera vez que se elige un instrumento y quedan guardados en el
-navegador (Cache Storage), asi que despues funcionan sin conexion.
+Los datos estan **alojados en este repositorio** (`src/assets/sounds`, unos 58 MB) y los sirve la propia app: no dependen
+de ningun servidor externo. Tienen el formato de [WebAudioFont](https://github.com/surikov/webaudiofont) (S. Surikov) y
+`scripts/fetch-sounds.sh` los regenera o actualiza. Cada instrumento se descarga la primera vez que se elige y queda
+guardado en el navegador (Cache Storage), asi que despues funciona sin conexion.
 
 | Banco | Credito / licencia |
 |---|---|
 | FluidR3 GM (instrumentos y kits de bateria) | (c) 2000-2002, 2008 Frank Wen. Licencia estilo MIT; el aviso de copyright debe mantenerse en trabajos derivados. |
-| GeneralUser GS (instrumentos) | S. Christian Collins. Revisar la licencia vigente en https://www.schristiancollins.com/generaluser.php antes de redistribuir. |
-
-La app solo *lee* esos archivos desde su servidor original; si se decide copiarlos al repo o a un servidor propio,
-hay que cumplir con las licencias de arriba.
+| GeneralUser GS (instrumentos) | S. Christian Collins. Su licencia (v2.0) permite usarlo en proyectos de software; el autor aclara que hereda los derechos de las muestras y que no puede garantizar su origen al 100 %. Ver https://www.schristiancollins.com/generaluser.php |
 
 ## Syntotec DAW (rack modular)
 
