@@ -77,7 +77,7 @@
     <span class="hide-narrow"><kbd>Esc</kbd> modo visual</span>
     <button class="ghost" (click)="ui.toggleHelp()"><kbd>F1</kbd> atajos</button>
     <span class="sep"></span>
-    <span class="ver">v{{ version }}</span>
+    <span class="ver" [title]="'Compilacion: ' + buildCommit + ' - ' + buildDate + '. Si no coincide con lo que esperas, recarga con Ctrl+Shift+R'">v{{ version }} &middot; {{ buildCommit }} &middot; {{ buildDate }}</span>
   </footer>
 </div>
 

@@ -4,6 +4,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+# Sello de la compilacion (se muestra en la barra de estado): docker build --build-arg BUILD_COMMIT=$(git rev-parse --short HEAD) .
+ARG BUILD_COMMIT=local
+RUN printf "export const BUILD_COMMIT = '%s';\\nexport const BUILD_DATE = '%s';\\n" "$BUILD_COMMIT" "$(date -u '+%Y-%m-%d %H:%M UTC')" > src/app/build-info.ts
 RUN npx ng build --prod --aot=false --build-optimizer=false
 
 # Serve stage

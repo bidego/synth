@@ -7,6 +7,7 @@ import { TransportService } from './daw/core/transport.service';
 import { ProjectService } from './daw/core/project.service';
 import { isTyping, isControl } from './daw/core/dom';
 import { version } from '../../package.json';
+import { BUILD_COMMIT, BUILD_DATE } from './build-info';
 
 interface Shortcut {
   keys: Array<string>;
@@ -21,6 +22,8 @@ interface Shortcut {
 export class AppComponent {
   title = 'Syntotec';
   version: string = version;
+  buildCommit = BUILD_COMMIT;
+  buildDate = BUILD_DATE;
   narrow = false;
 
   // Modo visual: el boton flotante casi desaparece y solo reaparece al mover el puntero o tocar
