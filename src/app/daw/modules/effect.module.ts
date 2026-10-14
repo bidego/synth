@@ -92,6 +92,19 @@ export abstract class EffectModule extends RackModule {
         this.env.changed();
     }
 
+    autoParam(id: string) {
+        const def = id.indexOf('p.') == 0 ? this.paramDefs.find(d => d.id == id.slice(2)) : null;
+        return def && def.kind == 'range' ? { label: def.label, min: def.min, max: def.max } : null;
+    }
+
+    getAutoValue(id: string): number {
+        return this.values[id.slice(2)];
+    }
+
+    setAutoValue(id: string, value: number) {
+        this.setParam(id.slice(2), value);
+    }
+
     setBypass(on: boolean) {
         this.bypass = on;
         this.set(this.fxGain.gain, on ? 0 : 1, 0.01);

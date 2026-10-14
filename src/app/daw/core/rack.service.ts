@@ -24,6 +24,8 @@ export class RackService {
     public message = '';
     // Algo cambio: el proyecto se autoguarda
     public readonly changed = new Subject<void>();
+    // Un dispositivo se duplico: lo usa la automatizacion para copiar sus pistas
+    public readonly duplicated = new Subject<{ from: string; to: string }>();
 
     constructor(private audioCtx: AudioContext, public transport: TransportService, library: SampleLibrary,
                 private zone: NgZone, sound: SoundService, midi: MidiService) {
@@ -131,6 +133,7 @@ export class RackService {
             this.wireAudioOut(copy, 'out');
         this.selectedId = copy.id;
         this.changed.next();
+        this.duplicated.next({ from: src.id, to: copy.id });
         return copy;
     }
 

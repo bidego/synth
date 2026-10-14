@@ -14,7 +14,13 @@
     <div class="body" *ngIf="ui.timelineOpen">
         <div class="labels">
             <div class="corner"></div>
-            <div class="lane-label" *ngFor="let l of shownLanes" [class.muted]="l.muted" [title]="l.label">{{ l.label }}</div>
+            <div class="lane-label" *ngFor="let l of shownLanes" [class.muted]="l.muted" [class.auto]="l.auto" [title]="l.label">
+                <span class="txt">{{ l.label }}</span>
+                <span class="lane-acts" *ngIf="l.auto">
+                    <button class="ghost icon" (click)="toggleLane(l)" [class.off]="!l.auto.enabled" [title]="l.auto.enabled ? 'Desactivar esta automatizacion' : 'Activar esta automatizacion'" aria-label="Activar o desactivar la automatizacion"><app-icon [name]="l.auto.enabled ? 'eye' : 'eye-off'" [size]="11"></app-icon></button>
+                    <button class="ghost icon" (click)="removeLane(l)" title="Borrar esta automatizacion" aria-label="Borrar la automatizacion"><app-icon name="trash" [size]="11"></app-icon></button>
+                </span>
+            </div>
             <div class="lane-label more" *ngIf="hiddenLanes">+{{ hiddenLanes }} pistas</div>
         </div>
         <div class="grid" #ruler [class.locked]="transport.recording" (pointerdown)="startSeek($event)">
@@ -25,7 +31,7 @@
                 <div class="lane" *ngFor="let l of shownLanes" [class.muted]="l.muted"></div>
                 <canvas #canvas class="notes" [style.height.px]="lanesHeight"></canvas>
             </div>
-            <div class="lane empty" *ngIf="!lanes.length">Todavia no hay pistas: apreta Rec y toca para grabar una</div>
+            <div class="lane empty" *ngIf="!lanes.length">Todavia no hay pistas: apreta Rec y toca para grabar una; mover una perilla mientras grabas queda como automatizacion</div>
             <!-- Lineas de compas y de pulso sobre toda la grilla -->
             <span class="vline bar" *ngFor="let b of bars" [style.left.%]="b.pct"></span>
             <span class="vline beat" *ngFor="let p of beatTicks" [style.left.%]="p"></span>

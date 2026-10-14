@@ -40,6 +40,16 @@ guardado en el navegador (Cache Storage), asi que despues funciona sin conexion.
 | FluidR3 GM (instrumentos y kits de bateria) | (c) 2000-2002, 2008 Frank Wen. Licencia estilo MIT; el aviso de copyright debe mantenerse en trabajos derivados. |
 | GeneralUser GS (instrumentos) | S. Christian Collins. Su licencia (v2.0) permite usarlo en proyectos de software; el autor aclara que hereda los derechos de las muestras y que no puede garantizar su origen al 100 %. Ver https://www.schristiancollins.com/generaluser.php |
 
+## Automatizacion
+
+Con **Rec** activo y la casilla *Grabar automatizacion* del transporte (viene marcada), el movimiento de una perilla o fader
+queda grabado en el loop y se repite en cada vuelta. Cada parametro tiene su pista en la linea de tiempo (curva azul), donde se
+puede desactivar o borrar; el control se pinta de azul si esta automatizado y de rojo mientras graba. Mientras se sostiene el
+control manda el usuario; al soltarlo vuelve la pista. Se guarda en el proyecto, se copia al duplicar un dispositivo y suena
+tambien en el WAV exportado. Se pueden automatizar los parametros de **efectos y dinamicos**, el **mezclador** (faders, paneo,
+envios aux, retornos, master), el **nivel de la salida** y el **volumen de cada pista** de un instrumento. Los parametros del
+sintetizador (filtro, LFO...) todavia no: el sonido de una pista queda fijo al grabarla.
+
 ## Syntotec DAW (rack modular)
 
 La aplicacion es un DAW tipo rack: un **host** con transporte global y un rack de **modulos** que se

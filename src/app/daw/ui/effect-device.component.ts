@@ -28,7 +28,7 @@ import { RackService } from '../core/rack.service';
         <ng-container *ngFor="let d of module.paramDefs">
             <div class="param knobwrap" *ngIf="d.kind == 'range'">
                 <app-knob [label]="d.label" [size]="54" [value]="module.values[d.id]" [min]="d.min" [max]="d.max" [step]="d.step"
-                    [default]="d.default" [log]="!!d.log" [unit]="d.unit" (valueChange)="module.setParam(d.id, $event)"></app-knob>
+                    [default]="d.default" [log]="!!d.log" [unit]="d.unit" [autoModule]="module.id" [autoParam]="'p.' + d.id" (valueChange)="module.setParam(d.id, $event)"></app-knob>
             </div>
             <label class="param toggle" *ngIf="d.kind == 'toggle'">
                 <span class="label">{{ d.label }}</span>

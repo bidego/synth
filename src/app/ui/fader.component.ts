@@ -1,4 +1,5 @@
-import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Optional, Output } from '@angular/core';
+import { AutomationService } from '../daw/core/automation.service';
 import { toNorm, fromNorm, formatValue } from './controls';
 
 /**
@@ -10,7 +11,7 @@ import { toNorm, fromNorm, formatValue } from './controls';
 @Component({
     selector: 'app-fader',
     template: `
-<div class="fader" [class.h]="horizontal" [class.drag]="dragging" [class.focus]="focused"
+<div class="fader" [class.auto]="automated" [class.rec]="autoRecording" [class.h]="horizontal" [class.drag]="dragging" [class.focus]="focused"
     [style.height.px]="horizontal ? null : length" [style.width.px]="horizontal ? length : null"
     (pointerdown)="down($event)" (dblclick)="reset()" [title]="tooltip">
     <div class="slot">
@@ -24,6 +25,8 @@ import { toNorm, fromNorm, formatValue } from './controls';
 </div>`,
     styles: [`
 :host { display: inline-block; }
+.fader.auto .fill { background: var(--info); }
+.fader.rec .fill { background: var(--danger); }
 .fader { position: relative; width: 26px; touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer; }
 .fader.h { height: 26px; }
 .slot { position: absolute; left: 50%; top: 6px; bottom: 6px; width: 6px; transform: translateX(-50%); border-radius: 3px;
@@ -58,12 +61,47 @@ export class FaderComponent {
     @Input() ariaLabel = '';
     @Input() inputClass = '';
     @Input() format: (v: number) => string;
+    // Para automatizar: el id del dispositivo y del parametro (si no se indican, el control no se automatiza)
+    @Input() autoModule = '';
+    @Input() autoParam = '';
     @Output() valueChange = new EventEmitter<number>();
 
     public dragging = false;
     public focused = false;
     public marks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
     private grab = 0;   // distancia entre el punto tocado y el centro del capuchon (para no saltar al arrastrarlo)
+
+    constructor(@Optional() private automation: AutomationService) {}
+
+    private get autoOn(): boolean {
+        return !!this.automation && !!this.autoModule && !!this.autoParam;
+    }
+
+    /** Tiene movimientos grabados / se esta grabando ahora (para pintar el control). */
+    get automated(): boolean {
+        return this.autoOn && this.automation.hasLane(this.autoModule, this.autoParam);
+    }
+
+    get autoRecording(): boolean {
+        return this.autoOn && this.automation.isRecording(this.autoModule, this.autoParam);
+    }
+
+    // Todo cambio hecho por el usuario sale por aca, asi tambien llega a la automatizacion
+    private emitChange(v: number) {
+        this.valueChange.emit(v);
+        if (this.autoOn)
+            this.automation.change(this.autoModule, this.autoParam, v);
+    }
+
+    private autoBegin() {
+        if (this.autoOn)
+            this.automation.begin(this.autoModule, this.autoParam);
+    }
+
+    private autoEnd() {
+        if (this.autoOn)
+            this.automation.end(this.autoModule, this.autoParam);
+    }
 
     get nativeStep(): number {
         return this.step > 0 ? this.step : (this.max - this.min) / 200;
@@ -94,6 +132,7 @@ export class FaderComponent {
         e.preventDefault();
         const el = e.currentTarget as HTMLElement;
         this.dragging = true;
+        this.autoBegin();
         // Si se agarra el capuchon se arrastra desde donde estaba; si se toca la ranura, salta ahi
         const at = this.normAt(e, el);
         this.grab = Math.abs(at - this.norm) < 0.08 ? at - this.norm : 0;
@@ -114,6 +153,8 @@ export class FaderComponent {
     @HostListener('pointerup')
     @HostListener('pointercancel')
     up() {
+        if (this.dragging)
+            this.autoEnd();
         this.dragging = false;
     }
 
@@ -126,17 +167,17 @@ export class FaderComponent {
     private apply(norm: number) {
         const v = fromNorm(norm, this.min, this.max, false, this.step);
         if (v !== this.value)
-            this.valueChange.emit(v);
+            this.emitChange(v);
     }
 
     reset() {
         const d = this.default !== undefined ? this.default : this.min;
         if (d !== this.value)
-            this.valueChange.emit(d);
+            this.emitChange(d);
     }
 
     onNative(v: number) {
         if (isFinite(v))
-            this.valueChange.emit(v);
+            this.emitChange(v);
     }
 }

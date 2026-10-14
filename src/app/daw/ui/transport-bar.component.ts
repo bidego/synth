@@ -1,7 +1,8 @@
-import { Component, ElementRef, OnInit, OnDestroy, HostBinding, HostListener, ViewChild } from '@angular/core';
+import { Component, ElementRef, NgZone, OnInit, OnDestroy, HostBinding, HostListener, ViewChild } from '@angular/core';
 import { UiService } from '../../services/ui.service';
 import { TransportService, BAR_OPTIONS, SIGNATURE_DENOMINATORS, MAX_TRANSPOSE } from '../core/transport.service';
 import { RackService } from '../core/rack.service';
+import { AutomationService } from '../core/automation.service';
 
 /** Barra de transporte global: grabar, reproducir, tempo, compas, loop, cuantizacion y transposicion. */
 @Component({
@@ -31,7 +32,8 @@ export class TransportBarComponent implements OnInit, OnDestroy {
     @ViewChild('box', { static: false }) private box: ElementRef<HTMLElement>;
     private drag: { dx: number; dy: number } = null;
 
-    constructor(public transport: TransportService, public rack: RackService, public ui: UiService) {}
+    constructor(public transport: TransportService, public rack: RackService, public ui: UiService,
+                public automation: AutomationService, private zone: NgZone) {}
 
     @HostBinding('class.floating') get floating(): boolean {
         return this.ui.transportMode == 'floating';
@@ -54,6 +56,25 @@ export class TransportBarComponent implements OnInit, OnDestroy {
         return p.x < 0 ? { top: '64px', right: '16px' } : { left: p.x + 'px', top: p.y + 'px' };
     }
 
+    // Los eventos globales del puntero se escuchan solo mientras se arrastra y fuera de la zona de Angular:
+    // un listener permanente en `document` dispara una deteccion de cambios completa en cada movimiento del mouse
+    private moveFn = (e: PointerEvent) => this.onMove(e);
+    private upFn = () => this.onPointerEnd();
+
+    private listen() {
+        this.zone.runOutsideAngular(() => {
+            document.addEventListener('pointermove', this.moveFn);
+            document.addEventListener('pointerup', this.upFn);
+            document.addEventListener('pointercancel', this.upFn);
+        });
+    }
+
+    private unlisten() {
+        document.removeEventListener('pointermove', this.moveFn);
+        document.removeEventListener('pointerup', this.upFn);
+        document.removeEventListener('pointercancel', this.upFn);
+    }
+
     startDrag(e: PointerEvent) {
         const el = this.box && this.box.nativeElement;
         if (!el || e.button > 0)
@@ -61,31 +82,29 @@ export class TransportBarComponent implements OnInit, OnDestroy {
         const r = el.getBoundingClientRect();
         this.drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        this.listen();
         e.preventDefault();
     }
 
-    @HostListener('document:pointermove', ['$event'])
-    onMove(e: PointerEvent) {
+    private onMove(e: PointerEvent) {
         if (!this.drag || !this.box)
             return;
         const el = this.box.nativeElement;
         const x = Math.min(Math.max(0, e.clientX - this.drag.dx), Math.max(0, window.innerWidth - el.offsetWidth));
         const y = Math.min(Math.max(0, e.clientY - this.drag.dy), Math.max(0, window.innerHeight - el.offsetHeight));
-        this.ui.floatPos = { x: Math.round(x), y: Math.round(y) };
+        this.zone.run(() => this.ui.floatPos = { x: Math.round(x), y: Math.round(y) });
     }
 
-    // Un solo manejador por evento (Angular 8 se queda con uno solo si dos metodos escuchan el mismo evento)
-    @HostListener('document:pointerup')
-    @HostListener('document:pointercancel')
-    onPointerEnd() {
+    private onPointerEnd() {
         this.stopHold();
         this.endDrag();
+        this.unlisten();
     }
 
     private endDrag() {
         if (this.drag) {
             this.drag = null;
-            this.ui.setFloatPos(this.ui.floatPos.x, this.ui.floatPos.y);
+            this.zone.run(() => this.ui.setFloatPos(this.ui.floatPos.x, this.ui.floatPos.y));
         }
     }
 
@@ -109,6 +128,7 @@ export class TransportBarComponent implements OnInit, OnDestroy {
             return;
         this.stopHold();
         this.transport.skipBars(dir);
+        this.listen();
         this.holdTimer = setTimeout(() => {
             this.holdTimer = setInterval(() => this.transport.skipBars(dir), 120);
         }, 380);
@@ -137,6 +157,8 @@ export class TransportBarComponent implements OnInit, OnDestroy {
     }
     ngOnDestroy() {
         clearInterval(this.timer);
+        this.stopHold();
+        this.unlisten();
     }
 
     get dots(): Array<number> {

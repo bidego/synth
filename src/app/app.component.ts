@@ -1,4 +1,4 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, NgZone } from '@angular/core';
 import { SoundService } from './services/sound.service';
 import { MidiService } from './services/midi.service';
 import { UiService } from './services/ui.service';
@@ -64,8 +64,13 @@ export class AppComponent {
   ];
 
   constructor(public sound: SoundService, public midi: MidiService, public ui: UiService,
-              public rack: RackService, public transport: TransportService, public project: ProjectService) {
+              public rack: RackService, public transport: TransportService, public project: ProjectService,
+              private zone: NgZone) {
     this.narrow = ui.isNarrow();
+    zone.runOutsideAngular(() => {
+      document.addEventListener('pointermove', this.zenMove, { passive: true });
+      document.addEventListener('pointerdown', this.zenMove, { passive: true });
+    });
   }
 
   /** Voces sonando entre todos los instrumentos del rack. */
@@ -147,8 +152,13 @@ export class AppComponent {
     }
   }
 
-  @HostListener('document:pointermove')
-  @HostListener('document:pointerdown')
+  // Listener fuera de la zona (cada movimiento del mouse dispararia una deteccion de cambios completa)
+  // y solo entra a la zona cuando el modo visual esta activo
+  private zenMove = () => {
+    if (this.ui.zen)
+      this.zone.run(() => this.showZenHint());
+  };
+
   showZenHint() {
     if (!this.ui.zen)
       return;

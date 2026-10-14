@@ -74,7 +74,7 @@ export class KeyboardDeviceComponent {
 <div class="out">
     <div class="ctl">
         <span class="label">Nivel</span>
-        <app-fader [horizontal]="true" [length]="170" [min]="0" [max]="1.5" [step]="0.01" [default]="1" [value]="module.level" (valueChange)="module.setLevel($event)" ariaLabel="Nivel de salida"></app-fader>
+        <app-fader [horizontal]="true" [length]="170" [min]="0" [max]="1.5" [step]="0.01" [default]="1" [value]="module.level" autoParam="level" [autoModule]="module.id" (valueChange)="module.setLevel($event)" ariaLabel="Nivel de salida"></app-fader>
         <output>{{ module.level | number:'1.2-2' }}</output>
     </div>
     <div class="meter" title="Nivel de salida"><i [style.width.%]="level * 100"></i></div>

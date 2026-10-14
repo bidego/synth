@@ -77,6 +77,7 @@
     <div class="field checks">
         <label><input type="checkbox" [checked]="transport.metronome" (change)="transport.setFlag('metronome', $event.target.checked)"> Metronomo</label>
         <label><input type="checkbox" [checked]="transport.countIn" (change)="transport.setFlag('countIn', $event.target.checked)"> Cuenta previa</label>
+        <label title="Al grabar, el movimiento de las perillas y faders queda grabado y se repite en cada vuelta del loop"><input type="checkbox" [checked]="automation.armed" (change)="automation.setArmed($event.target.checked)"> Grabar automatizacion</label>
     </div>
     </div>
 

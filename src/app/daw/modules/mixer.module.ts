@@ -202,6 +202,50 @@ export class MixerModule extends RackModule {
         this.env.changed();
     }
 
+    // Ids automatizables: gain.i  pan.i  send.i.a  aux.a  ret.a  master  (i y a desde 0)
+    autoParam(id: string) {
+        const m = /^(gain|pan|send)\.(\d+)(?:\.(\d+))?$/.exec(id);
+        if (m) {
+            const i = +m[2], a = m[3] !== undefined ? +m[3] : -1;
+            if (i >= MIXER_CHANNELS || (m[1] == 'send') != (a >= 0) || a >= AUX_BUSES)
+                return null;
+            const ch = 'Canal ' + (i + 1);
+            return m[1] == 'gain' ? { label: ch + ' \u00b7 Fader', min: 0, max: 1.5 }
+                : m[1] == 'pan' ? { label: ch + ' \u00b7 Paneo', min: -1, max: 1 }
+                : { label: ch + ' \u00b7 Envio aux ' + (a + 1), min: 0, max: 1.5 };
+        }
+        const b = /^(aux|ret)\.(\d+)$/.exec(id);
+        if (b && +b[2] < AUX_BUSES)
+            return { label: (b[1] == 'aux' ? 'Envio aux ' : 'Retorno ') + (+b[2] + 1), min: 0, max: 1.5 };
+        return id == 'master' ? { label: 'Master', min: 0, max: 1.5 } : null;
+    }
+
+    getAutoValue(id: string): number {
+        const p = id.split('.');
+        const i = +p[1];
+        switch (p[0]) {
+            case 'gain': return this.strips[i].gain;
+            case 'pan': return this.strips[i].pan;
+            case 'send': return this.strips[i].sends[+p[2]];
+            case 'aux': return this.auxLevel[i];
+            case 'ret': return this.returnLevel[i];
+            default: return this.master;
+        }
+    }
+
+    setAutoValue(id: string, value: number) {
+        const p = id.split('.');
+        const i = +p[1];
+        switch (p[0]) {
+            case 'gain': return this.setGain(i, value);
+            case 'pan': return this.setPan(i, value);
+            case 'send': return this.setSend(i, +p[2], value);
+            case 'aux': return this.setAuxLevel(i, value);
+            case 'ret': return this.setReturn(i, value);
+            default: return this.setMaster(value);
+        }
+    }
+
     toggleMute(i: number) {
         this.strips[i].mute = !this.strips[i].mute;
         this.applyAll();

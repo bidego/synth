@@ -49,6 +49,24 @@ export class SynthStudioModule extends RackModule {
             this.engine.receive(msg);
     }
 
+    // Ids automatizables: track.<id>.volume (el volumen de cada pista del secuenciador)
+    autoParam(id: string) {
+        const m = /^track\.(\d+)\.volume$/.exec(id);
+        const t = m && this.sequencer.tracks.find(x => x.id == +m[1]);
+        return t ? { label: t.name + ' \u00b7 Volumen', min: 0, max: 1 } : null;
+    }
+
+    getAutoValue(id: string): number {
+        const t = this.sequencer.tracks.find(x => x.id == +id.split('.')[1]);
+        return t ? t.volume : 0;
+    }
+
+    setAutoValue(id: string, value: number) {
+        const t = this.sequencer.tracks.find(x => x.id == +id.split('.')[1]);
+        if (t)
+            this.sequencer.setVolume(t, Math.max(0, Math.min(1, value)));
+    }
+
     /** Avisa que el patch, la octava o el nivel cambiaron (el autoguardado los toma). */
     touch() {
         this.env.changed();

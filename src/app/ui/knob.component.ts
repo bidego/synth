@@ -1,4 +1,5 @@
-import { Component, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Optional, Output } from '@angular/core';
+import { AutomationService } from '../daw/core/automation.service';
 import { toNorm, fromNorm, formatValue, arcPath, polar } from './controls';
 
 const SWEEP = 135;            // la perilla recorre de -135 a +135 grados (270 en total)
@@ -15,7 +16,7 @@ const FINE_FACTOR = 4;        // con Shift el arrastre es 4 veces mas fino
 @Component({
     selector: 'app-knob',
     template: `
-<div class="knob" [class.drag]="dragging" [class.focus]="focused" [class.bipolar]="bipolar" [style.width.px]="size"
+<div class="knob" [class.auto]="automated" [class.rec]="autoRecording" [class.drag]="dragging" [class.focus]="focused" [class.bipolar]="bipolar" [style.width.px]="size"
     (pointerdown)="down($event)" (dblclick)="reset()" [title]="tooltip">
     <span class="label" *ngIf="label">{{ label }}</span>
     <svg [attr.width]="size" [attr.height]="size" viewBox="0 0 100 100" aria-hidden="true">
@@ -49,6 +50,8 @@ svg { display: block; overflow: visible; }
 .body { fill: #1a1d32; stroke: #4a5185; stroke-width: 1.5; }
 .shine { fill: none; stroke: rgba(255, 255, 255, 0.07); stroke-width: 9; clip-path: inset(0 0 55% 0); }
 .pointer { stroke: #fff; stroke-width: 4; stroke-linecap: round; }
+.knob.auto .fill { stroke: var(--info); filter: drop-shadow(0 0 3px rgba(92, 200, 255, 0.55)); }
+.knob.rec .fill { stroke: var(--danger); filter: drop-shadow(0 0 4px rgba(255, 85, 96, 0.7)); }
 .knob:hover .body { stroke: #6a73b8; }
 .knob.drag .value, .knob:hover .value { color: var(--text); }
 .knob.drag .body { stroke: var(--accent); }
@@ -72,6 +75,9 @@ export class KnobComponent {
     @Input() inputClass = '';
     @Input() hideValue = false;
     @Input() format: (v: number) => string;
+    // Para automatizar: el id del dispositivo y del parametro (si no se indican, el control no se automatiza)
+    @Input() autoModule = '';
+    @Input() autoParam = '';
     @Output() valueChange = new EventEmitter<number>();
 
     public dragging = false;
@@ -83,6 +89,38 @@ export class KnobComponent {
     });
     private startY = 0;
     private startNorm = 0;
+
+    constructor(@Optional() private automation: AutomationService) {}
+
+    private get autoOn(): boolean {
+        return !!this.automation && !!this.autoModule && !!this.autoParam;
+    }
+
+    /** Tiene movimientos grabados / se esta grabando ahora (para pintar el control). */
+    get automated(): boolean {
+        return this.autoOn && this.automation.hasLane(this.autoModule, this.autoParam);
+    }
+
+    get autoRecording(): boolean {
+        return this.autoOn && this.automation.isRecording(this.autoModule, this.autoParam);
+    }
+
+    // Todo cambio hecho por el usuario sale por aca, asi tambien llega a la automatizacion
+    private emitChange(v: number) {
+        this.valueChange.emit(v);
+        if (this.autoOn)
+            this.automation.change(this.autoModule, this.autoParam, v);
+    }
+
+    private autoBegin() {
+        if (this.autoOn)
+            this.automation.begin(this.autoModule, this.autoParam);
+    }
+
+    private autoEnd() {
+        if (this.autoOn)
+            this.automation.end(this.autoModule, this.autoParam);
+    }
 
     get nativeStep(): number {
         return this.step > 0 ? this.step : (this.max - this.min) / 200;
@@ -110,18 +148,19 @@ export class KnobComponent {
     }
 
     get tooltip(): string {
-        return (this.label ? this.label + ': ' : '') + this.display + ' (arrastra; Shift = fino; doble clic = valor por defecto)';
+        return (this.label ? this.label + ': ' : '') + this.display + ' (arrastra; Shift = fino; doble clic = valor por defecto)' + (this.automated ? ' - automatizado' : '');
     }
 
     private set(norm: number) {
         const v = fromNorm(norm, this.min, this.max, this.log, this.step);
         if (v !== this.value)
-            this.valueChange.emit(v);
+            this.emitChange(v);
     }
 
     down(e: PointerEvent) {
         e.preventDefault();
         this.dragging = true;
+        this.autoBegin();
         this.startY = e.clientY;
         this.startNorm = this.norm;
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -142,6 +181,8 @@ export class KnobComponent {
     @HostListener('pointerup')
     @HostListener('pointercancel')
     up() {
+        if (this.dragging)
+            this.autoEnd();
         this.dragging = false;
     }
 
@@ -156,13 +197,13 @@ export class KnobComponent {
     reset() {
         const d = this.default !== undefined ? this.default : (this.bipolar ? (this.min + this.max) / 2 : this.min);
         if (d !== this.value)
-            this.valueChange.emit(d);
+            this.emitChange(d);
     }
 
     // Cambio desde el input nativo (teclado o lector de pantalla)
     onNative(v: number) {
         if (!isFinite(v))
             return;
-        this.valueChange.emit(this.log ? fromNorm(v, this.min, this.max, true, this.step) : v);
+        this.emitChange(this.log ? fromNorm(v, this.min, this.max, true, this.step) : v);
     }
 }

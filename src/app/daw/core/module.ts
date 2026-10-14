@@ -2,6 +2,13 @@ import { Subject } from 'rxjs';
 import { ModuleEnv, NoteMsg, PortDef } from './types';
 import { setParam } from './audio';
 
+/** Un parametro que se puede automatizar (grabar el movimiento de su perilla y reproducirlo en el loop). */
+export interface AutoParamInfo {
+    label: string;   // "Delay · Feedback" lo arma el servicio con el nombre del dispositivo
+    min: number;
+    max: number;
+}
+
 /**
  * Un dispositivo del rack. Expone puertos (audio / notas) que se unen con cables.
  * No sabe nada de la pantalla: asi se puede construir tambien en un OfflineAudioContext.
@@ -33,6 +40,15 @@ export abstract class RackModule {
     /** Estado serializable (parametros, patch, pistas...). */
     abstract getState(): any;
     abstract setState(state: any): void;
+
+    /** Parametros automatizables: info de uno por su id (null si no existe). Los ids son propios de cada modulo. */
+    autoParam(id: string): AutoParamInfo | null {
+        return null;
+    }
+    getAutoValue(id: string): number {
+        return 0;
+    }
+    setAutoValue(id: string, value: number): void {}
 
     /** El tempo cambio (para los efectos sincronizados al BPM). */
     onTempo(): void {}

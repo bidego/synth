@@ -10,19 +10,19 @@ import { MixerModule, AUX_BUSES } from '../modules/mixer.module';
         <span class="label">Canal {{ i + 1 }}</span>
         <div class="panwrap" title="Paneo (doble clic = centro)">
             <app-knob class="pan" [size]="34" [value]="s.pan" [min]="-1" [max]="1" [step]="0.01" [default]="0" [bipolar]="true" [hideValue]="true"
-                [format]="panText" (valueChange)="module.setPan(i, $event)" [ariaLabel]="'Paneo canal ' + (i + 1)"></app-knob>
+                [format]="panText" [autoModule]="module.id" [autoParam]="'pan.' + i" (valueChange)="module.setPan(i, $event)" [ariaLabel]="'Paneo canal ' + (i + 1)"></app-knob>
             <div class="pan-text">{{ panText(s.pan) }}</div>
         </div>
         <div class="sends">
             <label *ngFor="let a of auxes" [title]="'Envio al aux ' + (a + 1)">
                 <span>A{{ a + 1 }}</span>
                 <app-knob [size]="28" [value]="s.sends[a]" [min]="0" [max]="1.5" [step]="0.01" [default]="0" [hideValue]="true"
-                    (valueChange)="module.setSend(i, a, $event)" [ariaLabel]="'Envio aux ' + (a + 1) + ' canal ' + (i + 1)"></app-knob>
+                    [autoModule]="module.id" [autoParam]="'send.' + i + '.' + a" (valueChange)="module.setSend(i, a, $event)" [ariaLabel]="'Envio aux ' + (a + 1) + ' canal ' + (i + 1)"></app-knob>
             </label>
         </div>
         <div class="fader-box">
             <app-fader inputClass="fader" [length]="140" [value]="s.gain" [min]="0" [max]="1.5" [step]="0.01" [default]="0.8"
-                [format]="db" (valueChange)="module.setGain(i, $event)" [ariaLabel]="'Fader canal ' + (i + 1)"></app-fader>
+                [format]="db" [autoModule]="module.id" [autoParam]="'gain.' + i" (valueChange)="module.setGain(i, $event)" [ariaLabel]="'Fader canal ' + (i + 1)"></app-fader>
             <div class="meter"><i [style.height.%]="levels[i] * 100"></i></div>
         </div>
         <div class="db">{{ db(s.gain) }}</div>
@@ -37,9 +37,9 @@ import { MixerModule, AUX_BUSES } from '../modules/mixer.module';
             <b>{{ a + 1 }}</b>
             <div class="knobs">
                 <label><app-knob label="Envio" [size]="38" [value]="module.auxLevel[a]" [min]="0" [max]="1.5" [step]="0.01" [default]="1"
-                    (valueChange)="module.setAuxLevel(a, $event)" [ariaLabel]="'Nivel del bus aux ' + (a + 1)"></app-knob></label>
+                    [autoModule]="module.id" [autoParam]="'aux.' + a" (valueChange)="module.setAuxLevel(a, $event)" [ariaLabel]="'Nivel del bus aux ' + (a + 1)"></app-knob></label>
                 <label><app-knob label="Retorno" [size]="38" [value]="module.returnLevel[a]" [min]="0" [max]="1.5" [step]="0.01" [default]="1"
-                    (valueChange)="module.setReturn(a, $event)" [ariaLabel]="'Retorno ' + (a + 1)"></app-knob></label>
+                    [autoModule]="module.id" [autoParam]="'ret.' + a" (valueChange)="module.setReturn(a, $event)" [ariaLabel]="'Retorno ' + (a + 1)"></app-knob></label>
             </div>
         </div>
         <small>Cablea Aux n a un efecto y su salida al Retorno n (o usa el boton "Envio aux" del efecto).</small>
@@ -49,7 +49,7 @@ import { MixerModule, AUX_BUSES } from '../modules/mixer.module';
         <div class="pan-text">&nbsp;</div>
         <div class="fader-box">
             <app-fader inputClass="fader" [length]="140" [value]="module.master" [min]="0" [max]="1.5" [step]="0.01" [default]="1"
-                [format]="db" (valueChange)="module.setMaster($event)" ariaLabel="Fader master"></app-fader>
+                [format]="db" autoParam="master" [autoModule]="module.id" (valueChange)="module.setMaster($event)" ariaLabel="Fader master"></app-fader>
             <div class="meter"><i [style.height.%]="masterLevel * 100"></i></div>
         </div>
         <div class="db">{{ db(module.master) }}</div>

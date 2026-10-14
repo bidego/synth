@@ -1,3 +1,4 @@
+import { AutomationService } from './automation.service';
 import { Injectable, NgZone } from '@angular/core';
 import { RackService } from './rack.service';
 import { RackGraph } from './rack-graph';
@@ -14,6 +15,7 @@ export interface Project {
     name: string;
     transport: any;
     rack: any;
+    automation?: any;
 }
 
 export interface SavedProject {
@@ -44,11 +46,12 @@ export class ProjectService {
     private saveTimer: any;
 
     constructor(private rack: RackService, private transport: TransportService, private library: SampleLibrary,
-                private audioCtx: AudioContext, private zone: NgZone) {
+                private audioCtx: AudioContext, private zone: NgZone, private automation: AutomationService) {
         this.refreshSaved();
         // Se guarda solo, un instante despues del ultimo cambio
         rack.changed.subscribe(() => this.dirty());
         transport.changed.subscribe(() => this.dirty());
+        automation.changed.subscribe(() => this.dirty());
         this.restoreAutosave();
         // Si se abrio un enlace compartido, esa sesion reemplaza a la restaurada; y si se pega otro enlace
         // en la misma pestana tambien
@@ -63,7 +66,8 @@ export class ProjectService {
             version: 2,
             name: this.projectName,
             transport: this.transport.getState(),
-            rack: this.rack.getState()
+            rack: this.rack.getState(),
+            automation: this.automation.getState()
         };
     }
 
@@ -75,6 +79,7 @@ export class ProjectService {
             this.transport.stop();
             this.transport.setState(raw.transport);
             this.rack.setState(raw.rack);
+            this.automation.setState(raw.automation);
         } else if (Array.isArray(raw.tracks)) {
             this.migrateV1(raw);
         } else {
@@ -93,6 +98,7 @@ export class ProjectService {
         this.rack.buildDefault();
         const synth = this.rack.synths[0];
         synth.setState({ fx: raw.fx, sequencer: { tracks: raw.tracks } });
+        this.automation.setState({});
     }
 
     // --- Autoguardado ---
@@ -182,6 +188,7 @@ export class ProjectService {
         this.transport.stop();
         this.transport.setState({});
         this.rack.buildDefault();
+        this.automation.setState({});
         this.projectName = '';
         this.message = 'Proyecto nuevo';
         this.dirty();
@@ -323,6 +330,7 @@ export class ProjectService {
             const graph = new RackGraph(env);
             graph.setState(this.rack.getState());
             graph.ofType<SynthStudioModule>('synth').forEach(s => s.sequencer.renderPasses(this.exportPasses));
+            this.scheduleAutomation(offline, graph, seconds);
             const rendered = await offline.startRendering();
             graph.dispose();
             const name = (this.projectName || 'loop').trim() || 'loop';
@@ -332,6 +340,32 @@ export class ProjectService {
             this.message = 'No se pudo exportar: ' + (e && e.message || e);
         } finally {
             this.exporting = false;
+        }
+    }
+
+    /** La automatizacion tambien suena en el WAV: se detiene el render cada 1/16 de beat para mover los controles. */
+    private scheduleAutomation(offline: OfflineAudioContext, graph: RackGraph, seconds: number) {
+        const lanes = this.automation.lanes.filter(l => l.enabled && l.points.length);
+        if (!lanes.length)
+            return;
+        const beatDur = 60 / this.transport.bpm, loop = this.transport.loopBeats;
+        const apply = (t: number) => {
+            const beat = (t / beatDur) % loop;
+            lanes.forEach(l => {
+                const m = graph.find(l.module), v = this.automation.valueAt(l, beat);
+                if (m && v !== null)
+                    m.setAutoValue(l.param, v);
+            });
+        };
+        apply(0);
+        const step = beatDur / 16, quantum = 128 / offline.sampleRate;
+        let last = 0;
+        for (let t = step; t < seconds; t += step) {
+            const at = Math.round(t / quantum) * quantum;
+            if (at <= last)
+                continue;
+            last = at;
+            offline.suspend(at).then(() => { apply(at); return offline.resume(); }).catch(() => {});
         }
     }
 

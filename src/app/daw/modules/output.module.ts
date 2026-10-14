@@ -42,6 +42,18 @@ export class OutputModule extends RackModule {
         this.env.changed();
     }
 
+    autoParam(id: string) {
+        return id == 'level' ? { label: 'Nivel', min: 0, max: 1.5 } : null;
+    }
+
+    getAutoValue(id: string): number {
+        return this.level;
+    }
+
+    setAutoValue(id: string, value: number) {
+        this.setLevel(value);
+    }
+
     /** Pico de la salida (0..1), para el medidor. */
     peak(): number {
         const a = new Float32Array(this.analyser.fftSize);

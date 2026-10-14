@@ -51,6 +51,11 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.lane-label .txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.lane-label.auto .txt { color: var(--info); }
+.lane-acts { display: inline-flex; flex: none; }
+.lane-acts button { padding: 1px 3px; }
+.lane-acts button.off { opacity: 0.5; }
 .lane-label.muted { opacity: 0.45; text-decoration: line-through; }
 .lane-label.more { font-style: italic; }
 .grid {
