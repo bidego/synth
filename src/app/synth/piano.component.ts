@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { SynthEngine } from '../services/synth.engine';
+import { Component, Input, OnInit } from '@angular/core';
+import { SynthStudioModule } from '../daw/modules/synth-studio.module';
 import { KEY_SPAN, TOP_ROW, BOTTOM_ROW, defaultLabel, noteName } from '../services/keyboard-map';
 import { DRUM_NAMES } from './drums';
 import { GM_DRUM_SHORT, KIT_NOTE_OFFSET } from '../services/gm';
@@ -25,7 +25,11 @@ export class PianoComponent implements OnInit {
     public keys: Array<PianoKey> = [];
     private labels: { [code: string]: string } = {};
 
-    constructor(public engine: SynthEngine) {}
+    @Input() module: SynthStudioModule;
+
+    get engine() {
+        return this.module.engine;
+    }
 
     ngOnInit() {
         // Primera pasada: posicion en "teclas blancas"; el ancho total se conoce al final

@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener } from '@angular/core';
-import { LooperService } from '../services/looper.service';
+import { ProjectService } from '../daw/core/project.service';
 import { UiService } from '../services/ui.service';
 
 /** Menu de proyecto de la cabecera: guardar, abrir, importar y exportar. */
@@ -11,12 +11,12 @@ import { UiService } from '../services/ui.service';
 export class ProjectMenuComponent {
     public passOptions = [1, 2, 4, 8];
 
-    constructor(public looper: LooperService, public ui: UiService, private host: ElementRef) {}
+    constructor(public project: ProjectService, public ui: UiService, private host: ElementRef) {}
 
     toggle() {
         this.ui.menuOpen = !this.ui.menuOpen;
         if (this.ui.menuOpen)
-            this.looper.refreshSaved();
+            this.project.refreshSaved();
     }
 
     // Un clic fuera del menu lo cierra
@@ -29,7 +29,7 @@ export class ProjectMenuComponent {
     onImport(event: Event) {
         const input = event.target as HTMLInputElement;
         if (input.files && input.files[0])
-            this.looper.importFile(input.files[0]);
+            this.project.importFile(input.files[0]);
         // Permite volver a elegir el mismo archivo
         input.value = '';
     }

@@ -1,16 +1,25 @@
 <button class="trigger" [class.open]="ui.menuOpen" (click)="toggle()" aria-haspopup="true" [attr.aria-expanded]="ui.menuOpen">
     <app-icon name="folder" [size]="15"></app-icon>
-    <span class="txt">Proyecto<ng-container *ngIf="looper.projectName">: <b>{{ looper.projectName }}</b></ng-container></span>
+    <span class="txt">Proyecto<ng-container *ngIf="project.projectName">: <b>{{ project.projectName }}</b></ng-container></span>
     <app-icon name="chevron-down" [size]="13"></app-icon>
 </button>
 
 <div class="menu" *ngIf="ui.menuOpen" role="menu">
     <div class="section">
+        <div class="label">Proyecto</div>
+        <div class="row">
+            <button class="icon" (click)="project.newProject()" title="Vuelve al rack inicial">
+                <app-icon name="plus" [size]="14"></app-icon> Proyecto nuevo
+            </button>
+        </div>
+    </div>
+
+    <div class="section">
         <div class="label">Guardar</div>
         <div class="row">
-            <input type="text" placeholder="Nombre del proyecto" maxlength="40" [value]="looper.projectName"
-                (input)="looper.projectName = $event.target.value" (keydown.enter)="looper.saveNamed()" aria-label="Nombre del proyecto">
-            <button class="primary icon" (click)="looper.saveNamed()" title="Guardar en este navegador">
+            <input type="text" placeholder="Nombre del proyecto" maxlength="40" [value]="project.projectName"
+                (input)="project.projectName = $event.target.value" (keydown.enter)="project.saveNamed()" aria-label="Nombre del proyecto">
+            <button class="primary icon" (click)="project.saveNamed()" title="Guardar en este navegador">
                 <app-icon name="save" [size]="14"></app-icon> Guardar
             </button>
         </div>
@@ -18,15 +27,15 @@
     </div>
 
     <div class="section">
-        <div class="label">Abrir <small>({{ looper.saved.length }})</small></div>
-        <div class="empty" *ngIf="!looper.saved.length">Todavia no hay proyectos guardados.</div>
+        <div class="label">Abrir <small>({{ project.saved.length }})</small></div>
+        <div class="empty" *ngIf="!project.saved.length">Todavia no hay proyectos guardados.</div>
         <ul class="saved">
-            <li *ngFor="let s of looper.saved">
-                <button class="open" (click)="looper.loadNamed(s.name)" title="Abrir este proyecto">
+            <li *ngFor="let s of project.saved">
+                <button class="open" (click)="project.loadNamed(s.name)" title="Abrir este proyecto">
                     <span class="n">{{ s.name }}</span>
-                    <small>{{ s.tracks }} pistas &middot; {{ savedAt(s.savedAt) }}</small>
+                    <small>{{ s.modules }} dispositivos &middot; {{ savedAt(s.savedAt) }}</small>
                 </button>
-                <button class="ghost icon" (click)="looper.deleteNamed(s.name)" title="Borrar" aria-label="Borrar"><app-icon name="trash" [size]="14"></app-icon></button>
+                <button class="ghost icon" (click)="project.deleteNamed(s.name)" title="Borrar" aria-label="Borrar"><app-icon name="trash" [size]="14"></app-icon></button>
             </li>
         </ul>
     </div>
@@ -34,7 +43,7 @@
     <div class="section">
         <div class="label">Archivos</div>
         <div class="row wrap">
-            <button class="icon" (click)="looper.exportFile()" title="Descargar el proyecto como archivo .json">
+            <button class="icon" (click)="project.exportFile()" title="Descargar el proyecto como archivo .json">
                 <app-icon name="download" [size]="14"></app-icon> Exportar .json
             </button>
             <label class="file icon" title="Abrir un proyecto .json">
@@ -48,15 +57,15 @@
         <div class="label">Audio</div>
         <div class="row wrap">
             <span class="seg">
-                <button *ngFor="let n of passOptions" [class.on]="looper.exportPasses == n" (click)="looper.exportPasses = n">{{ n }}</button>
+                <button *ngFor="let n of passOptions" [class.on]="project.exportPasses == n" (click)="project.exportPasses = n">{{ n }}</button>
             </span>
-            <span class="dim">vuelta(s) &middot; {{ looper.exportSeconds | number:'1.0-0' }} s</span>
+            <span class="dim">vuelta(s) &middot; {{ project.exportSeconds | number:'1.0-0' }} s</span>
         </div>
-        <button class="primary icon wide" (click)="looper.exportWav()" [disabled]="looper.exporting"
-            title="Renderiza el loop a un WAV sin perdida (16 bits, estereo, con efectos)">
-            <app-icon name="download" [size]="14"></app-icon> {{ looper.exporting ? 'Exportando...' : 'Exportar WAV' }}
+        <button class="primary icon wide" (click)="project.exportWav()" [disabled]="project.exporting"
+            title="Renderiza todo el rack a un WAV sin perdida (16 bits, estereo, con los efectos y la mezcla)">
+            <app-icon name="download" [size]="14"></app-icon> {{ project.exporting ? 'Exportando...' : 'Exportar WAV' }}
         </button>
     </div>
 
-    <div class="msg" *ngIf="looper.message" role="status">{{ looper.message }}</div>
+    <div class="msg" *ngIf="project.message" role="status">{{ project.message }}</div>
 </div>

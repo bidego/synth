@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { LooperService, Track, LoopNote } from '../services/looper.service';
+import { Component, Input, OnInit, OnDestroy } from '@angular/core';
+import { Track, LoopNote } from '../daw/core/sequencer';
+import { SynthStudioModule } from '../daw/modules/synth-studio.module';
 
 /** Lista de pistas del looper (el transporte y el menu de proyecto viven en la cabecera). */
 @Component({
@@ -8,9 +9,12 @@ import { LooperService, Track, LoopNote } from '../services/looper.service';
     styleUrls: ['./looper.component.css']
 })
 export class LooperComponent implements OnInit, OnDestroy {
+    @Input() module: SynthStudioModule;
     private timer: any;
 
-    constructor(public looper: LooperService) {}
+    get looper() {
+        return this.module.sequencer;
+    }
 
     // El playhead se mueve con el tiempo del audio: un tick de la zona alcanza para refrescar la vista
     ngOnInit() {

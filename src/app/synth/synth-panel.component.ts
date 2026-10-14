@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { SynthEngine } from '../services/synth.engine';
+import { Component, Input } from '@angular/core';
+import { SynthStudioModule } from '../daw/modules/synth-studio.module';
 import { WaveType, FilterType, LfoTarget, LayerConfig } from '../services/presets';
 
 interface Knob {
@@ -39,7 +39,11 @@ export class SynthPanelComponent {
         { label: 'Key track', key: 'track', min: 0, max: 1, step: 0.01, unit: '' }
     ];
 
-    constructor(public engine: SynthEngine) {}
+    @Input() module: SynthStudioModule;
+
+    get engine() {
+        return this.module.engine;
+    }
 
     get lfoDepthRange(): Knob {
         const depth = { label: 'Depth', key: 'depth', min: 0 };

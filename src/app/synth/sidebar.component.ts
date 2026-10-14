@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
-import { SynthEngine } from '../services/synth.engine';
+import { RackService } from '../daw/core/rack.service';
+import { MODULE_META } from '../daw/modules/registry';
+import { CATEGORY_LABELS, ModuleMeta } from '../daw/core/types';
 import { UiService } from '../services/ui.service';
 import { PRESETS, Preset, makeSamplerPatch, makeKitPatch } from '../services/presets';
 import { BANK_FONTS, FAMILIES, GM_PROGRAMS, DRUM_KITS, DrumKit } from '../services/gm';
@@ -40,10 +42,37 @@ export class SidebarComponent {
     public kits = DRUM_KITS;
     public groups: Array<Group>;
 
-    constructor(public engine: SynthEngine, public ui: UiService) {
+    public tab: 'sounds' | 'devices' = 'sounds';
+    public deviceGroups: Array<{ label: string; items: Array<ModuleMeta> }>;
+
+    constructor(public rack: RackService, public ui: UiService) {
+        const order = ['instrument', 'io', 'mixing', 'effect', 'dynamics', 'patch'];
+        this.deviceGroups = order.map(c => ({ label: CATEGORY_LABELS[c], items: MODULE_META.filter(m => m.category == c) }));
         this.groups = CATEGORY_ORDER
             .map(c => ({ id: c.id, label: c.label, presets: PRESETS.filter(p => p.category == c.id) }))
             .filter(g => g.presets.length);
+    }
+
+    /** Instrumento al que apuntan los sonidos: el Synth Studio seleccionado (o el primero). */
+    get engine() {
+        const synth = this.rack.activeSynth;
+        return synth ? synth.engine : null;
+    }
+
+    get activeName(): string {
+        const synth = this.rack.activeSynth;
+        return synth ? synth.name : '';
+    }
+
+    // --- Dispositivos ---
+
+    countOf(type: string): number {
+        return this.rack.modules.filter(m => m.type == type).length;
+    }
+
+    addDevice(meta: ModuleMeta) {
+        this.rack.add(meta.type);
+        this.afterPick();
     }
 
     // --- Busqueda ---

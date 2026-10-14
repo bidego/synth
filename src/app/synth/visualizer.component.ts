@@ -1,5 +1,5 @@
 import { Component, ElementRef, NgZone, OnDestroy, AfterViewInit, ViewChild } from '@angular/core';
-import { SoundService } from '../services/sound.service';
+import { RackService } from '../daw/core/rack.service';
 import { UiService } from '../services/ui.service';
 
 @Component({
@@ -28,14 +28,14 @@ export class VisualizerComponent implements AfterViewInit, OnDestroy {
     private clock = 0;
     private onResize = () => this.resize();
 
-    constructor(private soundService: SoundService, private zone: NgZone, private ui: UiService) {}
+    constructor(private rack: RackService, private zone: NgZone, private ui: UiService) {}
 
     ngAfterViewInit() {
         const canvas = this.canvasRef.nativeElement;
         this.ctx = canvas.getContext('2d');
-        const analyser = this.soundService.analyser;
-        this.wave = new Uint8Array(analyser.fftSize);
-        this.spectrum = new Uint8Array(analyser.frequencyBinCount);
+        // Tamano fijo (fftSize 2048 de la salida): el analizador cambia si se agrega o quita la salida del rack
+        this.wave = new Uint8Array(2048).fill(128);
+        this.spectrum = new Uint8Array(1024);
         this.resize();
         window.addEventListener('resize', this.onResize);
         // Fuera de la zona de Angular para no disparar change detection en cada frame
@@ -57,9 +57,15 @@ export class VisualizerComponent implements AfterViewInit, OnDestroy {
         this.frameId = requestAnimationFrame(this.draw);
         const { ctx } = this;
         const { width, height } = this.canvasRef.nativeElement;
-        const analyser = this.soundService.analyser;
-        analyser.getByteTimeDomainData(this.wave);
-        analyser.getByteFrequencyData(this.spectrum);
+        // Sin salida de audio en el rack no hay senal: queda solo la animacion ambiente
+        const analyser = this.rack.masterAnalyser;
+        if (analyser) {
+            analyser.getByteTimeDomainData(this.wave);
+            analyser.getByteFrequencyData(this.spectrum);
+        } else {
+            this.wave.fill(128);
+            this.spectrum.fill(0);
+        }
 
         // Energia general: hace que la imagen reaccione al volumen
         let energy = 0;

@@ -9,6 +9,8 @@ export class UiService {
     public zen = false;
     // Panel lateral de sonidos
     public sidebarOpen = true;
+    // Vista del area principal: el rack (paneles frontales) o el cableado (grafo de cables)
+    public view: 'rack' | 'patch' = 'rack';
     // Panel de ayuda con los atajos y menu de proyecto de la cabecera
     public helpOpen = false;
     public menuOpen = false;
@@ -25,6 +27,8 @@ export class UiService {
             if (saved && typeof saved == 'object') {
                 if (typeof saved.sidebarOpen == 'boolean' && !this.isNarrow())
                     this.sidebarOpen = saved.sidebarOpen;
+                if (saved.view == 'rack' || saved.view == 'patch')
+                    this.view = saved.view;
                 if (saved.panels && typeof saved.panels == 'object')
                     this.panels = saved.panels;
                 if (saved.sections && typeof saved.sections == 'object')
@@ -43,6 +47,11 @@ export class UiService {
 
     toggleSidebar() {
         this.sidebarOpen = !this.sidebarOpen;
+        this.save();
+    }
+
+    setView(view: 'rack' | 'patch') {
+        this.view = view;
         this.save();
     }
 
@@ -71,7 +80,7 @@ export class UiService {
     private save() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                sidebarOpen: this.sidebarOpen, panels: this.panels, sections: this.sections
+                sidebarOpen: this.sidebarOpen, view: this.view, panels: this.panels, sections: this.sections
             }));
         } catch (e) {}
     }

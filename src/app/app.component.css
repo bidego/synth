@@ -287,3 +287,22 @@ main {
   font-family: var(--mono);
   opacity: 0.7;
 }
+
+/* --- Pestanas Rack / Cableado --- */
+.viewbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.viewbar .count {
+  color: var(--dim);
+  font-size: 12px;
+}
+.viewbar .hint {
+  color: var(--dim);
+  font-size: 11px;
+}
+.views button {
+  padding: 5px 16px;
+  font-weight: 600;
+}

@@ -246,3 +246,38 @@ h2 {
     color: var(--dim);
     opacity: 0.8;
 }
+
+.tabs {
+    flex: 1;
+    margin-right: 6px;
+}
+.tabs button {
+    flex: 1;
+}
+.pad {
+    padding: 14px 14px;
+}
+.hint {
+    margin: 4px 4px 10px;
+    color: var(--dim);
+    font-size: 11px;
+    line-height: 1.5;
+}
+.item.device {
+    align-items: flex-start;
+    padding: 6px 8px;
+}
+.item.device .n {
+    display: flex;
+    flex-direction: column;
+    white-space: normal;
+}
+.item.device small {
+    color: var(--dim);
+    font-size: 10px;
+    margin-top: 1px;
+}
+.item.device app-icon {
+    margin-top: 2px;
+    color: var(--dim);
+}

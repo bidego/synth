@@ -1,46 +1,50 @@
-import { Injectable, NgZone } from '@angular/core';
-import { SoundService } from './sound.service';
 import { Subject } from 'rxjs';
-import { PlayingVoice, createVoice } from '../synth/voice-factory';
-import { SampleLibrary, LoadStatus } from './sample-library';
-import { Patch, PRESETS, DEFAULT_FX, clonePatch } from './presets';
-import { KEY_OFFSETS, BASE_MIDI } from './keyboard-map';
+import { PlayingVoice, createVoice } from '../../synth/voice-factory';
+import { LoadStatus } from '../../services/sample-library';
+import { Patch, FxConfig, PRESETS, DEFAULT_FX, clonePatch } from '../../services/presets';
+import { BASE_MIDI } from '../../services/keyboard-map';
+import { ModuleEnv, NoteMsg } from './types';
 
 const MAX_VOICES = 24;
+const MIN_OCTAVE = -3;
+const MAX_OCTAVE = 3;
+
+/** Lo que se toca, venga de donde venga; el secuenciador lo graba. */
 export interface NoteEvent {
     type: 'on' | 'off';
     midi: number;
     velocity: number;
 }
 
-const MIN_OCTAVE = -3;
-const MAX_OCTAVE = 3;
-
-/** Motor polifonico: traduce teclas de computadora y notas MIDI a voces usando el patch actual. */
-@Injectable()
+/**
+ * Motor polifonico de UN instrumento: recibe notas (del piano en pantalla o de los cables) y las
+ * convierte en voces con el patch actual. Una instancia por modulo Synth Studio.
+ */
 export class SynthEngine {
     public patch: Patch = clonePatch(PRESETS[0]);
-    public octave: number = 0;
+    public octave: number = 0;       // octava del piano en pantalla
     public sustain: boolean = false;
-    // Pitch bend actual en cents (rueda del controlador MIDI)
+    // Pitch bend actual en cents
     private bend: number = 0;
-    // Notas sostenidas, por id (tecla fisica, 'mouse' o nota MIDI)
+    // Notas sostenidas, por id (piano en pantalla o nota recibida por cable)
     private held = new Map<string, { voice: PlayingVoice, midi: number }>();
     // Notas ya soltadas pero retenidas por el pedal de sustain (voz -> nota)
     private sustained = new Map<PlayingVoice, number>();
     private voices = new Set<PlayingVoice>();
-    // Lo que se toca, venga de donde venga; el looper lo graba
     public noteEvents = new Subject<NoteEvent>();
+    // El modulo aplica aca los efectos que trae cada preset
+    public onPatchFx: (fx: Partial<FxConfig>) => void = () => {};
     private patchOut: GainNode;
 
-    constructor(private audioCtx: AudioContext, private sound: SoundService, private zone: NgZone,
-                public library: SampleLibrary) {
-        this.patchOut = audioCtx.createGain();
-        this.patchOut.connect(sound.input);
-        this.loadPatch(PRESETS[0]);
-        sound.listenKey.subscribe(e => this.handleKey(e));
-        // Si se pierde el foco no llega el keyup: soltar todo
-        window.addEventListener('blur', () => this.allNotesOff());
+    constructor(private env: ModuleEnv, destination: AudioNode) {
+        this.patchOut = env.ctx.createGain();
+        this.patchOut.connect(destination);
+        this.patchOut.gain.value = this.patch.level;
+        this.octave = this.patch.octave;
+    }
+
+    get library() {
+        return this.env.library;
     }
 
     get voiceCount(): number {
@@ -52,11 +56,16 @@ export class SynthEngine {
     }
     set level(value: number) {
         this.patch.level = value;
-        this.patchOut.gain.setTargetAtTime(value, this.audioCtx.currentTime, 0.02);
+        this.patchOut.gain.setTargetAtTime(value, this.env.ctx.currentTime, 0.02);
     }
 
     get baseMidi(): number {
         return BASE_MIDI + 12 * this.octave;
+    }
+
+    /** Semitonos de transposicion general que le tocan a este patch (las baterias no se transponen). */
+    transposeFor(patch: Patch): number {
+        return patch.kind == 'kit' || patch.kind == 'drums' ? 0 : this.env.transport.transpose;
     }
 
     loadPatch(preset: Patch) {
@@ -64,8 +73,9 @@ export class SynthEngine {
         this.patch = clonePatch(preset);
         this.octave = this.patch.octave;
         this.level = this.patch.level;
-        this.sound.setFx({ ...DEFAULT_FX, ...this.patch.fx });
+        this.onPatchFx({ ...DEFAULT_FX, ...this.patch.fx });
         this.preload(this.patch);
+        this.env.changed();
     }
 
     /** Pide al banco el instrumento del patch (si usa muestras); sigue el progreso con `loading`. */
@@ -94,7 +104,7 @@ export class SynthEngine {
         return found;
     }
 
-    /** Tecla de computadora / mouse: la nota es relativa a la octava del teclado. */
+    /** Piano en pantalla: la nota es relativa a la octava del piano. */
     noteOn(id: string, offset: number) {
         this.noteOnMidi(id, this.baseMidi + offset, 1);
     }
@@ -104,17 +114,20 @@ export class SynthEngine {
         // Retrigger de una nota que solo seguia viva por el pedal
         this.noteOffNow(id);
         // Chrome crea el contexto suspendido hasta que hay un gesto del usuario
-        this.audioCtx.resume();
+        if ((this.env.ctx as any).resume)
+            (this.env.ctx as AudioContext).resume();
         if (this.voices.size >= MAX_VOICES)
             this.voices.values().next().value.release(true);
-        const voice = createVoice(this.audioCtx, this.patchOut, this.patch, midi, velocity, this.bend, undefined, this.library);
+        const sounding = Math.max(0, Math.min(127, midi + this.transposeFor(this.patch)));
+        const voice = createVoice(this.env.ctx, this.patchOut, this.patch, sounding, velocity, this.bend, undefined, this.library);
         // onended de WebAudio llega fuera de la zona: sin esto la pantalla no refresca el contador
-        voice.onEnded = () => this.zone.run(() => {
+        voice.onEnded = () => this.env.run(() => {
             this.voices.delete(voice);
             this.sustained.delete(voice);
         });
         this.voices.add(voice);
         this.held.set(id, { voice, midi });
+        // Se emite la nota tocada (sin transponer): lo que se graba es lo que se toco
         this.noteEvents.next({ type: 'on', midi, velocity });
     }
 
@@ -162,44 +175,14 @@ export class SynthEngine {
         this.setSustain(false);
     }
 
-    private handleKey(e: KeyboardEvent) {
-        if (!e || !e.code || this.isTyping(e.target as HTMLElement))
-            return;
-        if (e.code == 'Space' && !this.isControl(e.target as HTMLElement)) {
-            // Barra espaciadora = pedal de sustain
-            e.preventDefault();
-            this.setSustain(e.type == 'keydown');
-            return;
+    /** Mensaje que llega por el cable de notas. */
+    receive(msg: NoteMsg) {
+        switch (msg.type) {
+            case 'on': this.noteOnMidi('cable:' + msg.midi, msg.midi, msg.velocity); break;
+            case 'off': this.noteOff('cable:' + msg.midi); break;
+            case 'sustain': this.setSustain(msg.on); break;
+            case 'bend': this.setBend(msg.cents); break;
+            case 'allOff': this.allNotesOff(); break;
         }
-        if (e.type == 'keyup') {
-            this.noteOff(e.code);
-            return;
-        }
-        if (e.code == 'ArrowUp' || e.code == 'ArrowDown') {
-            e.preventDefault();
-            this.shiftOctave(e.code == 'ArrowUp' ? 1 : -1);
-            return;
-        }
-        const offset = KEY_OFFSETS[e.code];
-        if (offset === undefined || e.ctrlKey || e.metaKey || e.altKey)
-            return;
-        // Evita atajos del navegador (ej. "/" abre la busqueda rapida)
-        e.preventDefault();
-        if (!e.repeat)
-            this.noteOn(e.code, offset);
-    }
-
-    // Los sliders y botones no capturan teclas de notas; los campos de texto y selects si
-    public isTyping(target: HTMLElement): boolean {
-        if (!target)
-            return false;
-        if (target.tagName == 'SELECT' || target.tagName == 'TEXTAREA')
-            return true;
-        return target.tagName == 'INPUT' && ['range', 'checkbox', 'button'].indexOf((target as HTMLInputElement).type) < 0;
-    }
-
-    // Espacio sobre un boton enfocado debe seguir "clickeandolo"
-    public isControl(target: HTMLElement): boolean {
-        return !!target && (target.tagName == 'BUTTON' || target.tagName == 'A');
     }
 }

@@ -6,16 +6,22 @@
             <app-icon name="chevron-right" [size]="16"></app-icon>
         </button>
         <span class="vertical label">Sonidos</span>
-        <span class="vertical current">{{ engine.patch.name }}</span>
+        <span class="vertical current">{{ engine?.patch.name }}</span>
     </div>
 
     <div class="content" *ngIf="ui.sidebarOpen">
         <header>
-            <h2>Sonidos</h2>
+            <div class="seg tabs">
+                <button [class.on]="tab == 'sounds'" (click)="tab = 'sounds'">Sonidos</button>
+                <button [class.on]="tab == 'devices'" (click)="tab = 'devices'">Dispositivos</button>
+            </div>
             <button class="ghost icon" (click)="ui.toggleSidebar()" title="Colapsar el panel" aria-label="Colapsar el panel">
                 <app-icon name="chevron-left" [size]="16"></app-icon>
             </button>
         </header>
+
+        <ng-container *ngIf="tab == 'sounds'">
+        <ng-container *ngIf="engine; else noSynth">
 
         <div class="search">
             <app-icon name="search" [size]="14"></app-icon>
@@ -29,7 +35,7 @@
 
         <!-- Sonido actual -->
         <div class="now">
-            <div class="label">Sonido actual</div>
+            <div class="label">Sonido actual &middot; {{ activeName }}</div>
             <div class="name">{{ engine.patch.name }}</div>
             <div class="desc">{{ engine.patch.description }}</div>
             <ng-container *ngIf="engine.loading as l">
@@ -121,6 +127,25 @@
                 Muestras reales de FluidR3 GM (F. Wen) y GeneralUser GS (S. C. Collins), servidas por WebAudioFont.
                 Se descargan al elegir un instrumento y quedan guardadas en el navegador.
             </p>
+        </div>
+
+        </ng-container>
+        <ng-template #noSynth>
+            <div class="empty pad">No hay ningun Syntotec Synth Studio en el rack. Agrega uno desde la pestana <b>Dispositivos</b>.</div>
+        </ng-template>
+        </ng-container>
+
+        <!-- Catalogo de dispositivos -->
+        <div class="scroll devices" *ngIf="tab == 'devices'">
+            <p class="hint">Toca un dispositivo para agregarlo al rack. Despues se conecta en la vista <b>Cableado</b>.</p>
+            <div class="group" *ngFor="let g of deviceGroups">
+                <div class="group-title static">{{ g.label }}</div>
+                <button class="item device" *ngFor="let m of g.items" (click)="addDevice(m)" [disabled]="m.unique && countOf(m.type) > 0" [title]="m.description">
+                    <span class="n">{{ m.label }}<small>{{ m.description }}</small></span>
+                    <span class="tag" *ngIf="countOf(m.type)">{{ countOf(m.type) }}</span>
+                    <app-icon *ngIf="!m.unique || !countOf(m.type)" name="plus" [size]="13"></app-icon>
+                </button>
+            </div>
         </div>
     </div>
 </aside>

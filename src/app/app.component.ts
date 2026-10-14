@@ -1,9 +1,11 @@
 import { Component, HostListener } from '@angular/core';
 import { SoundService } from './services/sound.service';
-import { SynthEngine } from './services/synth.engine';
 import { MidiService } from './services/midi.service';
-import { LooperService } from './services/looper.service';
 import { UiService } from './services/ui.service';
+import { RackService } from './daw/core/rack.service';
+import { TransportService } from './daw/core/transport.service';
+import { ProjectService } from './daw/core/project.service';
+import { isTyping, isControl } from './daw/core/dom';
 import { version } from '../../package.json';
 
 interface Shortcut {
@@ -32,9 +34,14 @@ export class AppComponent {
       { keys: ['↑', '↓'], text: 'Cambiar de octava' },
       { keys: ['Espacio'], text: 'Pedal de sustain' }
     ] },
-    { group: 'Looper', items: [
-      { keys: ['`'], text: 'Grabar / dejar de grabar' },
+    { group: 'Transporte', items: [
+      { keys: ['`'], text: 'Grabar / dejar de grabar (en los instrumentos armados)' },
       { keys: ['Enter'], text: 'Reproducir / detener' }
+    ] },
+    { group: 'Rack', items: [
+      { keys: ['Tab'], text: 'Alternar entre Rack y Cableado (con nada enfocado)' },
+      { keys: ['Supr'], text: 'En Cableado: quitar el cable seleccionado' },
+      { keys: ['Shift', 'clic'], text: 'En Cableado: desconectar un puerto' }
     ] },
     { group: 'Editor de notas', items: [
       { keys: ['Supr'], text: 'Borrar las notas seleccionadas (tambien doble clic)' },
@@ -50,9 +57,18 @@ export class AppComponent {
     ] }
   ];
 
-  constructor(public sound: SoundService, public engine: SynthEngine, public midi: MidiService,
-              public looper: LooperService, public ui: UiService) {
+  constructor(public sound: SoundService, public midi: MidiService, public ui: UiService,
+              public rack: RackService, public transport: TransportService, public project: ProjectService) {
     this.narrow = ui.isNarrow();
+  }
+
+  /** Voces sonando entre todos los instrumentos del rack. */
+  get voiceCount(): number {
+    return this.rack.synths.reduce((n, s) => n + s.engine.voiceCount, 0);
+  }
+
+  get sustaining(): boolean {
+    return this.rack.synths.some(s => s.engine.sustain);
   }
 
   @HostListener('window:resize')
@@ -62,15 +78,6 @@ export class AppComponent {
 
   get latencyMs(): number {
     return Math.round((this.sound.baseLatency || 0) * 1000);
-  }
-
-  get kindLabel(): string {
-    switch (this.engine.patch.kind) {
-      case 'sampler': return 'Instrumento de muestras reales';
-      case 'kit': return 'Kit de bateria de muestras';
-      case 'drums': return 'Percusion sintetizada';
-      default: return 'Sintetizador';
-    }
   }
 
   // --- Chips de estado ---
@@ -90,8 +97,24 @@ export class AppComponent {
   // Esc: cierra lo que este abierto y, si no hay nada, alterna el modo visual (no interfiere con las notas)
   @HostListener('document:keydown', ['$event'])
   onKey(event: KeyboardEvent) {
-    if (event.repeat || this.engine.isTyping(event.target as HTMLElement))
+    const target = event.target as HTMLElement;
+    if (event.repeat || isTyping(target))
       return;
+    // Enter = play/stop y ` = grabar (no se usan para notas)
+    if ((event.code == 'Enter' || event.code == 'Backquote') && !isControl(target) && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+      if (event.code == 'Enter')
+        this.transport.togglePlay();
+      else
+        this.transport.toggleRecord();
+      return;
+    }
+    // Tab alterna Rack / Cableado solo si nada tiene el foco (si no, sigue siendo la navegacion normal)
+    if (event.code == 'Tab' && (!target || target === document.body) && !event.shiftKey) {
+      event.preventDefault();
+      this.ui.setView(this.ui.view == 'rack' ? 'patch' : 'rack');
+      return;
+    }
     if (event.code == 'F1') {
       event.preventDefault();
       this.ui.toggleHelp();

@@ -5,7 +5,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px 22px;
+    gap: 8px 20px;
     padding: 6px 14px;
     background: var(--panel);
     -webkit-backdrop-filter: var(--blur);
@@ -37,13 +37,23 @@
 @keyframes blink {
     50% { opacity: 0.65; }
 }
+.position {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.position b {
+    min-width: 34px;
+    font-family: var(--mono);
+    font-size: 15px;
+}
 .beats {
     display: inline-flex;
-    gap: 5px;
+    gap: 4px;
 }
 .beats i {
-    width: 10px;
-    height: 10px;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     background: var(--border);
 }
@@ -64,9 +74,31 @@
     width: 110px;
 }
 .bpm b {
-    min-width: 28px;
+    min-width: 34px;
     font-family: var(--mono);
     font-size: 14px;
+}
+.stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.stepper b {
+    min-width: 26px;
+    text-align: center;
+    font-family: var(--mono);
+}
+.stepper button {
+    padding: 3px 5px;
+}
+.tr {
+    cursor: pointer;
+}
+.tr.active {
+    color: var(--accent);
+}
+.dim {
+    color: var(--dim);
 }
 .checks {
     gap: 14px;

@@ -1,5 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
-import { SynthEngine } from './synth.engine';
+import { Subject } from 'rxjs';
+import { NoteMsg } from '../daw/core/types';
 import { noteName } from './keyboard-map';
 
 export type MidiStatus = 'unsupported' | 'insecure' | 'pending' | 'ready' | 'denied';
@@ -8,16 +9,18 @@ const BEND_RANGE_CENTS = 200; // +-2 semitonos, el estandar
 
 /**
  * Web MIDI: conecta cualquier controlador USB/Bluetooth que el navegador vea, tambien
- * los que se enchufen despues (plug and play).
+ * los que se enchufen despues (plug and play). Publica los mensajes como notas; los modulos
+ * de teclado los reenvian por sus cables.
  */
 @Injectable()
 export class MidiService {
     public status: MidiStatus = 'pending';
     public devices: Array<string> = [];
     public lastEvent: string = '';
+    public readonly messages = new Subject<NoteMsg>();
     private access: any;
 
-    constructor(private engine: SynthEngine, private zone: NgZone) {
+    constructor(private zone: NgZone) {
         const nav = navigator as any;
         if (!nav.requestMIDIAccess) {
             // Los navegadores solo exponen MIDI en contextos seguros (https o localhost)
@@ -47,35 +50,27 @@ export class MidiService {
         this.devices = names;
         // Un dispositivo que se desenchufa con notas sonando no manda note-off
         if (!names.length)
-            this.engine.allNotesOff();
+            this.messages.next({ type: 'allOff' });
     }
 
     private handle(data: Uint8Array) {
         const status = data[0] & 0xF0;
-        const channel = data[0] & 0x0F;
-        const [, d1, d2] = [data[0], data[1], data[2]];
-        const id = 'midi' + channel + ':' + d1;
+        const d1 = data[1], d2 = data[2];
         if (status == 0x90 && d2 > 0) {
-            this.engine.noteOnMidi(id, d1, d2 / 127);
+            this.messages.next({ type: 'on', midi: d1, velocity: d2 / 127 });
             this.lastEvent = noteName(d1) + ' vel ' + d2;
         } else if (status == 0x80 || status == 0x90) {
-            this.engine.noteOff(id);
+            this.messages.next({ type: 'off', midi: d1 });
         } else if (status == 0xB0) {
-            this.controlChange(d1, d2);
+            if (d1 == 64)
+                this.messages.next({ type: 'sustain', on: d2 >= 64 });
+            else if (d1 == 120 || d1 == 123)
+                this.messages.next({ type: 'allOff' });
         } else if (status == 0xE0) {
             // Pitch bend: 14 bits, 8192 = centro
             const value = ((d2 << 7) | d1) - 8192;
-            this.engine.setBend(value / 8192 * BEND_RANGE_CENTS);
+            this.messages.next({ type: 'bend', cents: value / 8192 * BEND_RANGE_CENTS });
         }
-    }
-
-    private controlChange(cc: number, value: number) {
-        if (cc == 64)
-            this.engine.setSustain(value >= 64);
-        else if (cc == 7)
-            this.engine.level = value / 127 * 0.8;
-        else if (cc == 120 || cc == 123)
-            this.engine.allNotesOff();
     }
 
     get message(): string {

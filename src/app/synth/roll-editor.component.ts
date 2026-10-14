@@ -1,6 +1,8 @@
-import { Component, ElementRef, ViewChild, DoCheck, HostListener } from '@angular/core';
-import { LooperService, Track, LoopNote } from '../services/looper.service';
-import { SynthEngine } from '../services/synth.engine';
+import { Component, ElementRef, Input, ViewChild, DoCheck, HostListener } from '@angular/core';
+import { Track, LoopNote } from '../daw/core/sequencer';
+import { SynthStudioModule } from '../daw/modules/synth-studio.module';
+import { RackService } from '../daw/core/rack.service';
+import { isTyping } from '../daw/core/dom';
 import { noteName } from '../services/keyboard-map';
 import { GM_DRUM_SHORT, KIT_NOTE_OFFSET } from '../services/gm';
 import { DRUM_NAMES } from './drums';
@@ -64,7 +66,13 @@ export class RollEditorComponent implements DoCheck {
     private future: Array<Array<LoopNote>> = [];
     private drag: Drag = null;
 
-    constructor(public looper: LooperService, private engine: SynthEngine) {}
+    @Input() module: SynthStudioModule;
+
+    constructor(private rack: RackService) {}
+
+    get looper() {
+        return this.module.sequencer;
+    }
 
     get track(): Track {
         return this.looper.editingTrack;
@@ -468,10 +476,10 @@ export class RollEditorComponent implements DoCheck {
     doubleLoop() {
         if (!window.confirm('Duplica el loop: se agrega una segunda mitad con una copia de las notas de TODAS las pistas. Esta accion no se puede deshacer. Continuar?'))
             return;
-        if (!this.looper.doubleLoop())
+        if (!this.rack.doubleLoop())
             this.message = 'El loop ya esta en el maximo de compases';
         else
-            this.message = 'Loop duplicado a ' + this.looper.bars + ' compases';
+            this.message = 'Loop duplicado a ' + this.rack.transport.bars + ' compases';
         this.dirtyView = true;
     }
 
@@ -503,7 +511,8 @@ export class RollEditorComponent implements DoCheck {
     // Atajos: solo con el editor abierto y sin escribir en un campo de texto
     @HostListener('document:keydown', ['$event'])
     onKey(event: KeyboardEvent) {
-        if (!this.track || this.engine.isTyping(event.target as HTMLElement))
+        // Solo responde el editor del instrumento seleccionado
+        if (!this.track || this.rack.selectedId != this.module.id || isTyping(event.target as HTMLElement))
             return;
         const mod = event.ctrlKey || event.metaKey;
         if (event.code == 'Delete' || event.code == 'Backspace') {

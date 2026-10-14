@@ -1,17 +1,17 @@
 import { FxConfig } from './presets';
 
 /**
- * Cadena master: delay + reverb + compresor + analyser.
+ * Cadena de efectos de un instrumento: delay + reverb + compresor.
  * Se arma igual sobre el AudioContext en vivo y sobre el OfflineAudioContext del export a WAV,
  * asi el archivo suena igual que lo que se escucha.
  *
- *  input -> dry ------------------------------> sum -> compresor -> analyser -> destino
+ *  input -> dry ------------------------------> sum -> compresor -> output
  *        -> delay (con realimentacion) -> wet -> sum
  *        -> reverb (convolver) --------> wet -> sum
  */
 export class MasterChain {
     public input: GainNode;
-    public analyser: AnalyserNode;
+    public output: AudioNode;
     private delay: DelayNode;
     private feedback: GainNode;
     private delayWet: GainNode;
@@ -35,9 +35,7 @@ export class MasterChain {
 
         // Muchas capas suman volumen: el compresor evita que sature
         const compressor = ctx.createDynamicsCompressor();
-        this.analyser = ctx.createAnalyser();
-        this.analyser.fftSize = 2048;
-        this.analyser.smoothingTimeConstant = 0.8;
+        this.output = compressor;
 
         this.input.connect(dry);
         dry.connect(sum);
@@ -51,8 +49,6 @@ export class MasterChain {
         reverb.connect(this.reverbWet);
         this.reverbWet.connect(sum);
         sum.connect(compressor);
-        compressor.connect(this.analyser);
-        this.analyser.connect(ctx.destination);
     }
 
     // Respuesta al impulso sintetica: ruido estereo con decaimiento exponencial
