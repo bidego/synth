@@ -39,7 +39,8 @@ export class AppComponent {
       { keys: ['Ctrl', 'A'], text: 'Seleccionar todo' },
       { keys: ['Ctrl', 'Z'], text: 'Deshacer' },
       { keys: ['Ctrl', 'Shift', 'Z'], text: 'Rehacer' },
-      { keys: ['Shift', 'clic'], text: 'Sumar o quitar de la seleccion' }
+      { keys: ['Shift', 'clic'], text: 'Sumar o quitar de la seleccion' },
+      { keys: ['Ctrl', 'arrastrar'], text: 'Copiar las notas (tambien Cmd o Alt)' }
     ] },
     { group: 'Interfaz', items: [
       { keys: ['Esc'], text: 'Modo visual: oculta todo y deja solo el arte' },

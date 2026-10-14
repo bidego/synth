@@ -29,6 +29,7 @@
             <button (click)="extendRange(-1)" title="Mostrar una octava mas grave">+ graves</button>
             <button (click)="doubleLoop()" title="Duplica los compases y copia las notas de todas las pistas">Duplicar compases x2</button>
         </span>
+        <span class="tip" title="Mantene Ctrl apretado mientras arrastras una nota (o varias seleccionadas) para copiarlas"><kbd>Ctrl</kbd> + arrastrar = copiar</span>
         <span class="status">{{ selected.size }} seleccionadas &middot; {{ t.notes.length }} notas <span class="msg" *ngIf="message">&middot; {{ message }}</span></span>
     </div>
     <div class="scroll">

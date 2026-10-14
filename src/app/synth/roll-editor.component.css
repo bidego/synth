@@ -76,3 +76,10 @@
     align-items: center;
     gap: 4px;
 }
+
+.tip {
+    color: var(--dim);
+}
+.tip kbd {
+    margin-right: 2px;
+}

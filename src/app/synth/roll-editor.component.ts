@@ -18,6 +18,8 @@ interface Drag {
     additive?: boolean;
     moved: boolean;
     lastMidi?: number;
+    // Arrastre con Ctrl: las originales quedan donde estaban y lo que se mueve son las copias
+    copy?: { originals: Array<LoopNote>; clones: Array<LoopNote> };
 }
 
 const GUTTER_W = 64;
@@ -176,6 +178,11 @@ export class RollEditorComponent implements DoCheck {
         return null;
     }
 
+    // Ctrl en Windows/Linux, Cmd en Mac, y Alt/Option (la convencion de varios DAWs)
+    private copyModifier(event: MouseEvent): boolean {
+        return event.ctrlKey || event.metaKey || event.altKey;
+    }
+
     private local(event: PointerEvent, el: HTMLElement) {
         const rect = el.getBoundingClientRect();
         return { x: event.clientX - rect.left, y: event.clientY - rect.top };
@@ -203,11 +210,25 @@ export class RollEditorComponent implements DoCheck {
                 this.selected.add(hit.note);
             }
             this.pushHistory();
+            let moving = Array.from(this.selected);
+            let anchor = hit.note;
+            let copy: Drag['copy'];
+            // Ctrl (o Cmd / Alt) + arrastrar el cuerpo de una nota: se copian las seleccionadas
+            if (this.copyModifier(event) && !hit.edge) {
+                const originals = moving;
+                const clones = originals.map(n => ({ ...n, take: 0 }));
+                t.notes.push(...clones);
+                anchor = clones[originals.indexOf(hit.note)];
+                this.selected.clear();
+                clones.forEach(n => this.selected.add(n));
+                moving = clones;
+                copy = { originals, clones };
+            }
             const origins = new Map<LoopNote, { start: number; dur: number; midi: number }>();
-            this.selected.forEach(n => origins.set(n, { start: n.start, dur: n.dur, midi: n.midi }));
-            this.drag = { ...base, kind: hit.edge ? 'resize' : 'move', note: hit.note, origins, lastMidi: hit.note.midi };
+            moving.forEach(n => origins.set(n, { start: n.start, dur: n.dur, midi: n.midi }));
+            this.drag = { ...base, kind: hit.edge ? 'resize' : 'move', note: anchor, origins, lastMidi: anchor.midi, copy };
             if (!hit.edge)
-                this.looper.preview(t, hit.note.midi, hit.note.vel);
+                this.looper.preview(t, anchor.midi, anchor.vel);
         } else if (this.tool == 'draw') {
             this.pushHistory();
             const midi = this.hi - Math.floor(y / ROW_H);
@@ -233,7 +254,7 @@ export class RollEditorComponent implements DoCheck {
         const d = this.drag;
         if (!d) {
             const hit = this.hitTest(x, y);
-            canvas.style.cursor = hit ? (hit.edge ? 'ew-resize' : 'grab') : (this.tool == 'draw' ? 'crosshair' : 'default');
+            canvas.style.cursor = hit ? (hit.edge ? 'ew-resize' : (this.copyModifier(event) ? 'copy' : 'grab')) : (this.tool == 'draw' ? 'crosshair' : 'default');
             return;
         }
         d.curX = x;
@@ -278,8 +299,19 @@ export class RollEditorComponent implements DoCheck {
         if (!d)
             return;
         // Un clic sin arrastrar no es una edicion: no ensucia el historial
-        if ((d.kind == 'move' || d.kind == 'resize') && !d.moved)
+        if ((d.kind == 'move' || d.kind == 'resize') && !d.moved) {
             this.history.pop();
+            // Ctrl + clic sin mover: se descartan las copias (quedarian encima de las originales)
+            if (d.copy) {
+                const clones = new Set(d.copy.clones);
+                this.track.notes = this.track.notes.filter(n => !clones.has(n));
+                this.selected.clear();
+                d.copy.originals.forEach(n => this.selected.add(n));
+                this.changed();
+            }
+        } else if (d.copy) {
+            this.message = d.copy.clones.length == 1 ? 'Nota copiada' : d.copy.clones.length + ' notas copiadas';
+        }
         this.dirtyView = true;
     }
 
