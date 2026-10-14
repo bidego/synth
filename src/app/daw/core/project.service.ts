@@ -90,6 +90,13 @@ export class ProjectService {
     load(raw: any): boolean {
         if (!raw || typeof raw != 'object')
             return false;
+        // Los archivos del servidor (el repositorio de datos), los enlaces cortos y los proyectos publicos vienen envueltos:
+        // { id, name, savedAt, data: <proyecto> }. Se acepta tambien ese formato, asi un archivo bajado del repo se puede importar.
+        let envelopeName = '';
+        if (!raw.rack && !Array.isArray(raw.tracks) && raw.data && typeof raw.data == 'object') {
+            envelopeName = typeof raw.name == 'string' ? raw.name : '';
+            raw = raw.data;
+        }
         if (raw.rack && typeof raw.rack == 'object') {
             this.transport.stop();
             this.transport.setState(raw.transport);
@@ -100,7 +107,7 @@ export class ProjectService {
         } else {
             return false;
         }
-        this.projectName = typeof raw.name == 'string' ? raw.name.slice(0, 40) : '';
+        this.projectName = typeof raw.name == 'string' ? raw.name.slice(0, 40) : envelopeName.slice(0, 40);
         return true;
     }
 
