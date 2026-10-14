@@ -95,6 +95,10 @@ h2 {
     font-weight: 600;
     margin-top: 2px;
 }
+.now .focus { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 4px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: 11px; }
+.now .focus span { flex: 1; min-width: 0; }
+.now .focus b { color: var(--text); }
+.now .focus button { padding: 1px 8px; font-size: 11px; }
 .now .desc {
     color: var(--dim);
     font-size: 11px;

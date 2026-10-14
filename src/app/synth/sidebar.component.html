@@ -38,6 +38,10 @@
             <div class="label">Sonido actual &middot; {{ activeName }}</div>
             <div class="name">{{ engine.patch.name }}</div>
             <div class="desc">{{ engine.patch.description }}</div>
+            <div class="focus" *ngIf="focusTrack as ft">
+                <span>Editando el instrumento de <b>{{ ft.name }}</b></span>
+                <button class="ghost" (click)="releaseFocus()" title="Dejar de editar la pista: los sonidos vuelven a cambiar solo el sonido actual">Soltar</button>
+            </div>
             <ng-container *ngIf="engine.loading as l">
                 <div class="load" *ngIf="l.state == 'loading'">
                     <span class="bar"><i [style.width.%]="l.progress * 100"></i></span>

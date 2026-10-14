@@ -16,6 +16,11 @@ export class LooperComponent implements OnInit, OnDestroy {
         return this.module.sequencer;
     }
 
+    /** Pone la pista en foco (su instrumento pasa a ser el sonido actual) o la suelta si ya lo estaba. */
+    focus(track: Track) {
+        this.looper.select(this.looper.selectedId == track.id ? null : track);
+    }
+
     // El playhead se mueve con el tiempo del audio: un tick de la zona alcanza para refrescar la vista
     ngOnInit() {
         this.timer = setInterval(() => {}, 50);

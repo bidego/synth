@@ -31,6 +31,8 @@ export class SynthStudioModule extends RackModule {
         this.sequencer = new Sequencer(env, this.engine, this.chain.input, msg => this.noteOut.next(msg));
         // Los efectos que trae cada preset se aplican a este instrumento
         this.engine.onPatchFx = fx => this.setFx(fx);
+        // Con una pista en foco, cambiar de sonido (o de nivel) cambia el instrumento de esa pista
+        this.engine.onPatchEdited = () => this.sequencer.followEngine();
         this.chain.setFx(this.fx, env.live);
     }
 
@@ -69,6 +71,7 @@ export class SynthStudioModule extends RackModule {
 
     /** Avisa que el patch, la octava o el nivel cambiaron (el autoguardado los toma). */
     touch() {
+        this.sequencer.followEngine();
         this.env.changed();
     }
 

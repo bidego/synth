@@ -51,6 +51,11 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.name.pick { cursor: pointer; border-radius: 4px; padding: 1px 4px; margin: -1px -4px; }
+.name.pick:hover { background: rgba(255, 255, 255, 0.06); }
+.name.pick:focus-visible { outline: 1px solid var(--info); }
+.track.focused { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-soft); }
+.track.focused .name small { color: var(--accent); }
 .name small {
     display: block;
     color: var(--dim);

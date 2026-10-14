@@ -35,6 +35,9 @@ export class SynthEngine {
     public noteEvents = new Subject<NoteEvent>();
     // El modulo aplica aca los efectos que trae cada preset
     public onPatchFx: (fx: Partial<FxConfig>) => void = () => {};
+    // Se llama cuando el sonido actual lo cambia el usuario (preset nuevo, nivel); el modulo lo copia a la pista en foco
+    public onPatchEdited: () => void = () => {};
+    private adopting = false;
     private patchOut: GainNode;
 
     constructor(private env: ModuleEnv, destination: AudioNode) {
@@ -59,6 +62,8 @@ export class SynthEngine {
         this.patch.level = value;
         setParam(this.env, this.patchOut.gain, value, 0.02);
         this.env.changed();
+        if (!this.adopting)
+            this.onPatchEdited();
     }
 
     get baseMidi(): number {
@@ -78,6 +83,25 @@ export class SynthEngine {
         this.onPatchFx({ ...DEFAULT_FX, ...this.patch.fx });
         this.preload(this.patch);
         this.env.changed();
+        this.onPatchEdited();
+    }
+
+    /**
+     * Pone como sonido actual el de una pista (al ponerla en foco). A diferencia de `loadPatch` no toca los
+     * efectos del instrumento ni avisa del cambio: es mostrar el sonido de la pista, no editarlo.
+     */
+    adoptPatch(patch: Patch) {
+        this.adopting = true;
+        try {
+            this.allNotesOff();
+            this.patch = clonePatch(patch);
+            this.octave = this.patch.octave;
+            this.level = this.patch.level;
+            this.preload(this.patch);
+            this.env.changed();
+        } finally {
+            this.adopting = false;
+        }
     }
 
     /** Pide al banco el instrumento del patch (si usa muestras); sigue el progreso con `loading`. */

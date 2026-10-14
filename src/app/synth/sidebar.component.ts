@@ -59,6 +59,18 @@ export class SidebarComponent {
         return synth ? synth.engine : null;
     }
 
+    /** Pista en foco del instrumento activo: los sonidos que se elijan le cambian el instrumento a ella. */
+    get focusTrack() {
+        const synth = this.rack.activeSynth;
+        return synth ? synth.sequencer.selectedTrack : undefined;
+    }
+
+    releaseFocus() {
+        const synth = this.rack.activeSynth;
+        if (synth)
+            synth.sequencer.select(null);
+    }
+
     get activeName(): string {
         const synth = this.rack.activeSynth;
         return synth ? synth.name : '';

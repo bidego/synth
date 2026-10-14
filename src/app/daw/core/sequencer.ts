@@ -40,6 +40,8 @@ const MAX_TRACKS = 8;
 export class Sequencer implements TransportClient {
     public tracks: Array<Track> = [];
     public armedId: number = null;
+    // Pista en foco: su instrumento es el sonido actual del modulo y los cambios de sonido la editan a ella
+    public selectedId: number = null;
     // Pista abierta en el editor de piano roll
     public editingId: number = null;
     // Sube con cada cambio de notas: el editor se redibuja al notarlo
@@ -88,6 +90,28 @@ export class Sequencer implements TransportClient {
         return this.tracks.find(t => t.id == this.editingId);
     }
 
+    get selectedTrack(): Track {
+        return this.tracks.find(t => t.id == this.selectedId);
+    }
+
+    /** Pone una pista en foco (o la suelta con null): el modulo toma su instrumento. */
+    select(track: Track | null) {
+        this.selectedId = track ? track.id : null;
+        if (track)
+            this.engine.adoptPatch(track.patch);
+        this.env.changed();
+    }
+
+    /** El sonido actual cambio mientras hay una pista en foco: la pista toma ese instrumento. */
+    followEngine() {
+        const t = this.selectedTrack;
+        if (!t)
+            return;
+        t.patch = clonePatch(this.engine.patch);
+        this.applyTrackGain(t);
+        this.dirty();
+    }
+
     get armedTrack(): Track {
         return this.tracks.find(t => t.id == this.armedId);
     }
@@ -132,6 +156,8 @@ export class Sequencer implements TransportClient {
             return this.tracks[this.tracks.length - 1];
         const track = this.createTrack('Pista ' + this.nextId, clonePatch(this.engine.patch));
         this.armedId = track.id;
+        // La pista nueva toma el sonido actual: ninguna otra queda en foco
+        this.selectedId = null;
         this.dirty();
         return track;
     }
@@ -193,6 +219,8 @@ export class Sequencer implements TransportClient {
         this.tracks = this.tracks.filter(t => t != track);
         if (this.editingId == track.id)
             this.editingId = null;
+        if (this.selectedId == track.id)
+            this.selectedId = null;
         if (this.armedId == track.id) {
             const last = this.tracks[this.tracks.length - 1];
             this.armedId = last ? last.id : null;
@@ -361,6 +389,7 @@ export class Sequencer implements TransportClient {
         this.tracks.forEach(t => t.out.disconnect());
         this.tracks = [];
         this.editingId = null;
+        this.selectedId = null;
         this.armed = !!(raw && raw.armed);
         if (!raw || !Array.isArray(raw.tracks))
             return;
