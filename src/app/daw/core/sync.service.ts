@@ -154,8 +154,17 @@ export class SyncService {
             clearTimeout(timer);
             let ok = res.ok && /json/.test(res.headers.get('content-type') || '');
             // nginx contesta {"backend":false} cuando el servidor no esta
-            if (ok)
-                ok = (await res.json()).backend !== false;
+            let broken = false;
+            if (ok) {
+                const health = await res.json();
+                ok = health.backend !== false;
+                // El servidor esta pero no pudo preparar su repositorio git (URL o token mal configurados)
+                broken = ok && health.ready === false;
+            }
+            if (broken) {
+                this.set('error', 'El servidor no puede acceder a su repositorio git (revisar GIT_REPO_URL y GIT_TOKEN; detalle en /api/health)');
+                return false;
+            }
             this.set(ok ? 'ok' : 'off', '');
             return ok;
         } catch (e) {
@@ -231,6 +240,8 @@ export class SyncService {
                 const res = await this.request('PUT', '/projects/' + id, { name: op.name, savedAt: op.savedAt, data: op.data });
                 if (res.status == 401)
                     throw AuthError();
+                if (res.status == 503)
+                    throw Failure('El servidor no puede guardar todavia (problema con su repositorio git)');
                 if (res.status >= 500 || res.status == 429)
                     throw NetworkError();
                 if (res.status == 413) {

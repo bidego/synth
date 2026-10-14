@@ -93,7 +93,25 @@ async function createServer(config) {
         pullIntervalMs: config.pullIntervalMs, maxProjectsPerOwner: config.maxProjectsPerOwner,
         maxOwners: config.maxOwners, log
     });
-    await store.start();
+    // Si el repositorio no se puede preparar (URL o token mal puestos, sin red), el servidor NO se cae: queda en pie
+    // contando el problema en /api/health y reintenta solo. Asi el error se ve sin tener que leer los logs del contenedor.
+    let ready = false;
+    let initError = '';
+    const prepare = async () => {
+        try {
+            await store.start();
+            ready = true;
+            initError = '';
+        } catch (e) {
+            initError = git.scrub(e.message);
+            log('No se pudo preparar el repositorio (reintento en ' + Math.round(config.retryMs / 1000) + ' s): ' + initError);
+            if (!closing)
+                retryTimer = setTimeout(prepare, config.retryMs);
+        }
+    };
+    let closing = false;
+    let retryTimer = null;
+    await prepare();
     const ipLimiter = new RateLimiter(config.rateLimitIpPerMin);
     const keyLimiter = new RateLimiter(config.rateLimitPerMin);
 
@@ -127,9 +145,12 @@ async function createServer(config) {
         if (parts[0] != 'api')
             throw new HttpError(404, 'No existe');
         if (parts[1] == 'health' && parts.length == 2 && req.method == 'GET')
-            return send(res, 200, store.health());
+            return send(res, 200, ready ? Object.assign({ ready: true }, store.health())
+                : { ok: false, ready: false, remote: !!config.remote, lastError: initError || 'preparando el repositorio' });
         if (parts[1] != 'projects' || parts.length > 3)
             throw new HttpError(404, 'No existe');
+        if (!ready)
+            throw new HttpError(503, 'El servidor todavia no pudo preparar su repositorio git');
         const owner = ownerFromRequest(req);
         if (!keyLimiter.allow(owner))
             throw new HttpError(429, 'Demasiados pedidos, espera un momento');
@@ -180,11 +201,14 @@ async function createServer(config) {
     return {
         server, store, port: server.address().port,
         async close() {
+            closing = true;
+            clearTimeout(retryTimer);
             const closed = new Promise(resolve => server.close(resolve));
             if (server.closeAllConnections)
                 server.closeAllConnections();
             await closed;
-            await store.close();
+            if (ready)
+                await store.close();
         }
     };
 }

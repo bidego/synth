@@ -200,6 +200,20 @@ const remoteCommits = () => { try { return parseInt(git(remote, 'rev-list', '--c
     await app.close();   // sin esperar el temporizador: close() versiona lo pendiente
     ok('al apagar se versiona lo pendiente', remoteFiles().some(f => f.endsWith('ultimo.json')));
 
+    console.log('Si el repositorio no se puede preparar, el servidor no se cae');
+    const missing = path.join(tmp, 'todavia-no-existe.git');
+    app = await start(path.join(tmp, 'dataF'), { GIT_REPO_URL: missing });
+    r = await api(app.port, 'GET', '/api/health');
+    ok('queda en pie y cuenta el problema en /api/health', r.status == 200 && r.json.ok === false && r.json.ready === false && /git|repository|fetch/i.test(r.json.lastError || ''), r.text);
+    ok('el problema no incluye el token', !r.text.includes(TOKEN));
+    r = await api(app.port, 'PUT', '/api/projects/x', { k: key(), body: project(1) });
+    ok('mientras tanto los proyectos responden 503', r.status == 503, r.status);
+    execFileSync('git', ['init', '--bare', '-q', missing]); execFileSync('git', ['symbolic-ref', 'HEAD', 'refs/heads/main'], { cwd: missing });
+    ok('al aparecer el repositorio, se prepara solo', await until(async () => (await api(app.port, 'GET', '/api/health')).json.ready === true, 8000));
+    r = await api(app.port, 'PUT', '/api/projects/x', { k: key(), body: project(1) });
+    ok('y entonces guarda', r.status == 200, r.text);
+    await app.close();
+
     console.log('Sin remoto (solo repo local)');
     app = await start(path.join(tmp, 'dataE'), { GIT_REPO_URL: '', GIT_TOKEN: '' });
     await api(app.port, 'PUT', '/api/projects/local', { k: k3, body: project(1) });

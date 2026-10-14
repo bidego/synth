@@ -76,7 +76,7 @@ class Store {
         await this.git.init();
         this.load();
         this.log('cargados ' + this.countProjects() + ' proyectos de ' + this.owners.size + ' usuarios');
-        if (this.pullIntervalMs > 0 && this.git.remote)
+        if (this.pullIntervalMs > 0 && this.git.remote && !this.pullTimer)
             this.pullTimer = setInterval(() => this.enqueue(() => this.pullTick()), this.pullIntervalMs);
     }
 
