@@ -4,9 +4,11 @@ import { NgModule } from '@angular/core';
 import { AppComponent } from './app.component';
 import { SoundService } from './services/sound.service';
 import { LooperService } from './services/looper.service';
+import { RollEditorComponent } from './synth/roll-editor.component';
 import { BankBrowserComponent } from './synth/bank-browser.component';
 import { LooperComponent } from './synth/looper.component';
 import { SampleLibrary } from './services/sample-library';
+import { UiService } from './services/ui.service';
 import { MidiService } from './services/midi.service';
 import { SynthEngine } from './services/synth.engine';
 import { SynthPanelComponent } from './synth/synth-panel.component';
@@ -21,6 +23,7 @@ import { ListenKeys } from './directives/listen.keys';
     PianoComponent,
     LooperComponent,
     BankBrowserComponent,
+    RollEditorComponent,
     VisualizerComponent,
     ListenKeys
   ],
@@ -34,6 +37,7 @@ import { ListenKeys } from './directives/listen.keys';
     SynthEngine,
     SampleLibrary,
     MidiService,
+    UiService,
     LooperService
   ],
   bootstrap: [AppComponent]

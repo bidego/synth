@@ -3,7 +3,7 @@
   Toca aqui para activar el sonido
   <small>(si sigue mudo en iPhone: revisa el interruptor de silencio del costado y el volumen)</small>
 </div>
-<div handlekeys class="app">
+<div handlekeys class="app" [class.zen]="ui.zen">
   <h1>{{ title }}</h1>
   <div class="presets">
     <span *ngFor="let group of categories" class="presetGroup">
@@ -36,5 +36,10 @@
   </div>
   <app-piano></app-piano>
   <app-looper></app-looper>
+  <app-roll-editor></app-roll-editor>
   <app-synth-panel></app-synth-panel>
 </div>
+<button class="zenToggle" [class.zen]="ui.zen" [class.hint]="zenHint" (click)="toggleZen()"
+  [title]="ui.zen ? 'Mostrar la interfaz (Esc)' : 'Ocultar la interfaz y ver solo el arte (Esc)'">
+  {{ ui.zen ? 'Mostrar interfaz' : 'Ocultar interfaz' }} <small>Esc</small>
+</button>

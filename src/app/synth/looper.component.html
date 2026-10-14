@@ -61,6 +61,7 @@
             <i class="playhead" *ngIf="looper.playing" [style.left.%]="looper.position * 100"></i>
         </div>
         <input type="range" min="0" max="1" step="0.01" [value]="t.volume" (input)="looper.setVolume(t, $event.target.value)" title="Volumen">
+        <button [class.on]="looper.editingId == t.id" (click)="looper.toggleEditor(t)" title="Editar las notas en un piano roll">Editar</button>
         <button [class.on]="t.muted" (click)="looper.toggleMute(t)" title="Silenciar">M</button>
         <button (click)="looper.undoTake(t)" title="Deshacer la ultima pasada">&#8630;</button>
         <button (click)="looper.clearTrack(t)" title="Borrar las notas">Limpiar</button>

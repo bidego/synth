@@ -3,6 +3,7 @@ import { PRESETS, Preset } from './services/presets';
 import { SoundService } from './services/sound.service';
 import { SynthEngine } from './services/synth.engine';
 import { MidiService } from './services/midi.service';
+import { UiService } from './services/ui.service';
 
 @Component({
   selector: 'app-root',
@@ -26,7 +27,7 @@ export class AppComponent {
     { name: 'reverbMix', label: 'Reverb', max: 1, step: 0.01 }
   ];
 
-  constructor(public sound: SoundService, public engine: SynthEngine, public midi: MidiService) {}
+  constructor(public sound: SoundService, public engine: SynthEngine, public midi: MidiService, public ui: UiService) {}
 
   loadPreset(preset: Preset) {
     this.engine.loadPatch(preset);
@@ -39,6 +40,37 @@ export class AppComponent {
     const target = event.target as HTMLElement;
     if (target && target.tagName == 'BUTTON')
       target.blur();
+  }
+
+  // Modo limpio: el boton flotante casi desaparece y solo reaparece al mover el puntero o tocar
+  public zenHint = false;
+  private zenTimer: any;
+
+  // Esc oculta o muestra toda la interfaz (no interfiere con las teclas de notas)
+  @HostListener('document:keydown', ['$event'])
+  onEscape(event: KeyboardEvent) {
+    if (event.code == 'Escape' && !event.repeat && !this.engine.isTyping(event.target as HTMLElement)) {
+      event.preventDefault();
+      this.toggleZen();
+    }
+  }
+
+  @HostListener('document:pointermove')
+  @HostListener('document:pointerdown')
+  showZenHint() {
+    if (!this.ui.zen)
+      return;
+    this.zenHint = true;
+    clearTimeout(this.zenTimer);
+    this.zenTimer = setTimeout(() => this.zenHint = false, 2500);
+  }
+
+  toggleZen() {
+    this.ui.toggleZen();
+    this.showZenHint();
+    // Al salir del modo limpio no hace falta el aviso
+    if (!this.ui.zen)
+      this.zenHint = false;
   }
 
   setFx(name: string, value) {

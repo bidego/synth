@@ -1,5 +1,6 @@
 import { Component, ElementRef, NgZone, OnDestroy, AfterViewInit, ViewChild } from '@angular/core';
 import { SoundService } from '../services/sound.service';
+import { UiService } from '../services/ui.service';
 
 @Component({
     selector: 'app-visualizer',
@@ -26,7 +27,7 @@ export class VisualizerComponent implements AfterViewInit, OnDestroy {
     private hue = 0;
     private onResize = () => this.resize();
 
-    constructor(private soundService: SoundService, private zone: NgZone) {}
+    constructor(private soundService: SoundService, private zone: NgZone, private ui: UiService) {}
 
     ngAfterViewInit() {
         const canvas = this.canvasRef.nativeElement;
@@ -67,14 +68,16 @@ export class VisualizerComponent implements AfterViewInit, OnDestroy {
 
         // Fade en vez de clear: deja estela
         ctx.globalCompositeOperation = 'source-over';
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+        ctx.fillStyle = this.ui.zen ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.18)';
         ctx.fillRect(0, 0, width, height);
         ctx.globalCompositeOperation = 'lighter';
 
         this.drawSpectrum(width, height);
         // Onda principal, replicada y espejada con distintos colores
-        this.drawWave(width, height, 0, 1, this.hue, 4 + energy * 16);
-        this.drawWave(width, height, 0, -1, this.hue + 120, 2 + energy * 8);
+        // En modo limpio el arte es lo unico visible: mas grueso y brillante
+        const boost = this.ui.zen ? 1.6 : 1;
+        this.drawWave(width, height, 0, 1, this.hue, (4 + energy * 16) * boost);
+        this.drawWave(width, height, 0, -1, this.hue + 120, (2 + energy * 8) * boost);
         this.drawWave(width, height, height * 0.25, 0.5, this.hue + 240, 2);
     }
 
@@ -105,7 +108,7 @@ export class VisualizerComponent implements AfterViewInit, OnDestroy {
             let sum = 0;
             for (let j = 0; j < binsPerBar; j++) sum += spectrum[i * binsPerBar + j];
             const h = (sum / binsPerBar / 255) * height * 0.5;
-            ctx.fillStyle = `hsla(${(this.hue + i * 4) % 360}, 100%, 50%, 0.2)`;
+            ctx.fillStyle = `hsla(${(this.hue + i * 4) % 360}, 100%, 50%, ${this.ui.zen ? 0.5 : 0.2})`;
             // Espejado arriba y abajo
             ctx.fillRect(i * barWidth, height - h, barWidth - 2, h);
             ctx.fillRect(i * barWidth, 0, barWidth - 2, h);

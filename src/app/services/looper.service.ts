@@ -82,6 +82,10 @@ export class LooperService {
     public countIn = true;
     public tracks: Array<Track> = [];
     public armedId: number = null;
+    // Pista abierta en el editor de piano roll
+    public editingId: number = null;
+    // Sube con cada cambio de notas: el editor se redibuja al notarlo
+    public notesVersion = 0;
     public playing = false;
     public recording = false;
     public exporting = false;
@@ -136,6 +140,45 @@ export class LooperService {
             return -1;
         const beat = Math.floor(this.absBeat);
         return ((beat % BEATS_PER_BAR) + BEATS_PER_BAR) % BEATS_PER_BAR;
+    }
+
+    get editingTrack(): Track {
+        return this.tracks.find(t => t.id == this.editingId);
+    }
+
+    /** Abre (o cierra, si ya estaba abierta) el editor de una pista. */
+    toggleEditor(track: Track) {
+        this.editingId = this.editingId == track.id ? null : track.id;
+    }
+
+    /** Las ediciones manuales de notas pasan por aca: se redibuja y se autoguarda. */
+    touch() {
+        this.dirty();
+    }
+
+    /** Suena una nota de prueba con el instrumento de la pista (al dibujar o mover notas). */
+    preview(track: Track, midi: number, vel = 0.8) {
+        this.audioCtx.resume();
+        const voice = createVoice(this.audioCtx, track.out, track.patch, midi, vel, 0, undefined, this.library);
+        voice.release(false, this.audioCtx.currentTime + 0.25);
+    }
+
+    /**
+     * Duplica la duracion del loop y copia ahi las notas de TODAS las pistas, para seguir armando
+     * una segunda parte sin perder la primera. Devuelve false si ya esta en el maximo.
+     */
+    doubleLoop(): boolean {
+        const next = BAR_OPTIONS.filter(b => b > this.bars)[0];
+        if (!next || next > this.bars * 2)
+            return false;
+        const L = this.loopBeats;
+        this.tracks.forEach(t => {
+            const copies = t.notes.map(n => ({ ...n, start: (n.start % L) + L }));
+            t.notes = t.notes.map(n => ({ ...n, start: n.start % L })).concat(copies);
+        });
+        this.bars = next;
+        this.dirty();
+        return true;
     }
 
     get armedTrack(): Track {
@@ -259,14 +302,18 @@ export class LooperService {
 
     // Borra la ultima pasada de grabacion de la pista (deshacer overdub)
     undoTake(track: Track) {
+        // take 0 son las notas dibujadas a mano en el editor: no son una pasada de grabacion
         const last = track.notes.reduce((max, n) => Math.max(max, n.take), 0);
-        track.notes = track.notes.filter(n => n.take != last);
+        if (last > 0)
+            track.notes = track.notes.filter(n => n.take != last);
         this.dirty();
     }
 
     removeTrack(track: Track) {
         track.out.disconnect();
         this.tracks = this.tracks.filter(t => t != track);
+        if (this.editingId == track.id)
+            this.editingId = null;
         if (this.armedId == track.id) {
             const last = this.tracks[this.tracks.length - 1];
             this.armedId = last ? last.id : null;
@@ -399,6 +446,7 @@ export class LooperService {
         this.stop();
         this.tracks.forEach(t => t.out.disconnect());
         this.tracks = [];
+        this.editingId = null;
         this.bars = BAR_OPTIONS.indexOf(raw.bars) >= 0 ? raw.bars : 2;
         this.bpm = Math.round(finite(raw.bpm, 40, 220, 100));
         this.quantize = QUANTIZES.indexOf(raw.quantize) >= 0 ? raw.quantize : 0.25;
@@ -435,6 +483,7 @@ export class LooperService {
 
     // Se guarda solo, un instante despues del ultimo cambio
     private dirty() {
+        this.notesVersion++;
         clearTimeout(this.saveTimer);
         this.saveTimer = setTimeout(() => this.write(STORAGE_AUTOSAVE, this.toProject()), 400);
     }
