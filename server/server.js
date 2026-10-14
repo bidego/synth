@@ -26,7 +26,12 @@ function loadConfig(env) {
         maxBodyBytes: int(env.MAX_BODY_BYTES, 4 * 1024 * 1024),
         maxProjectsPerOwner: int(env.MAX_PROJECTS_PER_OWNER, 200),
         maxOwners: int(env.MAX_OWNERS, 10000),
+        // Pedidos por minuto: por clave de usuario (no se puede falsificar) y por IP (mas holgado: detras de un balanceador
+        // todos los usuarios pueden compartir IP). PROXY_HOPS = cuantos proxies de confianza hay delante (nginx propio = 1;
+        // con un balanceador de la plataforma delante de nginx = 2): se toma esa entrada contando desde el final de X-Forwarded-For.
         rateLimitPerMin: int(env.RATE_LIMIT_PER_MIN, 120),
+        rateLimitIpPerMin: int(env.RATE_LIMIT_IP_PER_MIN, 600),
+        proxyHops: Math.max(1, int(env.PROXY_HOPS, 1)),
         allowedOrigin: env.ALLOWED_ORIGIN || '',
         quiet: env.QUIET === '1'
     };
@@ -89,7 +94,8 @@ async function createServer(config) {
         maxOwners: config.maxOwners, log
     });
     await store.start();
-    const limiter = new RateLimiter(config.rateLimitPerMin);
+    const ipLimiter = new RateLimiter(config.rateLimitIpPerMin);
+    const keyLimiter = new RateLimiter(config.rateLimitPerMin);
 
     const send = (res, status, body, extra) => {
         const text = body === undefined ? '' : (typeof body == 'string' ? body : JSON.stringify(body));
@@ -125,6 +131,8 @@ async function createServer(config) {
         if (parts[1] != 'projects' || parts.length > 3)
             throw new HttpError(404, 'No existe');
         const owner = ownerFromRequest(req);
+        if (!keyLimiter.allow(owner))
+            throw new HttpError(429, 'Demasiados pedidos, espera un momento');
         const id = parts[2];
         if (!id) {
             if (req.method != 'GET')
@@ -149,10 +157,11 @@ async function createServer(config) {
     };
 
     const server = http.createServer((req, res) => {
-        const ip = req.socket.remoteAddress || '';
-        // Detras de nginx la IP real llega en X-Forwarded-For
-        const client = (req.headers['x-forwarded-for'] || ip).split(',')[0].trim();
-        if (!limiter.allow(client))
+        // Detras de nginx la IP llega en X-Forwarded-For. Los clientes pueden agregar entradas al principio, asi que
+        // se cuenta desde el final: la ultima la agrego nuestro proxy y es la unica de confianza.
+        const chain = String(req.headers['x-forwarded-for'] || '').split(',').map(x => x.trim()).filter(Boolean);
+        const client = chain.length ? chain[Math.max(0, chain.length - config.proxyHops)] : (req.socket.remoteAddress || '');
+        if (!ipLimiter.allow(client))
             return send(res, 429, { error: 'Demasiados pedidos, espera un momento' }, { 'Retry-After': '60' });
         handle(req, res).catch(err => {
             if (err instanceof HttpError)

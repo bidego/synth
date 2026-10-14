@@ -34,6 +34,9 @@ const api = (port, method, url, { k, body, raw } = {}) => new Promise((resolve, 
     if (data) req.write(data);
     req.end();
 });
+const rawHealth = (port, xff) => new Promise((resolve, reject) => {
+    require('http').get({ host: '127.0.0.1', port, path: '/api/health', headers: { 'X-Forwarded-For': xff } }, res => { res.resume(); res.on('end', () => resolve({ status: res.statusCode })); }).on('error', reject);
+});
 const start = async (dataDir, extra = {}) => {
     const logs = [];
     const orig = console.log;
@@ -161,10 +164,26 @@ const remoteCommits = () => { try { return parseInt(git(remote, 'rev-list', '--c
 
     console.log('Limites');
     await app.close();
-    app = await start(path.join(tmp, 'dataC'), { RATE_LIMIT_PER_MIN: '5', MAX_PROJECTS_PER_OWNER: '2' });
+    app = await start(path.join(tmp, 'dataC'), { RATE_LIMIT_IP_PER_MIN: '5', RATE_LIMIT_PER_MIN: '4' });
     const statuses = [];
     for (let i = 0; i < 8; i++) statuses.push((await api(app.port, 'GET', '/api/health')).status);
-    ok('demasiados pedidos: 429', statuses.slice(0, 5).every(s => s == 200) && statuses.slice(5).every(s => s == 429), statuses.join());
+    ok('demasiados pedidos desde una IP: 429', statuses.slice(0, 5).every(s => s == 200) && statuses.slice(5).every(s => s == 429), statuses.join());
+    await app.close();
+    app = await start(path.join(tmp, 'dataC2'), { RATE_LIMIT_IP_PER_MIN: '5' });
+    const spoof = [];
+    for (let i = 0; i < 8; i++) spoof.push((await rawHealth(app.port, '10.9.8.' + i + ', 203.0.113.9')).status);   // lo ultimo lo agrega nginx
+    ok('falsificar X-Forwarded-For no evita el limite de IP', spoof.slice(5).every(s => s == 429), spoof.join());
+    await app.close();
+    app = await start(path.join(tmp, 'dataC3'), { RATE_LIMIT_IP_PER_MIN: '5', PROXY_HOPS: '2' });
+    const behind = [];
+    for (let i = 0; i < 8; i++) behind.push((await rawHealth(app.port, '10.9.8.' + i + ', 172.16.0.1')).status);
+    ok('detras de un balanceador (PROXY_HOPS=2) cada cliente cuenta por separado', behind.every(s => s == 200), behind.join());
+    await app.close();
+    app = await start(path.join(tmp, 'dataC4'), { RATE_LIMIT_PER_MIN: '4' });
+    const kLim = key(), kOther = key(), perKey = [];
+    for (let i = 0; i < 7; i++) perKey.push((await api(app.port, 'GET', '/api/projects', { k: kLim })).status);
+    ok('limite por clave de usuario: 429 al pasarse', perKey.slice(0, 4).every(s => s == 200) && perKey.slice(4).every(s => s == 429), perKey.join());
+    ok('y otra clave no se ve afectada', (await api(app.port, 'GET', '/api/projects', { k: kOther })).status == 200);
     await app.close();
     app = await start(path.join(tmp, 'dataD'), { MAX_PROJECTS_PER_OWNER: '2' });
     const k3 = key();

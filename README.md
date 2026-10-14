@@ -48,10 +48,30 @@ carga todo en memoria (las lecturas no tocan git) y agrupa los cambios en commit
 un token que vive **solo en el servidor** (variable `GIT_TOKEN`: nunca llega al navegador, a los logs ni a la
 configuracion de git; se entrega a git por `GIT_ASKPASS`).
 
+Hay dos formas de desplegarlo:
+
+**A. Un solo contenedor (lo mas simple; por ejemplo una plataforma con un servicio por branch).** La imagen del
+`Dockerfile` ya trae nginx y el backend. Si el servicio tiene la variable `GIT_REPO_URL`, el backend arranca solo; si no,
+arranca solo la web. Alcanza con cargar estas variables en el panel de la plataforma (el token como secreto):
+
+| Variable | Valor |
+|---|---|
+| `GIT_REPO_URL` | `https://github.com/USUARIO/syntotec-data.git` (repo **privado**) |
+| `GIT_TOKEN` | token fine-grained con *Contents: Read and write* **solo** sobre ese repo |
+| `GIT_BRANCH` | `main` (opcional) |
+
+No hace falta `API_UPSTREAM` ni abrir otro puerto: el backend escucha solo dentro del contenedor y nginx le reenvia `/api`.
+Al apagar el contenedor (SIGTERM o SIGQUIT) el backend versiona lo pendiente antes de salir. `/data` puede ser un volumen,
+pero no hace falta: el repo es la base de datos y se vuelve a clonar al arrancar.
+
+**B. Servicios separados** (`docker compose`):
+
 ```
-cp .env.example .env              # GIT_REPO_URL (conviene un repo PRIVADO) y GIT_TOKEN (solo contenido de ese repo)
+cp .env.example .env              # GIT_REPO_URL y GIT_TOKEN
 docker compose --profile backend up --build
 ```
+
+La web usa `API_UPSTREAM=http://api:3000`; el backend sale de `server/Dockerfile`.
 
 - nginx reenvia `/api` al backend (`API_UPSTREAM`). Sin backend la app sigue andando solo con el navegador.
 - Cada navegador genera una **clave** al azar (64 hex, en `localStorage`); con ella se identifica ante el servidor. En el
@@ -60,7 +80,8 @@ docker compose --profile backend up --build
   cambiar esos proyectos.
 - Sin conexion el proyecto queda guardado igual y se reenvia solo (con espera creciente); al arrancar la app trae los
   proyectos del servidor que falten y sube los que el servidor no tenga. Gana la version con fecha de guardado mas nueva.
-- Archivos: `projects/<hash-del-dueno>/<id>.json`. Limites: 4 MB por proyecto, 200 por usuario, 120 pedidos/min por IP.
+- Archivos: `projects/<hash-del-dueno>/<id>.json`. Limites: 4 MB por proyecto, 200 por usuario, 120 pedidos/min por clave y 600/min por IP. La IP sale del final de `X-Forwarded-For`; si hay un balanceador de la plataforma delante de nginx, poner `PROXY_HOPS=2` (si no, todos los usuarios cuentan como una sola IP).
+- El puerto del backend no debe quedar expuesto a internet: solo nginx habla con el (en el contenedor unico escucha en 127.0.0.1).
 - Si se borra un proyecto en un navegador y otro navegador con la misma clave todavia lo tiene, ese lo vuelve a subir en
   su proxima sincronizacion (no hay marca de borrado compartida).
 - El historial de git crece con cada version guardada: para un uso intenso conviene podar o archivar el repo de vez en cuando.

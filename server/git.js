@@ -96,6 +96,9 @@ class Git {
 
     /** Agrega todo lo de `projects/`, y si hay cambios hace un commit. Devuelve true si hubo commit. */
     async commitAll(message) {
+        // Sin la carpeta (todavia no se guardo ningun proyecto) no hay nada que agregar
+        if (!fs.existsSync(path.join(this.dir, 'projects')))
+            return false;
         await this.run(['add', '-A', '--', 'projects']);
         const diff = await this.run(['diff', '--cached', '--quiet'], { allowFail: true });
         if (diff.ok)
