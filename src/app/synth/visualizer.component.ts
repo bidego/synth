@@ -57,6 +57,12 @@ export class VisualizerComponent implements AfterViewInit, OnDestroy {
         this.frameId = requestAnimationFrame(this.draw);
         const { ctx } = this;
         const { width, height } = this.canvasRef.nativeElement;
+        // Bloqueado: el fondo queda negro
+        if (!this.ui.vjUnlocked) {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+            return;
+        }
         // Sin salida de audio en el rack no hay senal: queda solo la animacion ambiente
         const analyser = this.rack.masterAnalyser;
         if (analyser) {

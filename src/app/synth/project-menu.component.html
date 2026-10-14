@@ -18,7 +18,7 @@
         <div class="label">Guardar</div>
         <div class="row">
             <input type="text" placeholder="Nombre del proyecto" maxlength="40" [value]="project.projectName"
-                (input)="project.projectName = $event.target.value" (keydown.enter)="project.saveNamed()" aria-label="Nombre del proyecto">
+                (input)="project.projectName = $event.target.value" (keydown.enter)="project.saveNamed()" (keydown.escape)="ui.menuOpen = false" aria-label="Nombre del proyecto">
             <button class="primary icon" (click)="project.saveNamed()" title="Guardar en este navegador">
                 <app-icon name="save" [size]="14"></app-icon> Guardar
             </button>
@@ -51,6 +51,18 @@
                 <input type="file" accept=".json,application/json" (change)="onImport($event)">
             </label>
         </div>
+    </div>
+
+    <div class="section">
+        <div class="label">Compartir</div>
+        <div class="row wrap">
+            <button class="primary icon" (click)="project.copyShareLink()" title="Copia un enlace con la sesion completa adentro">
+                <app-icon name="upload" [size]="14"></app-icon> Copiar enlace
+            </button>
+            <button class="icon" *ngIf="project.canNativeShare" (click)="project.nativeShare()" title="Usa el menu de compartir del dispositivo">Compartir...</button>
+        </div>
+        <input type="text" class="link" readonly *ngIf="project.shareUrl" [value]="project.shareUrl" (focus)="$event.target.select()" aria-label="Enlace para compartir">
+        <p class="note">El enlace lleva toda la sesion adentro (rack, cables, ajustes, pistas y tempo), sin servidor: quien lo abra ve lo mismo. Tu sesion actual no se pierde: queda guardada.</p>
     </div>
 
     <div class="section">

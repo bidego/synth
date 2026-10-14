@@ -12,6 +12,7 @@ import { BUILD_COMMIT, BUILD_DATE } from './build-info';
 interface Shortcut {
   keys: Array<string>;
   text: string;
+  vj?: boolean;
 }
 
 @Component({
@@ -55,7 +56,7 @@ export class AppComponent {
       { keys: ['Ctrl', 'arrastrar'], text: 'Copiar las notas (tambien Cmd o Alt)' }
     ] },
     { group: 'Interfaz', items: [
-      { keys: ['Esc'], text: 'Modo visual: oculta todo y deja solo el arte' },
+      { keys: ['Esc'], text: 'Modo visual: oculta todo y deja solo el arte', vj: true },
       { keys: ['F1'], text: 'Esta ayuda' }
     ] }
   ];
@@ -101,6 +102,8 @@ export class AppComponent {
   @HostListener('document:keydown', ['$event'])
   onKey(event: KeyboardEvent) {
     const target = event.target as HTMLElement;
+    if (!event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey)
+      this.ui.feedSecret(event.key);
     if (event.repeat || isTyping(target))
       return;
     // Enter = play/stop y ` = grabar (no se usan para notas)

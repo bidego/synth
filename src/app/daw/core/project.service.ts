@@ -6,6 +6,7 @@ import { ModuleEnv } from './types';
 import { SampleLibrary } from '../../services/sample-library';
 import { encodeWav } from '../../services/wav';
 import { SynthStudioModule } from '../modules/synth-studio.module';
+import { SHARE_PREFIX, SHARE_SOFT_LIMIT, encodeShare, decodeShare } from './share';
 
 /** Un proyecto completo: transporte + rack (dispositivos, ajustes, pistas y cables). */
 export interface Project {
@@ -36,6 +37,9 @@ export class ProjectService {
     public message = '';
     public exporting = false;
     public exportPasses = 1;
+    // Enlace para compartir la sesion (ultimo generado)
+    public shareUrl = '';
+    public canNativeShare = typeof (navigator as any).share == 'function';
 
     private saveTimer: any;
 
@@ -46,6 +50,10 @@ export class ProjectService {
         rack.changed.subscribe(() => this.dirty());
         transport.changed.subscribe(() => this.dirty());
         this.restoreAutosave();
+        // Si se abrio un enlace compartido, esa sesion reemplaza a la restaurada; y si se pega otro enlace
+        // en la misma pestana tambien
+        this.loadFromHash();
+        window.addEventListener('hashchange', () => this.zone.run(() => this.loadFromHash()));
     }
 
     // --- Estado ---
@@ -177,6 +185,76 @@ export class ProjectService {
         this.projectName = '';
         this.message = 'Proyecto nuevo';
         this.dirty();
+    }
+
+    // --- Compartir: la sesion completa dentro del hash de la URL ---
+
+    /** El enlace que lleva toda la sesion. No usa ningun servidor: quien lo abra ve lo mismo. */
+    async buildShareLink(): Promise<string> {
+        const payload = await encodeShare(JSON.stringify(this.toProject()));
+        return location.origin + location.pathname + location.search + SHARE_PREFIX + payload;
+    }
+
+    async copyShareLink() {
+        try {
+            this.shareUrl = await this.buildShareLink();
+        } catch (e) {
+            this.message = 'No se pudo armar el enlace: ' + (e && e.message || e);
+            return;
+        }
+        const size = this.shareUrl.length;
+        let copied = false;
+        try {
+            await navigator.clipboard.writeText(this.shareUrl);
+            copied = true;
+        } catch (e) {
+            // Sin permiso del portapapeles: queda el enlace a la vista para copiarlo a mano
+        }
+        const big = size > SHARE_SOFT_LIMIT ? ' Es largo para un chat o un correo: si no entra, usa Exportar .json.' : '';
+        this.message = (copied ? 'Enlace copiado' : 'Copia el enlace de abajo') + ' (' + Math.round(size / 1000 * 10) / 10 + ' mil caracteres).' + big;
+    }
+
+    /** El menu nativo de compartir del telefono o la computadora (si existe). */
+    async nativeShare() {
+        try {
+            this.shareUrl = await this.buildShareLink();
+            await (navigator as any).share({ title: 'Sesion de Syntotec' + (this.projectName ? ': ' + this.projectName : ''), url: this.shareUrl });
+        } catch (e) {
+            // El usuario cancelo el menu: no es un error
+        }
+    }
+
+    // Abre la sesion de un enlace compartido (hash #s=...). Es contenido no confiable: pasa por la misma
+    // validacion que un archivo importado.
+    private async loadFromHash() {
+        if (location.hash.indexOf(SHARE_PREFIX) != 0)
+            return;
+        const payload = location.hash.slice(SHARE_PREFIX.length);
+        // El hash se saca de la URL enseguida: recargar no debe volver a pisar la sesion
+        history.replaceState(null, '', location.pathname + location.search);
+        try {
+            const data = await decodeShare(payload);
+            this.keepCurrentSession();
+            this.message = this.load(data) ? 'Sesion compartida abierta' : 'El enlace no contiene una sesion valida';
+            this.dirty();
+        } catch (e) {
+            this.message = e && e.message || 'El enlace no es valido';
+        }
+        this.zone.run(() => {});
+    }
+
+    // Antes de reemplazar la sesion por la de un enlace, la actual (si tiene notas) queda como proyecto guardado
+    private keepCurrentSession() {
+        const cur = this.toProject();
+        const hasNotes = cur.rack && Array.isArray(cur.rack.modules) && cur.rack.modules.some((m: any) =>
+            m && m.type == 'synth' && m.state && m.state.sequencer && (m.state.sequencer.tracks || []).some((t: any) => t.notes && t.notes.length));
+        if (!hasNotes)
+            return;
+        const all = this.read(STORAGE_PROJECTS) || {};
+        const name = ('Antes del enlace (' + new Date().toLocaleString() + ')').slice(0, 40);
+        all[name] = { savedAt: Date.now(), data: cur };
+        if (this.write(STORAGE_PROJECTS, all))
+            this.refreshSaved();
     }
 
     // --- Archivos ---

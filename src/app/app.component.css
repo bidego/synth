@@ -311,3 +311,20 @@ main {
   color: var(--warn);
   font-size: 12px;
 }
+
+/* --- Aviso breve (premio VJ, etc.) --- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 44px;
+  transform: translateX(-50%);
+  z-index: 60;
+  max-width: 90vw;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--panel-solid);
+  border: 1px solid var(--accent, #7c5cff);
+  font-size: 13px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+button.visual.locked { opacity: 0.6; }

@@ -36,8 +36,9 @@
     <button class="ghost icon hide-xs" (click)="ui.toggleHelp()" title="Atajos de teclado (F1)" aria-label="Ayuda">
       <app-icon name="help" [size]="17"></app-icon>
     </button>
-    <button class="icon visual" (click)="toggleZen()" title="Ocultar la interfaz y ver solo el arte (Esc)">
-      <app-icon name="eye-off" [size]="15"></app-icon><span class="txt">Modo visual</span>
+    <button class="icon visual" (click)="toggleZen()" [class.locked]="!ui.vjUnlocked"
+      [title]="ui.vjUnlocked ? 'Ocultar la interfaz y ver solo el arte (Esc)' : 'Arte VJ bloqueado: se desbloquea con ' + ui.vjRemainingLabel + ' mas de uso'">
+      <app-icon [name]="ui.vjUnlocked ? 'eye-off' : 'lock'" [size]="15"></app-icon><span class="txt">Modo visual</span>
     </button>
   </header>
 
@@ -74,7 +75,7 @@
     <span *ngIf="sustaining" class="on">Sustain</span>
     <span class="spacer"></span>
     <span class="hide-narrow"><kbd>Tab</kbd> rack / cableado</span>
-    <span class="hide-narrow"><kbd>Esc</kbd> modo visual</span>
+    <span class="hide-narrow" *ngIf="ui.vjUnlocked"><kbd>Esc</kbd> modo visual</span>
     <button class="ghost" (click)="ui.toggleHelp()"><kbd>F1</kbd> atajos</button>
     <span class="sep"></span>
     <span class="ver" [title]="'Compilacion: ' + buildCommit + ' - ' + buildDate + '. Si no coincide con lo que esperas, recarga con Ctrl+Shift+R'">v{{ version }} &middot; {{ buildCommit }} &middot; {{ buildDate }}</span>
@@ -91,15 +92,17 @@
     <div class="groups">
       <section *ngFor="let g of shortcuts">
         <h3 class="label">{{ g.group }}</h3>
-        <div class="row" *ngFor="let s of g.items">
+        <ng-container *ngFor="let s of g.items"><div class="row" *ngIf="!s.vj || ui.vjUnlocked">
           <span class="keys"><kbd *ngFor="let k of s.keys">{{ k }}</kbd></span>
           <span class="text">{{ s.text }}</span>
-        </div>
+        </div></ng-container>
       </section>
     </div>
     <p class="foot">Tambien funciona con cualquier teclado MIDI (Chrome o Edge) y con pantallas tactiles.</p>
   </div>
 </div>
+
+<div class="toast" *ngIf="ui.toastText" role="status">{{ ui.toastText }}</div>
 
 <span class="version" *ngIf="ui.zen" aria-hidden="true">v{{ version }}</span>
 
