@@ -87,8 +87,8 @@ export class PianoComponent implements OnInit {
         return noteName(base) + ' - ' + noteName(base + KEY_SPAN - 1);
     }
 
-    setLevel(value) {
-        this.engine.level = parseFloat(value);
+    setLevel(value: number) {
+        this.engine.level = value;
     }
 
     /**

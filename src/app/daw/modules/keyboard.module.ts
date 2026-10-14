@@ -40,6 +40,21 @@ export class KeyboardModule extends RackModule {
         return null;
     }
 
+    setVelocity(v: number) {
+        this.velocity = Math.max(0.1, Math.min(1, v));
+        this.env.changed();
+    }
+
+    setComputerKeys(on: boolean) {
+        this.computerKeys = on;
+        this.env.changed();
+    }
+
+    setMidiIn(on: boolean) {
+        this.midiIn = on;
+        this.env.changed();
+    }
+
     shiftOctave(delta: number) {
         this.octave = Math.max(-3, Math.min(3, this.octave + delta));
         this.env.changed();

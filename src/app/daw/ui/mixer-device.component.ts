@@ -8,16 +8,21 @@ import { MixerModule, AUX_BUSES } from '../modules/mixer.module';
 <div class="mixer">
     <div class="strip" *ngFor="let s of module.strips; let i = index" [class.muted]="s.mute">
         <span class="label">Canal {{ i + 1 }}</span>
-        <input class="pan" type="range" min="-1" max="1" step="0.01" [value]="s.pan" (input)="module.setPan(i, $event.target.valueAsNumber)" title="Paneo" [attr.aria-label]="'Paneo canal ' + (i + 1)">
-        <div class="pan-text">{{ panText(s.pan) }}</div>
+        <div class="panwrap" title="Paneo (doble clic = centro)">
+            <app-knob class="pan" [size]="34" [value]="s.pan" [min]="-1" [max]="1" [step]="0.01" [default]="0" [bipolar]="true" [hideValue]="true"
+                [format]="panText" (valueChange)="module.setPan(i, $event)" [ariaLabel]="'Paneo canal ' + (i + 1)"></app-knob>
+            <div class="pan-text">{{ panText(s.pan) }}</div>
+        </div>
         <div class="sends">
             <label *ngFor="let a of auxes" [title]="'Envio al aux ' + (a + 1)">
                 <span>A{{ a + 1 }}</span>
-                <input type="range" min="0" max="1.5" step="0.01" [value]="s.sends[a]" (input)="module.setSend(i, a, $event.target.valueAsNumber)" [attr.aria-label]="'Envio aux ' + (a + 1) + ' canal ' + (i + 1)">
+                <app-knob [size]="28" [value]="s.sends[a]" [min]="0" [max]="1.5" [step]="0.01" [default]="0" [hideValue]="true"
+                    (valueChange)="module.setSend(i, a, $event)" [ariaLabel]="'Envio aux ' + (a + 1) + ' canal ' + (i + 1)"></app-knob>
             </label>
         </div>
         <div class="fader-box">
-            <input class="fader" type="range" min="0" max="1.5" step="0.01" [value]="s.gain" (input)="module.setGain(i, $event.target.valueAsNumber)" orient="vertical" [attr.aria-label]="'Fader canal ' + (i + 1)">
+            <app-fader inputClass="fader" [length]="140" [value]="s.gain" [min]="0" [max]="1.5" [step]="0.01" [default]="0.8"
+                [format]="db" (valueChange)="module.setGain(i, $event)" [ariaLabel]="'Fader canal ' + (i + 1)"></app-fader>
             <div class="meter"><i [style.height.%]="levels[i] * 100"></i></div>
         </div>
         <div class="db">{{ db(s.gain) }}</div>
@@ -30,8 +35,12 @@ import { MixerModule, AUX_BUSES } from '../modules/mixer.module';
         <span class="label">Aux</span>
         <div class="bus" *ngFor="let a of auxes">
             <b>{{ a + 1 }}</b>
-            <label><span>Envio</span><input type="range" min="0" max="1.5" step="0.01" [value]="module.auxLevel[a]" (input)="module.setAuxLevel(a, $event.target.valueAsNumber)" [attr.aria-label]="'Nivel del bus aux ' + (a + 1)"></label>
-            <label><span>Retorno</span><input type="range" min="0" max="1.5" step="0.01" [value]="module.returnLevel[a]" (input)="module.setReturn(a, $event.target.valueAsNumber)" [attr.aria-label]="'Retorno ' + (a + 1)"></label>
+            <div class="knobs">
+                <label><app-knob label="Envio" [size]="38" [value]="module.auxLevel[a]" [min]="0" [max]="1.5" [step]="0.01" [default]="1"
+                    (valueChange)="module.setAuxLevel(a, $event)" [ariaLabel]="'Nivel del bus aux ' + (a + 1)"></app-knob></label>
+                <label><app-knob label="Retorno" [size]="38" [value]="module.returnLevel[a]" [min]="0" [max]="1.5" [step]="0.01" [default]="1"
+                    (valueChange)="module.setReturn(a, $event)" [ariaLabel]="'Retorno ' + (a + 1)"></app-knob></label>
+            </div>
         </div>
         <small>Cablea Aux n a un efecto y su salida al Retorno n (o usa el boton "Envio aux" del efecto).</small>
     </div>
@@ -39,38 +48,40 @@ import { MixerModule, AUX_BUSES } from '../modules/mixer.module';
         <span class="label">Master</span>
         <div class="pan-text">&nbsp;</div>
         <div class="fader-box">
-            <input class="fader" type="range" min="0" max="1.5" step="0.01" [value]="module.master" (input)="module.setMaster($event.target.valueAsNumber)" orient="vertical" aria-label="Fader master">
+            <app-fader inputClass="fader" [length]="140" [value]="module.master" [min]="0" [max]="1.5" [step]="0.01" [default]="1"
+                [format]="db" (valueChange)="module.setMaster($event)" ariaLabel="Fader master"></app-fader>
             <div class="meter"><i [style.height.%]="masterLevel * 100"></i></div>
         </div>
         <div class="db">{{ db(module.master) }}</div>
     </div>
 </div>`,
     styles: [`
-.mixer { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 2px; }
-.strip { flex: none; width: 74px; display: flex; flex-direction: column; align-items: center; gap: 4px;
-    padding: 6px 4px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: rgba(0,0,0,0.22); }
-.strip.master { margin-left: 10px; border-color: var(--border-strong); }
+.mixer { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 6px; }
+.strip { flex: none; width: 82px; display: flex; flex-direction: column; align-items: center; gap: 5px;
+    padding: 8px 4px 6px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(0,0,0,0.28)); }
+.strip.master { margin-left: 10px; border-color: var(--border-strong); width: 90px; }
 .strip.muted { opacity: 0.6; }
-.pan { width: 60px; margin: 0; }
-.sends { display: flex; flex-direction: column; gap: 1px; width: 62px; }
-.sends label { display: flex; align-items: center; gap: 3px; font-size: 9px; color: var(--info); }
-.sends input { width: 44px; margin: 0; }
-.strip.aux { width: 150px; align-items: stretch; margin-left: 10px; }
-.strip.aux .bus { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border-top: 1px solid var(--border); }
-.strip.aux .bus b { color: var(--info); }
-.strip.aux label { display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 10px; color: var(--dim); }
-.strip.aux input { width: 80px; margin: 0; }
-.strip.aux small { font-size: 9px; color: var(--dim); line-height: 1.3; }
-.pan-text { font-size: 10px; color: var(--dim); font-family: var(--mono); }
-.fader-box { display: flex; gap: 6px; height: 130px; }
-.fader { writing-mode: vertical-lr; direction: rtl; width: 22px; height: 130px; margin: 0; }
-.meter { width: 7px; height: 130px; background: var(--border); border-radius: 3px; position: relative; overflow: hidden; }
+.panwrap { display: flex; flex-direction: column; align-items: center; }
+.pan-text { font-size: 10px; color: var(--dim); font-family: var(--mono); min-height: 13px; }
+.sends { display: flex; justify-content: center; gap: 4px; }
+.sends label { display: flex; flex-direction: column; align-items: center; font-size: 9px; color: var(--info); cursor: default; }
+.fader-box { display: flex; gap: 8px; align-items: stretch; margin-top: 2px; }
+.meter { width: 8px; height: 140px; background: #0a0b14; border-radius: 3px; position: relative; overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 0 1px #2d3256; }
 .meter i { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, var(--ok) 60%, var(--warn) 85%, var(--danger)); }
 .db { font-size: 10px; font-family: var(--mono); color: var(--dim); }
 .btns { display: flex; gap: 3px; }
-.btns button { padding: 2px 7px; font-weight: 700; }
+.btns button { padding: 2px 8px; font-weight: 700; }
 .btns .mute { background: var(--warn); border-color: var(--warn); color: #000; }
 .btns .solo { background: var(--info); border-color: var(--info); color: #000; }
+.strip.aux { width: 132px; align-items: stretch; margin-left: 10px; }
+.strip.aux .label { align-self: center; }
+.strip.aux .bus { display: flex; align-items: center; gap: 8px; padding: 6px 2px; border-top: 1px solid var(--border); }
+.strip.aux .bus b { color: var(--info); font-size: 15px; }
+.strip.aux .knobs { display: flex; gap: 6px; }
+.strip.aux label { display: block; }
+.strip.aux small { font-size: 9px; color: var(--dim); line-height: 1.35; }
 `]
 })
 export class MixerDeviceComponent implements OnInit, OnDestroy {
@@ -91,11 +102,8 @@ export class MixerDeviceComponent implements OnInit, OnDestroy {
         clearInterval(this.timer);
     }
 
-    panText(p: number): string {
-        return p == 0 ? 'C' : (p < 0 ? 'L' : 'R') + Math.round(Math.abs(p) * 100);
-    }
+    // Funciones (flecha) para que los controles puedan usarlas como formato sin perder el `this`
+    panText = (p: number): string => p == 0 ? 'C' : (p < 0 ? 'L' : 'R') + Math.round(Math.abs(p) * 100);
 
-    db(g: number): string {
-        return g <= 0.001 ? '-inf' : (20 * Math.log10(g)).toFixed(1) + ' dB';
-    }
+    db = (g: number): string => g <= 0.001 ? '-inf' : (20 * Math.log10(g)).toFixed(1) + ' dB';
 }

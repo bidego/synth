@@ -7,18 +7,12 @@ import { DEFAULT_FX } from '../services/presets';
     selector: 'app-fx',
     template: `
 <div class="fx">
-    <label class="knob" *ngFor="let k of knobs">
-        <span class="label">{{ k.label }}</span>
-        <input type="range" min="0" [max]="k.max" [step]="k.step" [value]="module.fx[k.name]" (input)="set(k.name, $event.target.value)" [attr.aria-label]="k.label">
-        <output>{{ module.fx[k.name] | number:'1.2-2' }}{{ k.unit }}</output>
-    </label>
+    <app-knob *ngFor="let k of knobs" [label]="k.label" [size]="50" [value]="module.fx[k.name]" [min]="0" [max]="k.max" [step]="0.01" [default]="0"
+        [unit]="k.unit" (valueChange)="set(k.name, $event)"></app-knob>
     <button (click)="reset()" title="Apagar delay y reverb de este instrumento">Restablecer</button>
 </div>`,
     styles: [`
-.fx { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 28px; padding-top: 6px; }
-.knob { display: flex; flex-direction: column; gap: 3px; }
-.knob input { width: 150px; margin: 0; }
-output { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+.fx { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 26px; padding-top: 6px; }
 `]
 })
 export class FxComponent {
@@ -31,8 +25,8 @@ export class FxComponent {
         { name: 'reverbMix', label: 'Reverb', max: 1, step: 0.01, unit: '' }
     ];
 
-    set(name: string, value) {
-        this.module.setFx({ [name]: parseFloat(value) });
+    set(name: string, value: number) {
+        this.module.setFx({ [name]: value });
     }
 
     reset() {

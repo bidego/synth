@@ -145,6 +145,11 @@ export class Sequencer implements TransportClient {
         return track;
     }
 
+    toggleArmed() {
+        this.armed = !this.armed;
+        this.dirty();
+    }
+
     arm(track: Track) {
         this.armedId = track.id;
     }

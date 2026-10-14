@@ -49,6 +49,11 @@ export class SynthStudioModule extends RackModule {
             this.engine.receive(msg);
     }
 
+    /** Avisa que el patch, la octava o el nivel cambiaron (el autoguardado los toma). */
+    touch() {
+        this.env.changed();
+    }
+
     setFx(fx: Partial<FxConfig>) {
         Object.assign(this.fx, fx);
         this.chain.setFx(this.fx, this.env.live);

@@ -55,6 +55,7 @@
         </div>
         <span class="count">{{ rack.modules.length }} dispositivos &middot; {{ rack.cables.length }} cables</span>
         <span class="spacer"></span>
+        <span class="notice" *ngIf="rack.message && ui.view == 'rack'" role="status">{{ rack.message }}</span>
         <span class="hint hide-narrow"><kbd>Tab</kbd> alterna la vista</span>
       </div>
       <app-rack-view *ngIf="ui.view == 'rack'"></app-rack-view>

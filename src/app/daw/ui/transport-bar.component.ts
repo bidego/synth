@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { TransportService, BAR_OPTIONS, SIGNATURE_DENOMINATORS, MAX_TRANSPOSE } from '../core/transport.service';
+import { RackService } from '../core/rack.service';
 
 /** Barra de transporte global: grabar, reproducir, tempo, compas, loop, cuantizacion y transposicion. */
 @Component({
@@ -20,7 +21,13 @@ export class TransportBarComponent implements OnInit, OnDestroy {
     ];
     private timer: any;
 
-    constructor(public transport: TransportService) {}
+    constructor(public transport: TransportService, public rack: RackService) {}
+
+    /** Nombres de los instrumentos que graban (los armados). */
+    get armedNames(): string {
+        const names = this.rack.armedSynths.map(s => s.name + (this.rack.noteSources(s.id).length ? '' : ' (sin entrada)'));
+        return names.length ? names.join(', ') : 'ninguno armado';
+    }
 
     // Los indicadores de pulso siguen el reloj del audio: un tick de la zona alcanza para refrescarlos
     ngOnInit() {

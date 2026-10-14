@@ -115,3 +115,21 @@
     .buttons button { min-width: 0; }
     .transport { gap: 8px 14px; padding: 6px 10px; }
 }
+
+.target {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 85, 96, 0.5);
+    color: var(--danger);
+    font-size: 12px;
+}
+.target b {
+    color: var(--text);
+}
+.target.none {
+    color: var(--warn);
+    border-color: rgba(255, 200, 87, 0.5);
+}

@@ -8,6 +8,10 @@
         </button>
     </div>
 
+    <div class="target" *ngIf="transport.recording" [class.none]="!rack.armedSynths.length" title="Los instrumentos armados son los que graban lo que tocas">
+        <app-icon name="rec" [size]="9"></app-icon> Grabando en <b>{{ armedNames }}</b>
+    </div>
+
     <div class="position" title="Compas y pulso dentro del loop">
         <span class="label">Pos</span>
         <b>{{ transport.positionText }}</b>
@@ -17,8 +21,8 @@
     </div>
 
     <div class="field bpm">
-        <span class="label">BPM</span>
-        <input type="range" min="40" max="240" step="1" [value]="transport.bpm" (input)="transport.setBpm($event.target.value)" aria-label="Tempo">
+        <app-knob label="BPM" [size]="46" [value]="transport.bpm" [min]="40" [max]="240" [step]="1" [default]="100" [hideValue]="true"
+            (valueChange)="transport.setBpm($event)" ariaLabel="Tempo"></app-knob>
         <b>{{ transport.bpm }}</b>
         <button (click)="transport.tap()" title="Toca el ritmo para fijar el tempo">Tap</button>
     </div>

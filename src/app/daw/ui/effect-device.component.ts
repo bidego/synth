@@ -26,11 +26,10 @@ import { RackService } from '../core/rack.service';
     </div>
     <div class="params" [class.off]="module.bypass">
         <ng-container *ngFor="let d of module.paramDefs">
-            <label class="param" *ngIf="d.kind == 'range'">
-                <span class="label">{{ d.label }}</span>
-                <input type="range" [min]="slider(d).min" [max]="slider(d).max" [step]="slider(d).step" [value]="toSlider(d)" (input)="fromSlider(d, $event.target.value)" [attr.aria-label]="d.label">
-                <output>{{ format(d) }}</output>
-            </label>
+            <div class="param knobwrap" *ngIf="d.kind == 'range'">
+                <app-knob [label]="d.label" [size]="54" [value]="module.values[d.id]" [min]="d.min" [max]="d.max" [step]="d.step"
+                    [default]="d.default" [log]="!!d.log" [unit]="d.unit" (valueChange)="module.setParam(d.id, $event)"></app-knob>
+            </div>
             <label class="param toggle" *ngIf="d.kind == 'toggle'">
                 <span class="label">{{ d.label }}</span>
                 <input type="checkbox" [checked]="module.values[d.id]" (change)="module.setParam(d.id, $event.target.checked ? 1 : 0)">
@@ -56,10 +55,9 @@ import { RackService } from '../core/rack.service';
 .gr small { position: absolute; left: 6px; top: -1px; font-size: 9px; font-family: var(--mono); color: #fff; mix-blend-mode: difference; }
 .send { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .send small { color: var(--dim); font-size: 11px; }
-.params { display: flex; flex-wrap: wrap; gap: 12px 26px; }
+.params { display: flex; flex-wrap: wrap; gap: 14px 22px; }
 .params.off { opacity: 0.45; }
-.param { display: flex; flex-direction: column; gap: 3px; min-width: 130px; }
-.param input[type=range] { width: 150px; margin: 0; }
+.param { display: flex; flex-direction: column; gap: 3px; min-width: 70px; align-items: center; }
 .param.toggle { flex-direction: row; align-items: center; gap: 8px; }
 output { font-family: var(--mono); font-size: 11px; color: var(--dim); }
 `]
@@ -97,27 +95,5 @@ export class EffectDeviceComponent implements OnInit, OnDestroy {
     }
     ngOnDestroy() {
         clearInterval(this.timer);
-    }
-
-    // Los parametros "log" (frecuencias) se mueven en una escala logaritmica: se mapean a un slider 0..1
-    slider(d: ParamDef) {
-        return d.log ? { min: 0, max: 1, step: 0.001 } : { min: d.min, max: d.max, step: d.step };
-    }
-
-    toSlider(d: ParamDef): number {
-        const v = this.module.values[d.id];
-        return d.log ? Math.log(v / d.min) / Math.log(d.max / d.min) : v;
-    }
-
-    fromSlider(d: ParamDef, raw: string) {
-        const x = parseFloat(raw);
-        const v = d.log ? d.min * Math.pow(d.max / d.min, x) : x;
-        this.module.setParam(d.id, d.log ? Math.round(v * 10) / 10 : v);
-    }
-
-    format(d: ParamDef): string {
-        const v = this.module.values[d.id];
-        const text = d.step && d.step < 0.01 ? v.toFixed(3) : Math.abs(v) >= 100 ? Math.round(v).toString() : (Math.round(v * 100) / 100).toString();
-        return text + (d.unit || '');
     }
 }

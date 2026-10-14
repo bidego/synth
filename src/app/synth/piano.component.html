@@ -17,11 +17,9 @@
         <small class="range">{{ range }}</small>
     </div>
 
-    <label class="ctl level">
-        <span class="label">Nivel</span>
-        <input type="range" min="0" max="0.8" step="0.01" [value]="engine.level" (input)="setLevel($event.target.value)" aria-label="Nivel del sonido">
-        <output>{{ engine.level | number:'1.2-2' }}</output>
-    </label>
+    <div class="ctl level">
+        <app-knob label="Nivel" [size]="38" [value]="engine.level" [min]="0" [max]="0.8" [step]="0.01" [default]="0.3" (valueChange)="setLevel($event)" ariaLabel="Nivel del sonido"></app-knob>
+    </div>
 
     <span class="chip voices" [class.ok]="engine.voiceCount"><i></i>Voces <b>{{ engine.voiceCount }}</b></span>
 </div>

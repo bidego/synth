@@ -58,6 +58,7 @@ export class SynthEngine {
     set level(value: number) {
         this.patch.level = value;
         setParam(this.env, this.patchOut.gain, value, 0.02);
+        this.env.changed();
     }
 
     get baseMidi(): number {
@@ -96,6 +97,7 @@ export class SynthEngine {
 
     shiftOctave(delta: number) {
         this.octave = Math.max(MIN_OCTAVE, Math.min(MAX_OCTAVE, this.octave + delta));
+        this.env.changed();
     }
 
     isHeld(offset: number): boolean {

@@ -10,6 +10,10 @@
     align-items: center;
     gap: 6px 18px;
     padding: 6px 4px 10px;
+    height: 56px;       /* fija: un aviso de error que aparece o desaparece no puede desplazar los puertos */
+    min-height: 56px;
+    overflow: hidden;
+    align-content: center;
     font-size: 12px;
     color: var(--dim);
 }
@@ -38,7 +42,7 @@
     top: 0;
     pointer-events: none;
 }
-.cables path, .cables .del { pointer-events: auto; }
+.cables path { pointer-events: none; }
 .cable {
     fill: none;
     stroke-width: 3.5;
@@ -97,6 +101,8 @@
 .col.in .port { margin-left: -8px; }
 .col.out .port { margin-right: -8px; justify-content: flex-end; }
 .jack {
+    position: relative;
+    z-index: 6;   /* por encima de la capa de clics de los cables (z 4): un puerto nunca queda tapado */
     flex: none;
     width: 16px;
     height: 16px;
@@ -113,3 +119,22 @@
 .jack.used { opacity: 1; }
 .jack:hover { transform: scale(1.25); }
 .jack.ok { transform: scale(1.35); box-shadow: 0 0 10px #fff; opacity: 1; }
+
+/* Capa de clics por encima de los nodos: solo el trazo de cada cable recibe eventos */
+.hits {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 4;
+    pointer-events: none;
+}
+.hits .hit {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 16;
+    stroke-linecap: round;
+    pointer-events: stroke;
+    cursor: pointer;
+}
+.hits .del circle { fill: var(--danger); stroke: #fff; stroke-width: 1.5; cursor: pointer; pointer-events: all; }
+.hits .del path { stroke: #fff; stroke-width: 2; fill: none; pointer-events: none; }

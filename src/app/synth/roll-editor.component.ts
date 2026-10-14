@@ -491,8 +491,8 @@ export class RollEditorComponent implements DoCheck {
         this.dirtyView = true;
     }
 
-    setZoom(value) {
-        this.ppb = parseFloat(value);
+    setZoom(value: number) {
+        this.ppb = value;
         this.dirtyView = true;
     }
 

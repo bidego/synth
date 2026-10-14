@@ -49,26 +49,31 @@ section h4 {
 .knobs {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 14px;
+    gap: 10px 16px;
+    align-items: flex-end;
 }
-.knobs.two {
-    display: grid;
-    grid-template-columns: repeat(2, auto);
+.knobs.wrap {
+    max-width: 330px;
 }
-.knob {
+.adsr {
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+    padding: 4px 4px 0;
+}
+.adsr .ch {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    gap: 3px;
+}
+.adsr .letter {
+    font-weight: 700;
+    color: var(--info);
     font-size: 11px;
 }
-.knob > span {
-    color: var(--dim);
-}
-.knob input[type=range] {
-    width: 120px;
-    margin: 0;
-}
-.knob output {
+.adsr .val {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 10px;
+    color: var(--dim);
 }

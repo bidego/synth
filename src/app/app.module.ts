@@ -9,6 +9,8 @@ import { ProjectMenuComponent } from './synth/project-menu.component';
 import { FxComponent } from './synth/fx.component';
 import { IconComponent } from './ui/icon.component';
 import { PanelComponent } from './ui/panel.component';
+import { KnobComponent } from './ui/knob.component';
+import { FaderComponent } from './ui/fader.component';
 import { LooperComponent } from './synth/looper.component';
 import { TransportService } from './daw/core/transport.service';
 import { RackService } from './daw/core/rack.service';
@@ -50,6 +52,8 @@ import { ListenKeys } from './directives/listen.keys';
     FxComponent,
     IconComponent,
     PanelComponent,
+    KnobComponent,
+    FaderComponent,
     RollEditorComponent,
     VisualizerComponent,
     ListenKeys

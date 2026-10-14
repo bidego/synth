@@ -85,9 +85,9 @@ export class RackService {
         }
         const n = this.graph.modules.length - 1;
         module.pos = { x: 30 + (n % 4) * 260, y: 40 + Math.floor(n / 4) * 280 };
-        this.autoWire(module);
-        this.selectedId = module.id;
         this.message = '';
+        this.autoWire(module);   // puede dejar un aviso en `message`
+        this.selectedId = module.id;
         this.changed.next();
         return module;
     }
@@ -136,8 +136,11 @@ export class RackService {
         const g = this.graph;
         if (m.type == 'synth') {
             const kb = g.ofType('keyboard')[0];
-            if (kb)
+            if (kb && !g.cablesOf(kb.id, 'notes').length)
                 g.connect(kb.id, 'notes', m.id, 'notes');
+            else if (kb)
+                // El teclado ya toca a otro instrumento: no se agrega solo para que no suenen los dos
+                this.message = '"' + m.name + '" no recibe el teclado todavia: activalo en el panel del instrumento o del Teclado / MIDI';
             this.wireAudioOut(m, 'out');
         } else if (m.type == 'keyboard') {
             const free = this.synths.find(s => !g.cablesOf(s.id, 'notes').length);
@@ -168,6 +171,31 @@ export class RackService {
         const out = g.ofType('output')[0];
         if (out && !g.cablesOf(out.id, 'in').length)
             g.connect(m.id, port, out.id, 'in');
+    }
+
+    // --- Conexiones de notas (teclado / MIDI -> instrumentos) ---
+
+    /** Cables de notas que llegan a la entrada de un instrumento. */
+    noteSources(moduleId: string): Array<CableModel> {
+        return this.graph.cables.filter(c => c.toModule == moduleId && c.toPort == 'notes');
+    }
+
+    /** Instrumentos a los que llega la salida de notas de un teclado. */
+    noteTargets(keyboardId: string): Array<CableModel> {
+        return this.graph.cables.filter(c => c.fromModule == keyboardId && c.fromPort == 'notes');
+    }
+
+    isNoteLinked(keyboardId: string, synthId: string): boolean {
+        return this.graph.cables.some(c => c.fromModule == keyboardId && c.fromPort == 'notes' && c.toModule == synthId && c.toPort == 'notes');
+    }
+
+    /** Conecta o desconecta el teclado de un instrumento (un clic, sin ir a la vista de cableado). */
+    toggleNoteLink(keyboardId: string, synthId: string) {
+        const cable = this.graph.cables.find(c => c.fromModule == keyboardId && c.fromPort == 'notes' && c.toModule == synthId && c.toPort == 'notes');
+        if (cable)
+            this.disconnect(cable.id);
+        else
+            this.connect(keyboardId, 'notes', synthId, 'notes');
     }
 
     // --- Envios aux ---
@@ -216,13 +244,24 @@ export class RackService {
 
     // --- Grabacion y loop ---
 
-    // Si ningun instrumento esta armado, arma el activo
+    /** Instrumentos armados para grabar. */
+    get armedSynths(): Array<SynthStudioModule> {
+        return this.synths.filter(s => s.sequencer.armed);
+    }
+
+    // Al empezar a grabar tiene que haber un instrumento armado QUE RECIBA NOTAS. Un instrumento que
+    // quedo armado de antes pero ya no esta conectado al teclado no sirve: se arma el seleccionado
+    // (si esta conectado), si no el primero conectado, y en ultimo caso el activo (se toca con su piano).
     private ensureArmed() {
-        if (this.synths.some(s => s.sequencer.armed))
+        const receives = (s: SynthStudioModule) => this.noteSources(s.id).length > 0;
+        if (this.armedSynths.some(receives))
             return;
-        const s = this.activeSynth;
-        if (s)
-            s.sequencer.armed = true;
+        const selected = this.selected && this.selected.type == 'synth' ? this.selected as SynthStudioModule : null;
+        const target = (selected && receives(selected) ? selected : null)
+            || this.synths.find(receives)
+            || this.activeSynth;
+        if (target)
+            target.sequencer.armed = true;
     }
 
     /** Duplica la duracion del loop copiando las notas de todos los instrumentos. Devuelve false si ya es el maximo. */

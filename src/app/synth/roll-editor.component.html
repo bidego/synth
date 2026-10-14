@@ -8,7 +8,7 @@
         <span class="seg" title="Grilla">
             <button *ngFor="let g of grids" [class.on]="grid == g.value" (click)="setGrid(g.value)">{{ g.label }}</button>
         </span>
-        <label>Zoom <input type="range" min="8" max="240" step="1" [value]="ppb" (input)="setZoom($event.target.value)"></label>
+        <span class="zoom"><span class="label">Zoom</span><app-fader [horizontal]="true" [length]="110" [min]="8" [max]="240" [step]="1" [default]="40" [value]="ppb" (valueChange)="setZoom($event)" ariaLabel="Zoom horizontal"></app-fader></span>
         <button (click)="close()" class="close icon" title="Cerrar el editor"><app-icon name="close" [size]="12"></app-icon> Cerrar</button>
     </div>
     <div class="bar">

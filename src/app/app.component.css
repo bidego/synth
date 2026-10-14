@@ -306,3 +306,8 @@ main {
   padding: 5px 16px;
   font-weight: 600;
 }
+
+.viewbar .notice {
+  color: var(--warn);
+  font-size: 12px;
+}

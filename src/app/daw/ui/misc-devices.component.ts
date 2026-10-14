@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { KeyboardModule } from '../modules/keyboard.module';
+import { RackService } from '../core/rack.service';
 import { OutputModule } from '../modules/output.module';
 import { SplitterModule, MergerModule } from '../modules/patchbay.module';
 
@@ -14,15 +15,21 @@ import { SplitterModule, MergerModule } from '../modules/patchbay.module';
         <b>{{ module.octave > 0 ? '+' : '' }}{{ module.octave }}</b>
         <button class="icon" (click)="module.shiftOctave(1)" aria-label="Octava arriba"><app-icon name="chevron-right" [size]="13"></app-icon></button>
     </div>
-    <label class="ctl">
-        <span class="label">Velocidad</span>
-        <input type="range" min="0.1" max="1" step="0.01" [value]="module.velocity" (input)="module.velocity = $event.target.valueAsNumber" aria-label="Velocidad de las teclas">
-        <output>{{ module.velocity | number:'1.2-2' }}</output>
-    </label>
-    <label class="ctl chk"><input type="checkbox" [checked]="module.computerKeys" (change)="module.computerKeys = $event.target.checked"> Teclado de la computadora</label>
-    <label class="ctl chk"><input type="checkbox" [checked]="module.midiIn" (change)="module.midiIn = $event.target.checked"> Controlador MIDI</label>
-    <p class="hint">Las notas salen por el puerto <b>Notas</b>: unilo con uno o mas Synth Studio en la vista Cableado.
-       Flechas = octava &middot; Espacio = sustain.</p>
+    <div class="ctl">
+        <app-knob label="Velocidad" [size]="46" [value]="module.velocity" [min]="0.1" [max]="1" [step]="0.01" [default]="1" (valueChange)="module.setVelocity($event)" ariaLabel="Velocidad de las teclas"></app-knob>
+    </div>
+    <label class="ctl chk"><input type="checkbox" [checked]="module.computerKeys" (change)="module.setComputerKeys($event.target.checked)"> Teclado de la computadora</label>
+    <label class="ctl chk"><input type="checkbox" [checked]="module.midiIn" (change)="module.setMidiIn($event.target.checked)"> Controlador MIDI</label>
+    <div class="targets">
+        <span class="label">Envia a</span>
+        <label class="tgt" *ngFor="let s of synths" [class.on]="rack.isNoteLinked(module.id, s.id)">
+            <input type="checkbox" [checked]="rack.isNoteLinked(module.id, s.id)" (change)="rack.toggleNoteLink(module.id, s.id)">
+            {{ s.name }}
+        </label>
+        <span class="none" *ngIf="!synths.length">no hay instrumentos en el rack</span>
+    </div>
+    <p class="hint">Marca varios instrumentos para tocarlos a la vez (capas) o ninguno para dejar el teclado mudo.
+       Tambien se puede cablear en la vista Cableado. Flechas = octava &middot; Espacio = sustain.</p>
 </div>`,
     styles: [`
 .kb { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 26px; }
@@ -30,11 +37,21 @@ import { SplitterModule, MergerModule } from '../modules/patchbay.module';
 .ctl b { min-width: 24px; text-align: center; font-family: var(--mono); }
 .chk { color: var(--dim); cursor: pointer; }
 output { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+.targets { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.tgt { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; color: var(--dim); }
+.tgt.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.none { color: var(--dim); font-size: 12px; }
 .hint { flex-basis: 100%; margin: 2px 0 0; color: var(--dim); font-size: 11px; }
 `]
 })
 export class KeyboardDeviceComponent {
     @Input() module: KeyboardModule;
+
+    constructor(public rack: RackService) {}
+
+    get synths() {
+        return this.rack.synths;
+    }
 }
 
 /** Salida de audio: nivel general y medidor. */
@@ -42,11 +59,11 @@ export class KeyboardDeviceComponent {
     selector: 'app-output-device',
     template: `
 <div class="out">
-    <label class="ctl">
+    <div class="ctl">
         <span class="label">Nivel</span>
-        <input type="range" min="0" max="1.5" step="0.01" [value]="module.level" (input)="module.setLevel($event.target.valueAsNumber)" aria-label="Nivel de salida">
+        <app-fader [horizontal]="true" [length]="170" [min]="0" [max]="1.5" [step]="0.01" [default]="1" [value]="module.level" (valueChange)="module.setLevel($event)" ariaLabel="Nivel de salida"></app-fader>
         <output>{{ module.level | number:'1.2-2' }}</output>
-    </label>
+    </div>
     <div class="meter" title="Nivel de salida"><i [style.width.%]="level * 100"></i></div>
     <p class="hint">Todo lo que no llegue a esta salida por un cable no se escucha.</p>
 </div>`,

@@ -9,6 +9,7 @@ interface CablePath {
     id: string;
     kind: PortKind;
     d: string;
+    hit: string;  // el tramo central del cable: la zona donde se hace clic (los extremos quedan libres para los puertos)
     mx: number;   // punto medio, para el boton de borrar
     my: number;
 }
@@ -23,6 +24,22 @@ interface Drag {
 }
 
 const NODE_W = 210;
+
+type Pt = [number, number];
+const lerp = (a: Pt, b: Pt, t: number): Pt => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+
+// Divide una curva de Bezier cubica en t (De Casteljau)
+function split(p: Array<Pt>, t: number): { left: Array<Pt>; right: Array<Pt> } {
+    const a = lerp(p[0], p[1], t), b = lerp(p[1], p[2], t), c = lerp(p[2], p[3], t);
+    const d = lerp(a, b, t), e = lerp(b, c, t), f = lerp(d, e, t);
+    return { left: [p[0], a, d, f], right: [f, e, c, p[3]] };
+}
+
+// El tramo [t0, t1] de la curva, como atributo `d` de un path
+function sliceD(p: Array<Pt>, t0: number, t1: number): string {
+    const q = split(split(p, t1).left, t0 / t1).right;
+    return 'M' + q[0][0] + ' ' + q[0][1] + ' C' + q[1][0] + ' ' + q[1][1] + ', ' + q[2][0] + ' ' + q[2][1] + ', ' + q[3][0] + ' ' + q[3][1];
+}
 
 /**
  * Vista Cableado: los dispositivos como nodos que se arrastran, con sus puertos (jacks) a los lados.
@@ -45,6 +62,9 @@ export class PatchViewComponent implements AfterViewChecked {
 
     private moving: { module: RackModule; dx: number; dy: number } = null;
     private signature = '';
+    // Para detectar el doble clic en un puerto: solo vale si el primer clic fue limpio (sin arrastrar un cable)
+    private lastJack = { key: '', time: 0, clean: false };
+    private dragMoved = false;
 
     constructor(public rack: RackService) {}
 
@@ -89,12 +109,15 @@ export class PatchViewComponent implements AfterViewChecked {
         return { x: r.left - w.left + wrap.scrollLeft + r.width / 2, y: r.top - w.top + wrap.scrollTop + r.height / 2 };
     }
 
-    private curve(x1: number, y1: number, x2: number, y2: number): { d: string; mx: number; my: number } {
+    private curve(x1: number, y1: number, x2: number, y2: number): { d: string; hit: string; mx: number; my: number } {
         const dx = Math.max(60, Math.abs(x2 - x1) / 2);
         // Los cables cuelgan un poco, como cables de verdad
         const sag = Math.min(70, 20 + Math.abs(x2 - x1) / 6);
+        const pts: Array<Pt> = [[x1, y1], [x1 + dx, y1 + sag], [x2 - dx, y2 + sag], [x2, y2]];
         const d = 'M' + x1 + ' ' + y1 + ' C' + (x1 + dx) + ' ' + (y1 + sag) + ', ' + (x2 - dx) + ' ' + (y2 + sag) + ', ' + x2 + ' ' + y2;
-        return { d, mx: (x1 + x2) / 2, my: (y1 + y2) / 2 + sag * 0.75 };
+        // El punto del cable en t = 0.5, para el boton de borrar
+        const mid = split(pts, 0.5).left[3];
+        return { d, hit: sliceD(pts, 0.14, 0.86), mx: mid[0], my: mid[1] };
     }
 
     ngAfterViewChecked() {
@@ -143,6 +166,17 @@ export class PatchViewComponent implements AfterViewChecked {
     startCable(m: RackModule, p: PortDef, e: PointerEvent) {
         e.preventDefault();
         e.stopPropagation();
+        // Doble clic en un puerto: desconecta todo lo suyo. Se detecta aca y no con el evento dblclick,
+        // porque el contenedor captura el puntero y el navegador ya no lo entrega al puerto.
+        const key = m.id + ':' + p.id, now = performance.now();
+        const again = this.lastJack.clean && this.lastJack.key == key && now - this.lastJack.time < 350;
+        this.lastJack = { key, time: again ? 0 : now, clean: false };
+        this.dragMoved = false;
+        if (again) {
+            this.rack.graph.disconnectPort(m.id, p.id);
+            this.selectedCable = null;
+            return;
+        }
         // Mayuscula + clic: desconecta todo lo de ese puerto
         if (e.shiftKey) {
             this.rack.graph.disconnectPort(m.id, p.id);
@@ -160,6 +194,8 @@ export class PatchViewComponent implements AfterViewChecked {
     onMove(e: PointerEvent) {
         if (this.drag) {
             const pt = this.local(e);
+            if (Math.abs(pt.x - this.drag.x) + Math.abs(pt.y - this.drag.y) > 4)
+                this.dragMoved = true;
             this.drag.x = pt.x;
             this.drag.y = pt.y;
         } else if (this.moving) {
@@ -176,11 +212,14 @@ export class PatchViewComponent implements AfterViewChecked {
         if (this.drag) {
             const d = this.drag;
             this.drag = null;
+            // Un clic sin arrastrar deja la puerta abierta para un segundo clic (doble clic)
+            this.lastJack.clean = !this.dragMoved;
             // El puerto bajo el puntero (el captura el contenedor, asi que se busca por posicion)
             const hit = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement;
             const jack = hit && hit.closest ? hit.closest('[data-j]') as HTMLElement : null;
-            if (jack) {
-                const [mod, port] = jack.getAttribute('data-j').split(':');
+            const [mod, port] = jack ? jack.getAttribute('data-j').split(':') : ['', ''];
+            // Soltar sobre el mismo puerto del que se salio (un simple clic) no es un intento de cable
+            if (jack && !(mod == d.module && port == d.port)) {
                 if (d.dir == 'out')
                     this.rack.connect(d.module, d.port, mod, port);
                 else
@@ -208,8 +247,20 @@ export class PatchViewComponent implements AfterViewChecked {
 
     selectCable(id: string, e: Event) {
         e.stopPropagation();
+        // Si el foco quedo en un campo de texto (ej. el buscador) Supr se tomaria como escritura
+        const active = document.activeElement as HTMLElement;
+        if (active && active !== document.body && active.blur)
+            active.blur();
         this.selectedCable = id;
         this.rack.message = '';
+    }
+
+    // Doble clic en un puerto: se desconecta todo lo que tenga
+    disconnectPort(m: RackModule, p: PortDef, e: Event) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.rack.graph.disconnectPort(m.id, p.id);
+        this.selectedCable = null;
     }
 
     deleteCable(id: string) {
