@@ -4,6 +4,7 @@ import { LoadStatus } from '../../services/sample-library';
 import { Patch, FxConfig, PRESETS, DEFAULT_FX, clonePatch } from '../../services/presets';
 import { BASE_MIDI } from '../../services/keyboard-map';
 import { ModuleEnv, NoteMsg } from './types';
+import { setParam } from './audio';
 
 const MAX_VOICES = 24;
 const MIN_OCTAVE = -3;
@@ -56,7 +57,7 @@ export class SynthEngine {
     }
     set level(value: number) {
         this.patch.level = value;
-        this.patchOut.gain.setTargetAtTime(value, this.env.ctx.currentTime, 0.02);
+        setParam(this.env, this.patchOut.gain, value, 0.02);
     }
 
     get baseMidi(): number {

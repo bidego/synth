@@ -2,6 +2,7 @@ import { PlayingVoice, createVoice } from '../../synth/voice-factory';
 import { Patch, clonePatch, sanitizePatch } from '../../services/presets';
 import { TransportClient } from './transport.service';
 import { ModuleEnv } from './types';
+import { setParam } from './audio';
 import { SynthEngine, NoteEvent } from './synth-engine';
 
 /** Una nota grabada. El tiempo va en beats (negras), no en segundos: cambiar el BPM no la desarma. */
@@ -180,7 +181,7 @@ export class Sequencer implements TransportClient {
 
     private applyTrackGain(track: Track) {
         const gain = track.muted ? 0 : track.volume * track.patch.level;
-        track.out.gain.setTargetAtTime(gain, this.env.ctx.currentTime, 0.01);
+        setParam(this.env, track.out.gain, gain, 0.01);
     }
 
     // --- Grabacion ---

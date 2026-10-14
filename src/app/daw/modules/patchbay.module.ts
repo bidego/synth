@@ -38,7 +38,7 @@ export class SplitterModule extends RackModule {
 
     toggleMute(i: number) {
         this.muted[i] = !this.muted[i];
-        this.outs[i].gain.setTargetAtTime(this.muted[i] ? 0 : 1, this.env.ctx.currentTime, 0.01);
+        this.set(this.outs[i].gain, this.muted[i] ? 0 : 1, 0.01);
         this.env.changed();
     }
 
@@ -92,7 +92,7 @@ export class MergerModule extends RackModule {
 
     toggleMute(i: number) {
         this.muted[i] = !this.muted[i];
-        this.ins[i].gain.setTargetAtTime(this.muted[i] ? 0 : 1, this.env.ctx.currentTime, 0.01);
+        this.set(this.ins[i].gain, this.muted[i] ? 0 : 1, 0.01);
         this.env.changed();
     }
 

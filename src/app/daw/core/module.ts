@@ -1,5 +1,6 @@
 import { Subject } from 'rxjs';
 import { ModuleEnv, NoteMsg, PortDef } from './types';
+import { setParam } from './audio';
 
 /**
  * Un dispositivo del rack. Expone puertos (audio / notas) que se unen con cables.
@@ -17,6 +18,11 @@ export abstract class RackModule {
     public readonly noteOut = new Subject<NoteMsg>();
 
     constructor(protected env: ModuleEnv) {}
+
+    /** Cambia un parametro de audio (suave en vivo, inmediato en el render offline). */
+    protected set(param: AudioParam, value: number, timeConstant = 0.02) {
+        setParam(this.env, param, value, timeConstant);
+    }
 
     /** El AudioNode al que se conecta (entrada) o del que sale (salida) un puerto de audio. */
     abstract audioPort(id: string): AudioNode | null;

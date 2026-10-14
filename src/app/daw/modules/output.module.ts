@@ -38,7 +38,7 @@ export class OutputModule extends RackModule {
 
     setLevel(v: number) {
         this.level = Math.max(0, Math.min(1.5, v));
-        this.input.gain.setTargetAtTime(this.level, this.env.ctx.currentTime, 0.015);
+        this.set(this.input.gain, this.level, 0.015);
         this.env.changed();
     }
 

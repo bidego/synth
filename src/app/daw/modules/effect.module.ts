@@ -94,9 +94,8 @@ export abstract class EffectModule extends RackModule {
 
     setBypass(on: boolean) {
         this.bypass = on;
-        const t = this.env.ctx.currentTime;
-        this.fxGain.gain.setTargetAtTime(on ? 0 : 1, t, 0.01);
-        this.bypassGain.gain.setTargetAtTime(on ? 1 : 0, t, 0.01);
+        this.set(this.fxGain.gain, on ? 0 : 1, 0.01);
+        this.set(this.bypassGain.gain, on ? 1 : 0, 0.01);
         this.env.changed();
     }
 

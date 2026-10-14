@@ -90,17 +90,16 @@ export class MixerModule extends RackModule {
     }
 
     private applyStrip(i: number) {
-        const t = this.env.ctx.currentTime;
         const n = this.nodes[i];
-        n.fader.gain.setTargetAtTime(this.audible(i) ? this.strips[i].gain : 0, t, 0.015);
+        this.set(n.fader.gain, this.audible(i) ? this.strips[i].gain : 0, 0.015);
         if (n.pan)
-            n.pan.pan.setTargetAtTime(this.strips[i].pan, t, 0.015);
+            this.set(n.pan.pan, this.strips[i].pan, 0.015);
     }
 
     private applyAll() {
         for (let i = 0; i < MIXER_CHANNELS; i++)
             this.applyStrip(i);
-        this.masterGain.gain.setTargetAtTime(this.master, this.env.ctx.currentTime, 0.015);
+        this.set(this.masterGain.gain, this.master, 0.015);
     }
 
     setGain(i: number, v: number) {
@@ -129,7 +128,7 @@ export class MixerModule extends RackModule {
 
     setMaster(v: number) {
         this.master = Math.max(0, Math.min(1.5, v));
-        this.masterGain.gain.setTargetAtTime(this.master, this.env.ctx.currentTime, 0.015);
+        this.set(this.masterGain.gain, this.master, 0.015);
         this.env.changed();
     }
 

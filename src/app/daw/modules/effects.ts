@@ -38,14 +38,13 @@ export class DelayModule extends EffectModule {
     }
 
     protected apply(id: string, value: number) {
-        const t = this.env.ctx.currentTime;
         switch (id) {
             case 'sync': case 'division': case 'time': this.applyTime(); break;
-            case 'feedback': this.feedback.gain.setTargetAtTime(value, t, 0.03); break;
-            case 'tone': this.tone.frequency.setTargetAtTime(value, t, 0.03); break;
+            case 'feedback': this.set(this.feedback.gain, value, 0.03); break;
+            case 'tone': this.set(this.tone.frequency, value, 0.03); break;
             case 'mix':
-                this.wet.gain.setTargetAtTime(value, t, 0.03);
-                this.dry.gain.setTargetAtTime(1 - value * 0.5, t, 0.03);
+                this.set(this.wet.gain, value, 0.03);
+                this.set(this.dry.gain, 1 - value * 0.5, 0.03);
                 break;
         }
     }
@@ -53,7 +52,7 @@ export class DelayModule extends EffectModule {
     private applyTime() {
         const v = this.values;
         const seconds = v.sync ? v.division * 60 / this.env.transport.bpm : v.time;
-        this.delay.delayTime.setTargetAtTime(Math.max(0.001, Math.min(1.99, seconds)), this.env.ctx.currentTime, 0.03);
+        this.set(this.delay.delayTime, Math.max(0.001, Math.min(1.99, seconds)), 0.03);
     }
 
     onTempo() {
@@ -96,7 +95,6 @@ export class ReverbModule extends EffectModule {
     }
 
     protected apply(id: string, value: number) {
-        const t = this.env.ctx.currentTime;
         switch (id) {
             case 'decay':
                 // Regenerar la respuesta es caro: se espera a que el usuario suelte el control
@@ -106,11 +104,11 @@ export class ReverbModule extends EffectModule {
                 else
                     this.buildImpulse();
                 break;
-            case 'predelay': this.pre.delayTime.setTargetAtTime(value, t, 0.03); break;
-            case 'damping': this.damp.frequency.setTargetAtTime(value, t, 0.03); break;
+            case 'predelay': this.set(this.pre.delayTime, value, 0.03); break;
+            case 'damping': this.set(this.damp.frequency, value, 0.03); break;
             case 'mix':
-                this.wet.gain.setTargetAtTime(value, t, 0.03);
-                this.dry.gain.setTargetAtTime(1 - value * 0.4, t, 0.03);
+                this.set(this.wet.gain, value, 0.03);
+                this.set(this.dry.gain, 1 - value * 0.4, 0.03);
                 break;
         }
     }
@@ -168,13 +166,12 @@ export class ChorusModule extends EffectModule {
     }
 
     protected apply(id: string, value: number) {
-        const t = this.env.ctx.currentTime;
         switch (id) {
-            case 'rate': this.lfos.forEach((l, i) => l.frequency.setTargetAtTime(value * (1 + i * 0.13), t, 0.05)); break;
-            case 'depth': this.depths.forEach(d => d.gain.setTargetAtTime(value * 0.004, t, 0.05)); break;
+            case 'rate': this.lfos.forEach((l, i) => this.set(l.frequency, value * (1 + i * 0.13), 0.05)); break;
+            case 'depth': this.depths.forEach(d => this.set(d.gain, value * 0.004, 0.05)); break;
             case 'mix':
-                this.wet.gain.setTargetAtTime(value, t, 0.03);
-                this.dry.gain.setTargetAtTime(1 - value * 0.4, t, 0.03);
+                this.set(this.wet.gain, value, 0.03);
+                this.set(this.dry.gain, 1 - value * 0.4, 0.03);
                 break;
         }
     }
@@ -224,14 +221,13 @@ export class DistortionModule extends EffectModule {
     }
 
     protected apply(id: string, value: number) {
-        const t = this.env.ctx.currentTime;
         switch (id) {
-            case 'drive': this.pre.gain.setTargetAtTime(value, t, 0.03); break;
-            case 'tone': this.tone.frequency.setTargetAtTime(value, t, 0.03); break;
-            case 'level': this.levelGain.gain.setTargetAtTime(value, t, 0.03); break;
+            case 'drive': this.set(this.pre.gain, value, 0.03); break;
+            case 'tone': this.set(this.tone.frequency, value, 0.03); break;
+            case 'level': this.set(this.levelGain.gain, value, 0.03); break;
             case 'mix':
-                this.wet.gain.setTargetAtTime(value, t, 0.03);
-                this.dry.gain.setTargetAtTime(1 - value, t, 0.03);
+                this.set(this.wet.gain, value, 0.03);
+                this.set(this.dry.gain, 1 - value, 0.03);
                 break;
         }
     }
@@ -261,12 +257,11 @@ export class EqModule extends EffectModule {
     }
 
     protected apply(id: string, value: number) {
-        const t = this.env.ctx.currentTime;
         switch (id) {
-            case 'low': this.low.gain.setTargetAtTime(value, t, 0.03); break;
-            case 'mid': this.mid.gain.setTargetAtTime(value, t, 0.03); break;
-            case 'midFreq': this.mid.frequency.setTargetAtTime(value, t, 0.03); break;
-            case 'high': this.high.gain.setTargetAtTime(value, t, 0.03); break;
+            case 'low': this.set(this.low.gain, value, 0.03); break;
+            case 'mid': this.set(this.mid.gain, value, 0.03); break;
+            case 'midFreq': this.set(this.mid.frequency, value, 0.03); break;
+            case 'high': this.set(this.high.gain, value, 0.03); break;
         }
     }
 }
@@ -294,14 +289,13 @@ export class CompressorModule extends EffectModule {
     }
 
     protected apply(id: string, value: number) {
-        const t = this.env.ctx.currentTime;
         switch (id) {
-            case 'threshold': this.comp.threshold.setTargetAtTime(value, t, 0.02); break;
-            case 'ratio': this.comp.ratio.setTargetAtTime(value, t, 0.02); break;
-            case 'attack': this.comp.attack.setTargetAtTime(value, t, 0.02); break;
-            case 'release': this.comp.release.setTargetAtTime(value, t, 0.02); break;
-            case 'knee': this.comp.knee.setTargetAtTime(value, t, 0.02); break;
-            case 'makeup': this.makeup.gain.setTargetAtTime(dbToGain(value), t, 0.02); break;
+            case 'threshold': this.set(this.comp.threshold, value, 0.02); break;
+            case 'ratio': this.set(this.comp.ratio, value, 0.02); break;
+            case 'attack': this.set(this.comp.attack, value, 0.02); break;
+            case 'release': this.set(this.comp.release, value, 0.02); break;
+            case 'knee': this.set(this.comp.knee, value, 0.02); break;
+            case 'makeup': this.set(this.makeup.gain, dbToGain(value), 0.02); break;
         }
     }
 
@@ -335,11 +329,10 @@ export class LimiterModule extends EffectModule {
     }
 
     protected apply(id: string, value: number) {
-        const t = this.env.ctx.currentTime;
         switch (id) {
-            case 'gain': this.pre.gain.setTargetAtTime(dbToGain(value), t, 0.02); break;
-            case 'ceiling': this.comp.threshold.setTargetAtTime(value, t, 0.02); break;
-            case 'release': this.comp.release.setTargetAtTime(value, t, 0.02); break;
+            case 'gain': this.set(this.pre.gain, dbToGain(value), 0.02); break;
+            case 'ceiling': this.set(this.comp.threshold, value, 0.02); break;
+            case 'release': this.set(this.comp.release, value, 0.02); break;
         }
     }
 
