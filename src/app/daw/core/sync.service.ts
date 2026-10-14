@@ -17,7 +17,8 @@ interface PendingPut {
     data: any;
 }
 
-const API = 'api';
+// Absoluto: la app vive en /app/ y la API en /api (relativo iria a /app/api)
+const API = '/api';
 const KEY_STORAGE = 'synth.syncKey';
 const ENABLED_STORAGE = 'synth.syncEnabled';
 const DELETED_STORAGE = 'synth.syncDeleted';

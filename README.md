@@ -40,6 +40,25 @@ guardado en el navegador (Cache Storage), asi que despues funciona sin conexion.
 | FluidR3 GM (instrumentos y kits de bateria) | (c) 2000-2002, 2008 Frank Wen. Licencia estilo MIT; el aviso de copyright debe mantenerse en trabajos derivados. |
 | GeneralUser GS (instrumentos) | S. Christian Collins. Su licencia (v2.0) permite usarlo en proyectos de software; el autor aclara que hereda los derechos de las muestras y que no puede garantizar su origen al 100 %. Ver https://www.schristiancollins.com/generaluser.php |
 
+## Landing y proyectos publicos
+
+La raiz del sitio (`/`) es la **landing** (`landing/`, HTML + CSS + JS sin dependencias) y la app vive en `/app/`. Los enlaces
+viejos (`/#s=...`) y los nuevos (`#c=`, `#p=`, `#demo=`) se redirigen solos a la app.
+
+- **Intro:** una vez por visita arranca con el arte VJ de la app y el logo animado, y con un clic suena la musica de un proyecto
+  real (`landing/audio/intro.mp3`, el render del proyecto *Funkito D* hecho con el propio Syntotec). Se salta con Esc o
+  `?intro=0`; con movimiento reducido no anima.
+- **Nuestros proyectos:** proyectos de ejemplo estaticos en `landing/demos/` (`<slug>.json` + `index.json`, que se regenera con
+  `node scripts/build-demos.js`). Se abren en la app con `#demo=<slug>`.
+- **Galeria:** los ultimos proyectos publicos del backend (`GET /api/public`). Cada proyecto guardado se publica desde
+  *Proyecto > (globo)* con aviso previo, autor y descripcion; `#p=<id>` lo abre en la app. El texto que viene del servidor
+  se inserta siempre como texto, nunca como HTML. Moderacion: `ADMIN_TOKEN` habilita `DELETE /api/admin/public/<id>`;
+  `FEATURED_PIDS` marca destacados; `MAX_PUBLIC_PER_OWNER` limita las publicaciones por usuario.
+- **Enlaces cortos:** con backend, *Copiar enlace* guarda una copia de la sesion en el servidor (`shares/<codigo>.json` en el
+  repo) y da un enlace de ~10 caracteres (`#c=`); sin backend sigue siendo el enlace largo con la sesion adentro.
+- Para regenerar el audio y las capturas: abrir el proyecto con `#demo=funkito-d`, exportar el WAV y pasarlo por
+  `ffmpeg -i funkito.wav -af loudnorm=I=-15:TP=-1.5 -b:a 128k landing/audio/intro.mp3`.
+
 ## Backend: los proyectos guardados van a un repositorio git
 
 La app funciona sola, pero si hay un backend (`server/`), los proyectos que se **guardan con nombre** se envian ahi y

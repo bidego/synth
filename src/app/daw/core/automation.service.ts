@@ -80,6 +80,13 @@ export class AutomationService implements TransportClient {
         return m && info ? m.name + ' · ' + info.label : lane.module + ' · ' + lane.param;
     }
 
+    /** "Mix · Delay 1": el parametro primero (la columna es angosta y el nombre del dispositivo se corta). */
+    shortLabel(lane: AutoLane): string {
+        const m = this.rack.graph.find(lane.module);
+        const info = m && m.autoParam(lane.param);
+        return m && info ? info.label.replace(/^Canal (\d+) · /, 'C$1 · ') + ' · ' + m.name : lane.module + ' · ' + lane.param;
+    }
+
     range(lane: AutoLane): { min: number; max: number } {
         const m = this.rack.graph.find(lane.module);
         const info = m && m.autoParam(lane.param);

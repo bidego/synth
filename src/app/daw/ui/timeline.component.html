@@ -14,7 +14,7 @@
     <div class="body" *ngIf="ui.timelineOpen">
         <div class="labels">
             <div class="corner"></div>
-            <div class="lane-label" *ngFor="let l of shownLanes" [class.muted]="l.muted" [class.auto]="l.auto" [title]="l.label">
+            <div class="lane-label" *ngFor="let l of shownLanes" [class.muted]="l.muted" [class.auto]="l.auto" [title]="l.tip || l.label">
                 <span class="txt">{{ l.label }}</span>
                 <span class="lane-acts" *ngIf="l.auto">
                     <button class="ghost icon" (click)="toggleLane(l)" [class.off]="!l.auto.enabled" [title]="l.auto.enabled ? 'Desactivar esta automatizacion' : 'Activar esta automatizacion'" aria-label="Activar o desactivar la automatizacion"><app-icon [name]="l.auto.enabled ? 'eye' : 'eye-off'" [size]="11"></app-icon></button>

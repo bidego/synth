@@ -12,6 +12,7 @@ interface Lane {
     auto?: AutoLane;   // franja de automatizacion: en vez de notas se dibuja la curva del parametro
     min?: number;
     max?: number;
+    tip?: string;       // texto completo para el tooltip
 }
 
 const MAX_LANES_SHOWN = 16;
@@ -62,15 +63,16 @@ export class TimelineComponent implements OnInit, OnDestroy, AfterViewChecked {
             return;
         this.sig = sig;
         const lanes: Array<Lane> = [];
-        synths.forEach(s => s.sequencer.tracks.forEach(t => lanes.push({
+        synths.forEach((s, si) => s.sequencer.tracks.forEach(t => lanes.push({
             key: s.id + ':' + t.id,
-            label: s.name + ' · ' + t.name,
+            // "Pista 1 · Power Kit"; con varios instrumentos se antepone cual es ("2 · Pista 1 · TR-808")
+            label: (synths.length > 1 ? (si + 1) + ' · ' : '') + t.name + ' · ' + (t.patch && t.patch.name || s.name),
             muted: t.muted,
             notes: t.notes.map(n => ({ start: n.start, dur: n.dur, midi: n.midi }))
         })));
         this.automation.lanes.forEach(l => {
             const r = this.automation.range(l);
-            lanes.push({ key: 'a:' + l.module + l.param, label: this.automation.label(l), muted: !l.enabled, notes: [], auto: l, min: r.min, max: r.max });
+            lanes.push({ key: 'a:' + l.module + l.param, label: this.automation.shortLabel(l), tip: this.automation.label(l), muted: !l.enabled, notes: [], auto: l, min: r.min, max: r.max });
         });
         this.lanes = lanes;
         this.dirty = true;

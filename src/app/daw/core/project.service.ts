@@ -344,8 +344,8 @@ export class ProjectService {
             if (kind == SHARE_PREFIX) {
                 data = await decodeShare(payload);
             } else {
-                const url = kind == SHORT_PREFIX && /^[0-9A-Za-z]{10}$/.test(payload) ? 'api/shares/' + payload
-                    : kind == PUBLIC_PREFIX && /^p[a-f0-9]{14}$/.test(payload) ? 'api/public/' + payload
+                const url = kind == SHORT_PREFIX && /^[0-9A-Za-z]{10}$/.test(payload) ? '/api/shares/' + payload
+                    : kind == PUBLIC_PREFIX && /^p[a-f0-9]{14}$/.test(payload) ? '/api/public/' + payload
                     : kind == DEMO_PREFIX && /^[a-z0-9-]{1,40}$/.test(payload) ? '/demos/' + payload + '.json' : '';
                 if (!url)
                     throw new Error('El enlace no es valido');

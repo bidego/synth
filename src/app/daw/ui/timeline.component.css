@@ -37,7 +37,7 @@
 }
 .labels {
     flex: none;
-    width: 150px;
+    width: 200px;
     padding-right: 8px;
 }
 .corner, .ruler { height: 20px; }
