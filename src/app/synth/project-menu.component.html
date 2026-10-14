@@ -40,6 +40,25 @@
         </ul>
     </div>
 
+    <div class="section sync">
+        <div class="label">Servidor</div>
+        <div class="state" [ngClass]="sync.status">
+            <i></i><span>{{ sync.label }}</span>
+            <small *ngIf="sync.lastSync && sync.status == 'ok'">&middot; {{ savedAt(sync.lastSync) }} {{ sync.lastSync | date:'HH:mm' }}</small>
+            <small *ngIf="sync.unsent">&middot; {{ sync.unsent }} sin enviar</small>
+        </div>
+        <label class="chk"><input type="checkbox" [checked]="sync.enabled" (change)="sync.setEnabled($event.target.checked)"> Enviar al servidor los proyectos que guardo</label>
+        <div class="row wrap" *ngIf="sync.enabled">
+            <button class="icon" (click)="project.syncNow()" title="Trae los proyectos del servidor y sube los que falten">Sincronizar ahora</button>
+        </div>
+        <div class="row wrap key" *ngIf="sync.enabled && sync.status != 'off'">
+            <span class="keytext" title="Tu clave de sincronizacion (no se muestra completa)">{{ sync.keyShort }}</span>
+            <button class="icon" (click)="copyKey()" title="Copiar la clave completa">Copiar clave</button>
+            <button class="icon" (click)="changeKey()" title="Usar la clave de otro navegador para ver sus proyectos">Usar otra clave</button>
+        </div>
+        <p class="note" *ngIf="sync.enabled && sync.status != 'off'">Al guardar, el proyecto tambien se envia al servidor. Con la misma clave ves tus proyectos en otro navegador: quien la tenga puede verlos y cambiarlos, no la compartas.</p>
+    </div>
+
     <div class="section">
         <div class="label">Archivos</div>
         <div class="row wrap">

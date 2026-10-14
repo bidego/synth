@@ -1,0 +1,14 @@
+{
+  "name": "syntotec-server",
+  "version": "0.1.0",
+  "description": "Backend de Syntotec: guarda los proyectos en memoria y los versiona en un repositorio git",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}

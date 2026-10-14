@@ -40,6 +40,33 @@ guardado en el navegador (Cache Storage), asi que despues funciona sin conexion.
 | FluidR3 GM (instrumentos y kits de bateria) | (c) 2000-2002, 2008 Frank Wen. Licencia estilo MIT; el aviso de copyright debe mantenerse en trabajos derivados. |
 | GeneralUser GS (instrumentos) | S. Christian Collins. Su licencia (v2.0) permite usarlo en proyectos de software; el autor aclara que hereda los derechos de las muestras y que no puede garantizar su origen al 100 %. Ver https://www.schristiancollins.com/generaluser.php |
 
+## Backend: los proyectos guardados van a un repositorio git
+
+La app funciona sola, pero si hay un backend (`server/`), los proyectos que se **guardan con nombre** se envian ahi y
+quedan versionados en un repositorio git: **el repositorio es la base de datos**. El servidor lo clona al arrancar,
+carga todo en memoria (las lecturas no tocan git) y agrupa los cambios en commits (uno cada pocos segundos) que sube con
+un token que vive **solo en el servidor** (variable `GIT_TOKEN`: nunca llega al navegador, a los logs ni a la
+configuracion de git; se entrega a git por `GIT_ASKPASS`).
+
+```
+cp .env.example .env              # GIT_REPO_URL (conviene un repo PRIVADO) y GIT_TOKEN (solo contenido de ese repo)
+docker compose --profile backend up --build
+```
+
+- nginx reenvia `/api` al backend (`API_UPSTREAM`). Sin backend la app sigue andando solo con el navegador.
+- Cada navegador genera una **clave** al azar (64 hex, en `localStorage`); con ella se identifica ante el servidor. En el
+  repo el dueno es un hash de la clave, asi que quien lea el repo no puede deducirla. Para ver los proyectos en otro
+  navegador: *Proyecto > Servidor > Copiar clave* y en el otro *Usar otra clave*. Quien tenga la clave puede ver y
+  cambiar esos proyectos.
+- Sin conexion el proyecto queda guardado igual y se reenvia solo (con espera creciente); al arrancar la app trae los
+  proyectos del servidor que falten y sube los que el servidor no tenga. Gana la version con fecha de guardado mas nueva.
+- Archivos: `projects/<hash-del-dueno>/<id>.json`. Limites: 4 MB por proyecto, 200 por usuario, 120 pedidos/min por IP.
+- Si se borra un proyecto en un navegador y otro navegador con la misma clave todavia lo tiene, ese lo vuelve a subir en
+  su proxima sincronizacion (no hay marca de borrado compartida).
+- El historial de git crece con cada version guardada: para un uso intenso conviene podar o archivar el repo de vez en cuando.
+- Variables: ver `.env.example` y `server/server.js` (`COMMIT_DELAY_MS`, `PULL_INTERVAL_MS` para traer ediciones hechas a mano en el repo, etc.).
+- Pruebas del backend (con un remoto git real): `cd server && node test.js`.
+
 ## Automatizacion
 
 Con **Rec** activo y la casilla *Grabar automatizacion* del transporte (viene marcada), el movimiento de una perilla o fader

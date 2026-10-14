@@ -11,7 +11,9 @@ RUN npx ng build --prod --aot=false --build-optimizer=false
 
 # Serve stage
 FROM nginx:alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# nginx.conf es una plantilla: el contenedor reemplaza ${API_UPSTREAM} y ${NGINX_RESOLVER} al arrancar
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+ENV API_UPSTREAM=http://127.0.0.1:3000 NGINX_RESOLVER=127.0.0.11
 COPY --from=build /app/dist/syntotec-app /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

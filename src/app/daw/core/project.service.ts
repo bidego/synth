@@ -1,4 +1,5 @@
 import { AutomationService } from './automation.service';
+import { SyncService } from './sync.service';
 import { Injectable, NgZone } from '@angular/core';
 import { RackService } from './rack.service';
 import { RackGraph } from './rack-graph';
@@ -46,7 +47,8 @@ export class ProjectService {
     private saveTimer: any;
 
     constructor(private rack: RackService, private transport: TransportService, private library: SampleLibrary,
-                private audioCtx: AudioContext, private zone: NgZone, private automation: AutomationService) {
+                private audioCtx: AudioContext, private zone: NgZone, private automation: AutomationService,
+                private sync: SyncService) {
         this.refreshSaved();
         // Se guarda solo, un instante despues del ultimo cambio
         rack.changed.subscribe(() => this.dirty());
@@ -56,6 +58,8 @@ export class ProjectService {
         // Si se abrio un enlace compartido, esa sesion reemplaza a la restaurada; y si se pega otro enlace
         // en la misma pestana tambien
         this.loadFromHash();
+        // Si hay servidor, los proyectos guardados se sincronizan (se traen los que faltan y se suben los nuevos)
+        this.sync.check().then(ok => ok && this.reconcile());
         window.addEventListener('hashchange', () => this.zone.run(() => this.loadFromHash()));
     }
 
@@ -163,6 +167,7 @@ export class ProjectService {
         if (this.write(STORAGE_PROJECTS, all)) {
             this.message = 'Guardado "' + name + '"';
             this.refreshSaved();
+            this.sync.push(name, all[name].savedAt, all[name].data);
         }
     }
 
@@ -179,6 +184,61 @@ export class ProjectService {
         delete all[name];
         this.write(STORAGE_PROJECTS, all);
         this.refreshSaved();
+        this.sync.remove(name);
+    }
+
+    // --- Sincronizacion con el servidor ---
+
+    /** Pone al dia los proyectos guardados: trae los del servidor que faltan o son mas nuevos y sube los que el servidor no tiene. */
+    async reconcile() {
+        const remote = await this.sync.list();
+        if (!remote)
+            return;
+        const all = this.read(STORAGE_PROJECTS) || {};
+        let pulled = 0;
+        for (const item of remote) {
+            // Borrado aca y todavia sin confirmar en el servidor: no se vuelve a traer
+            if (this.sync.isDeleted(item.name))
+                continue;
+            const local = all[item.name];
+            if (!local || local.savedAt < item.savedAt) {
+                const full = await this.sync.get(item.id);
+                if (full && full.data && typeof full.savedAt == 'number') {
+                    all[item.name] = { savedAt: full.savedAt, data: full.data };
+                    pulled++;
+                }
+            }
+        }
+        const remoteByName: { [name: string]: { savedAt: number } } = {};
+        remote.forEach(r => remoteByName[r.name] = r);
+        Object.keys(all).forEach(name => {
+            const r = remoteByName[name];
+            if (!r || r.savedAt < all[name].savedAt)
+                this.sync.push(name, all[name].savedAt, all[name].data);
+        });
+        if (pulled && this.write(STORAGE_PROJECTS, all)) {
+            this.refreshSaved();
+            this.message = pulled == 1 ? 'Se trajo 1 proyecto del servidor' : 'Se trajeron ' + pulled + ' proyectos del servidor';
+        }
+        this.sync.markSynced();
+    }
+
+    /** Boton "Sincronizar ahora". */
+    async syncNow() {
+        if (await this.sync.check()) {
+            this.sync.retryNow();
+            await this.reconcile();
+        } else {
+            this.message = 'No se encontro el servidor';
+        }
+    }
+
+    /** Cambia la clave de sincronizacion: los proyectos de esa clave se traen a este navegador. */
+    async useKey(key: string): Promise<boolean> {
+        if (!this.sync.setKey(key))
+            return false;
+        await this.syncNow();
+        return true;
     }
 
     /** Proyecto nuevo: el rack inicial y el transporte por defecto. */

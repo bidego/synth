@@ -44,3 +44,7 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# Backend: secretos y datos locales
+.env
+server/data/

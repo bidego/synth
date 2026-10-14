@@ -16,6 +16,7 @@ import { TransportService } from './daw/core/transport.service';
 import { RackService } from './daw/core/rack.service';
 import { ProjectService } from './daw/core/project.service';
 import { AutomationService } from './daw/core/automation.service';
+import { SyncService } from './daw/core/sync.service';
 import { TimelineComponent } from './daw/ui/timeline.component';
 import { TransportBarComponent } from './daw/ui/transport-bar.component';
 import { RackViewComponent } from './daw/ui/rack-view.component';
@@ -74,6 +75,7 @@ import { ListenKeys } from './directives/listen.keys';
     TransportService,
     RackService,
     AutomationService,
+    SyncService,
     ProjectService
   ],
   bootstrap: [AppComponent]
