@@ -1,21 +1,13 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { LooperService, Track, LoopNote, BAR_OPTIONS } from '../services/looper.service';
+import { LooperService, Track, LoopNote } from '../services/looper.service';
 
+/** Lista de pistas del looper (el transporte y el menu de proyecto viven en la cabecera). */
 @Component({
     selector: 'app-looper',
     templateUrl: './looper.component.html',
     styleUrls: ['./looper.component.css']
 })
 export class LooperComponent implements OnInit, OnDestroy {
-    public barOptions = BAR_OPTIONS;
-    public passOptions = [1, 2, 4, 8];
-    public quantizes = [
-        { label: 'Libre', value: 0 },
-        { label: '1/4', value: 1 },
-        { label: '1/8', value: 0.5 },
-        { label: '1/16', value: 0.25 }
-    ];
-    public dots = [0, 1, 2, 3];
     private timer: any;
 
     constructor(public looper: LooperService) {}
@@ -28,21 +20,13 @@ export class LooperComponent implements OnInit, OnDestroy {
         clearInterval(this.timer);
     }
 
-    onImport(event: Event) {
-        const input = event.target as HTMLInputElement;
-        if (input.files && input.files[0])
-            this.looper.importFile(input.files[0]);
-        // Permite volver a elegir el mismo archivo
-        input.value = '';
-    }
-
     get gridSize(): string {
         return 100 / this.looper.loopBeats + '% 100%';
     }
 
     // Altura de una nota en el mini piano roll (los kits de percusion se reparten por instrumento)
     noteBottom(track: Track, n: LoopNote): number {
-        return track.patch.kind == 'drums'
+        return track.patch.kind == 'drums' || track.patch.kind == 'kit'
             ? (n.midi % 12) / 12 * 88
             : Math.max(0, Math.min(88, (n.midi - 24) / 72 * 88));
     }

@@ -1,0 +1,126 @@
+<aside class="sidebar" [class.collapsed]="!ui.sidebarOpen" aria-label="Sonidos">
+
+    <!-- Colapsado: queda una barra angosta para volver a abrirlo -->
+    <div class="rail" *ngIf="!ui.sidebarOpen">
+        <button class="ghost icon" (click)="ui.toggleSidebar()" title="Mostrar los sonidos" aria-label="Mostrar los sonidos">
+            <app-icon name="chevron-right" [size]="16"></app-icon>
+        </button>
+        <span class="vertical label">Sonidos</span>
+        <span class="vertical current">{{ engine.patch.name }}</span>
+    </div>
+
+    <div class="content" *ngIf="ui.sidebarOpen">
+        <header>
+            <h2>Sonidos</h2>
+            <button class="ghost icon" (click)="ui.toggleSidebar()" title="Colapsar el panel" aria-label="Colapsar el panel">
+                <app-icon name="chevron-left" [size]="16"></app-icon>
+            </button>
+        </header>
+
+        <div class="search">
+            <app-icon name="search" [size]="14"></app-icon>
+            <input type="search" placeholder="Buscar: piano, strings, 808..." [value]="query"
+                (input)="setQuery($event.target.value)" (keydown.escape)="clearSearch($event)" (keydown.enter)="pickFirst($event)"
+                aria-label="Buscar sonido">
+            <button class="ghost icon clear" *ngIf="query" (click)="setQuery('')" title="Borrar la busqueda" aria-label="Borrar la busqueda">
+                <app-icon name="close" [size]="12"></app-icon>
+            </button>
+        </div>
+
+        <!-- Sonido actual -->
+        <div class="now">
+            <div class="label">Sonido actual</div>
+            <div class="name">{{ engine.patch.name }}</div>
+            <div class="desc">{{ engine.patch.description }}</div>
+            <ng-container *ngIf="engine.loading as l">
+                <div class="load" *ngIf="l.state == 'loading'">
+                    <span class="bar"><i [style.width.%]="l.progress * 100"></i></span>
+                    <small>Cargando {{ (l.progress * 100) | number:'1.0-0' }}%</small>
+                </div>
+                <div class="load error" *ngIf="l.state == 'error'">No se pudo cargar ({{ l.message }}). Revisa la conexion y volve a elegirlo.</div>
+            </ng-container>
+        </div>
+
+        <div class="scroll">
+
+            <!-- Resultados de busqueda -->
+            <ng-container *ngIf="searching">
+                <div class="empty" *ngIf="noResults">Nada coincide con "{{ query }}".</div>
+
+                <div class="group" *ngIf="presetResults.length">
+                    <div class="group-title static">Favoritos y sintetizadores</div>
+                    <button class="item" *ngFor="let p of presetResults" [class.active]="isCurrentPreset(p)" (click)="pickPreset(p)" [title]="p.description">
+                        <span class="n">{{ p.name }}</span><span class="tag">{{ tag(p) }}</span>
+                    </button>
+                </div>
+
+                <div class="group" *ngIf="programResults.length">
+                    <div class="group-title static">Banco GM <small>({{ fontLabel }})</small></div>
+                    <button class="item" *ngFor="let p of programResults" [class.active]="isCurrentProgram(p)" (click)="pickProgram(p)">
+                        <span class="n">{{ names[p] }}</span><span class="tag">{{ familyName(p) }}</span>
+                    </button>
+                </div>
+
+                <div class="group" *ngIf="kitResults.length">
+                    <div class="group-title static">Kits de bateria</div>
+                    <button class="item" *ngFor="let k of kitResults" [class.active]="isCurrentKit(k.id)" (click)="pickKit(k)">
+                        <span class="n">{{ k.label }} Kit</span><span class="tag">KIT</span>
+                    </button>
+                </div>
+            </ng-container>
+
+            <!-- Navegacion normal -->
+            <ng-container *ngIf="!searching">
+
+                <div class="group" *ngFor="let g of groups">
+                    <button class="group-title" (click)="toggle('cat:' + g.id, g.id == 'Sampled')">
+                        <app-icon [name]="open('cat:' + g.id, g.id == 'Sampled') ? 'chevron-down' : 'chevron-right'" [size]="12"></app-icon>
+                        <span>{{ g.label }}</span><small>{{ g.presets.length }}</small>
+                    </button>
+                    <div class="items" *ngIf="open('cat:' + g.id, g.id == 'Sampled')">
+                        <button class="item" *ngFor="let p of g.presets" [class.active]="isCurrentPreset(p)" (click)="pickPreset(p)" [title]="p.description">
+                            <span class="n">{{ p.name }}</span><span class="tag">{{ tag(p) }}</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="group">
+                    <div class="group-title static"><app-icon name="music" [size]="12"></app-icon><span>Banco de muestras GM</span><small>128</small></div>
+                    <div class="seg fonts">
+                        <button *ngFor="let f of fonts" [class.on]="font == f.id" (click)="font = f.id" [title]="f.credit">{{ f.label }}</button>
+                    </div>
+                    <div class="family" *ngFor="let f of families; let i = index">
+                        <button class="group-title sub" (click)="toggle('fam:' + i)">
+                            <app-icon [name]="open('fam:' + i) ? 'chevron-down' : 'chevron-right'" [size]="12"></app-icon>
+                            <span>{{ f }}</span><small>8</small>
+                        </button>
+                        <div class="items" *ngIf="open('fam:' + i)">
+                            <button class="item" *ngFor="let p of programs(i)" [class.active]="isCurrentProgram(p)" (click)="pickProgram(p)">
+                                <span class="n">{{ names[p] }}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group">
+                    <button class="group-title" (click)="toggle('kits', true)">
+                        <app-icon [name]="open('kits', true) ? 'chevron-down' : 'chevron-right'" [size]="12"></app-icon>
+                        <span>Kits de bateria (FluidR3)</span><small>{{ kits.length }}</small>
+                    </button>
+                    <div class="items" *ngIf="open('kits', true)">
+                        <button class="item" *ngFor="let k of kits" [class.active]="isCurrentKit(k.id)" (click)="pickKit(k)">
+                            <span class="n">{{ k.label }} Kit</span><span class="tag">KIT</span>
+                        </button>
+                    </div>
+                </div>
+            </ng-container>
+
+            <p class="credit">
+                Muestras reales de FluidR3 GM (F. Wen) y GeneralUser GS (S. C. Collins), servidas por WebAudioFont.
+                Se descargan al elegir un instrumento y quedan guardadas en el navegador.
+            </p>
+        </div>
+    </div>
+</aside>

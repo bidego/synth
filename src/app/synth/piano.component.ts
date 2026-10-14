@@ -4,19 +4,18 @@ import { KEY_SPAN, TOP_ROW, BOTTOM_ROW, defaultLabel, noteName } from '../servic
 import { DRUM_NAMES } from './drums';
 import { GM_DRUM_SHORT, KIT_NOTE_OFFSET } from '../services/gm';
 
-const WHITE_WIDTH = 46;
-const BLACK_WIDTH = 30;
 const BLACK_STEPS = [1, 3, 6, 8, 10];
 
 interface PianoKey {
     offset: number;
     black: boolean;
-    left: number;
-    width: number;
+    left: number;    // % del ancho total
+    width: number;   // % del ancho total
     top: string;     // tecla fisica de la fila de arriba que toca esta nota
     bottom: string;  // tecla fisica de la fila de abajo
 }
 
+/** Teclado en pantalla (ancho fluido) con la barra de octava, nivel y voces. */
 @Component({
     selector: 'app-piano',
     templateUrl: './piano.component.html',
@@ -24,26 +23,31 @@ interface PianoKey {
 })
 export class PianoComponent implements OnInit {
     public keys: Array<PianoKey> = [];
-    public width: number;
     private labels: { [code: string]: string } = {};
 
     constructor(public engine: SynthEngine) {}
 
     ngOnInit() {
+        // Primera pasada: posicion en "teclas blancas"; el ancho total se conoce al final
+        const raw: Array<{ offset: number; black: boolean; whites: number }> = [];
         let whites = 0;
         for (let offset = 0; offset < KEY_SPAN; offset++) {
             const black = BLACK_STEPS.indexOf(offset % 12) >= 0;
-            this.keys.push({
-                offset, black,
-                left: black ? whites * WHITE_WIDTH - BLACK_WIDTH / 2 : whites * WHITE_WIDTH,
-                width: black ? BLACK_WIDTH : WHITE_WIDTH - 2,
-                top: TOP_ROW[this.rowIndex(offset, 12)],
-                bottom: BOTTOM_ROW[this.rowIndex(offset, 0)]
-            });
+            raw.push({ offset, black, whites });
             if (!black)
                 whites++;
         }
-        this.width = whites * WHITE_WIDTH;
+        const unit = 100 / whites;
+        this.keys = raw.map(k => {
+            const width = k.black ? unit * 0.62 : unit - 0.3;
+            return {
+                offset: k.offset, black: k.black,
+                left: k.black ? k.whites * unit - width / 2 : k.whites * unit,
+                width,
+                top: TOP_ROW[k.offset - 12],
+                bottom: BOTTOM_ROW[k.offset]
+            };
+        });
         this.loadLayoutLabels();
     }
 
@@ -74,9 +78,13 @@ export class PianoComponent implements OnInit {
         }
     }
 
-    // Indice en la fila de teclas de una nota (o -1 si esa fila no la cubre)
-    private rowIndex(offset: number, rowStart: number): number {
-        return offset - rowStart;
+    get range(): string {
+        const base = this.engine.baseMidi;
+        return noteName(base) + ' - ' + noteName(base + KEY_SPAN - 1);
+    }
+
+    setLevel(value) {
+        this.engine.level = parseFloat(value);
     }
 
     /**

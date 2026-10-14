@@ -1,68 +1,131 @@
 :host {
     display: block;
 }
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 24px;
+    margin-bottom: 10px;
+}
+.sound {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.sound b {
+    font-size: 14px;
+}
+.sound small {
+    color: var(--dim);
+}
+.ctl {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.octave b {
+    min-width: 22px;
+    text-align: center;
+    font-family: var(--mono);
+}
+.range {
+    color: var(--dim);
+    font-family: var(--mono);
+}
+.level input {
+    width: 110px;
+}
+.level output {
+    min-width: 34px;
+    color: var(--dim);
+    font-family: var(--mono);
+}
+.voices {
+    margin-left: auto;
+}
+
+/* --- Teclado de ancho fluido --- */
 .piano {
     position: relative;
-    height: 150px;
-    margin: 0 auto;
+    height: clamp(110px, 22vh, 190px);
     user-select: none;
+    -webkit-user-select: none;
     touch-action: none;   /* en pantallas tactiles el dedo toca teclas, no desplaza la pagina */
 }
 .key {
     position: absolute;
     top: 0;
-    height: 150px;
-    box-sizing: border-box;
-    border-radius: 0 0 5px 5px;
-    background: #eee;
+    height: 100%;
+    border-radius: 0 0 6px 6px;
+    background: linear-gradient(#f2f3f8, #d9dbe6);
     color: #333;
     cursor: pointer;
     text-align: center;
+    box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.12);
 }
 .key.black {
-    height: 92px;
-    background: #222;
+    height: 62%;
+    background: linear-gradient(#2a2d44, #0d0e18);
     color: #ddd;
     z-index: 2;
     border: 1px solid #000;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
 }
 .key.on {
-    background: #ff5a8a;
-    box-shadow: 0 0 18px #ff5a8a;
+    background: linear-gradient(#ff7aa6, var(--accent));
+    box-shadow: 0 0 18px var(--accent);
 }
 .key.black.on {
-    background: #c01e53;
+    background: linear-gradient(#d83a72, #8f1c47);
 }
 .lbl, .note {
     position: absolute;
     left: 0;
     right: 0;
-    font-size: 10px;
+    line-height: 1;
 }
-.lbl.top, .legend .top {
-    color: #2a7bd6;
+.lbl {
+    font-weight: 700;
+    font-size: clamp(9px, 1.05vw, 13px);
 }
-.lbl.bottom, .legend .bottom {
-    color: #e08a1e;
-}
-.key.black .lbl.top { color: #7db4f5; }
-.key.black .lbl.bottom { color: #f5b567; }
-.lbl.top { bottom: 46px; font-weight: bold; font-size: 13px; }
-.lbl.bottom { bottom: 30px; font-weight: bold; font-size: 13px; }
-.key.black .lbl.top { bottom: 40px; }
-.key.black .lbl.bottom { bottom: 22px; }
+.lbl.top { bottom: 32%; color: #2a7bd6; }
+.lbl.bottom { bottom: 17%; color: #d97a0f; }
+.key.black .lbl.top { bottom: 42%; color: #7db4f5; }
+.key.black .lbl.bottom { bottom: 20%; color: #f5b567; }
 .note {
-    bottom: 6px;
+    bottom: 3%;
+    font-size: clamp(8px, 0.85vw, 11px);
     opacity: 0.55;
+    white-space: nowrap;
+    overflow: hidden;
 }
 .key.black .note {
     display: none;
 }
+
 .legend {
-    width: fit-content;
-    margin: 8px auto 0;
-    padding: 2px 12px;
-    border-radius: 6px;
-    background: rgba(10, 10, 20, 0.72);
-    font-size: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--dim);
+}
+.legend kbd {
+    margin: 0 2px;
+}
+.dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+.dot.top { background: #2a7bd6; }
+.dot.bottom { background: #d97a0f; }
+@media (max-width: 700px) {
+    .level input { width: 80px; }
+    .legend span:nth-child(n+3) { display: none; }
 }

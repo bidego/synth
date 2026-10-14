@@ -1,45 +1,113 @@
 <app-visualizer></app-visualizer>
-<div class="unlock" *ngIf="sound.audioState != 'running'" (click)="sound.unlock()">
-  Toca aqui para activar el sonido
-  <small>(si sigue mudo en iPhone: revisa el interruptor de silencio del costado y el volumen)</small>
+
+<div class="unlock" *ngIf="sound.audioState != 'running'" (click)="sound.unlock()" role="alert">
+  <app-icon name="volume-off" [size]="16"></app-icon>
+  <span>Toca aqui para activar el sonido</span>
+  <small>Si sigue mudo en iPhone, revisa el interruptor de silencio del costado y el volumen.</small>
 </div>
+
 <div handlekeys class="app" [class.zen]="ui.zen">
-  <h1>{{ title }}</h1>
-  <div class="presets">
-    <span *ngFor="let group of categories" class="presetGroup">
-      <b>{{ group.name }}</b>
-      <button *ngFor="let preset of group.presets"
-        [class.on]="engine.patch.name == preset.name"
-        (click)="loadPreset(preset)" [title]="preset.description">{{ preset.name }}</button>
-    </span>
+
+  <!-- Cabecera -->
+  <header class="topbar">
+    <button class="ghost icon burger" (click)="ui.toggleSidebar()" [title]="ui.sidebarOpen ? 'Ocultar los sonidos' : 'Mostrar los sonidos'" aria-label="Sonidos">
+      <app-icon name="menu" [size]="18"></app-icon>
+    </button>
+
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4f87"/><stop offset="1" stop-color="#5cc8ff"/></linearGradient></defs>
+        <rect width="32" height="32" rx="8" fill="url(#g)"/>
+        <path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <div class="titles"><b>{{ title }}</b><small>Synth Studio</small></div>
+    </div>
+
+    <app-project-menu></app-project-menu>
+
+    <span class="spacer"></span>
+
+    <span class="chip hide-xs" [ngClass]="midiClass" [title]="'MIDI: ' + midi.message"><i></i>MIDI &middot; {{ midiLabel }}</span>
+    <button class="chip audio" [class.ok]="sound.audioState == 'running'" [class.danger]="sound.audioState != 'running'"
+      (click)="sound.unlock()" [title]="sound.audioState == 'running' ? 'El audio esta activo' : 'El audio esta inactivo: tocar para activarlo'">
+      <i></i>Audio<span class="hide-xs" *ngIf="sound.audioState != 'running'">&nbsp;inactivo</span>
+    </button>
+
+    <button class="ghost icon hide-xs" (click)="ui.toggleHelp()" title="Atajos de teclado (F1)" aria-label="Ayuda">
+      <app-icon name="help" [size]="17"></app-icon>
+    </button>
+    <button class="icon visual" (click)="toggleZen()" title="Ocultar la interfaz y ver solo el arte (Esc)">
+      <app-icon name="eye-off" [size]="15"></app-icon><span class="txt">Modo visual</span>
+    </button>
+  </header>
+
+  <app-transport></app-transport>
+
+  <div class="workspace">
+    <div class="backdrop" *ngIf="narrow && ui.sidebarOpen" (click)="ui.toggleSidebar()"></div>
+    <app-sidebar class="side" [class.drawer-open]="ui.sidebarOpen"></app-sidebar>
+
+    <main>
+      <app-panel panelId="keys" heading="Teclado">
+        <app-piano></app-piano>
+      </app-panel>
+
+      <app-panel panelId="looper" heading="Looper">
+        <span panel-meta>{{ looper.tracks.length }} {{ looper.tracks.length == 1 ? 'pista' : 'pistas' }} &middot; {{ looper.bars }} {{ looper.bars == 1 ? 'compas' : 'compases' }}</span>
+        <button panel-actions class="icon" (click)="looper.addTrack()" title="Nueva pista (usa el sonido actual)">
+          <app-icon name="plus" [size]="13"></app-icon> Pista
+        </button>
+        <app-looper></app-looper>
+      </app-panel>
+
+      <app-roll-editor></app-roll-editor>
+
+      <app-panel panelId="patch" heading="Sonido">
+        <span panel-meta>{{ kindLabel }}</span>
+        <app-synth-panel></app-synth-panel>
+      </app-panel>
+
+      <app-panel panelId="fx" heading="Efectos master">
+        <app-fx></app-fx>
+      </app-panel>
+    </main>
   </div>
-  <app-bank-browser></app-bank-browser>
-  <div class="fx">
-    <b>FX</b>
-    <label *ngFor="let k of fxKnobs">
-      {{ k.label }}
-      <input type="range" min="0" [max]="k.max" [step]="k.step" [value]="sound.fx[k.name]"
-        (input)="setFx(k.name, $event.target.value)">
-    </label>
-  </div>
-  <div class="midi" [class.on]="midi.devices.length">
-    <b>MIDI</b> {{ midi.message }}
-    <span *ngIf="midi.lastEvent">&middot; {{ midi.lastEvent }}</span>
-    <span *ngIf="engine.sustain">&middot; sustain</span>
-  </div>
-  <div class="loading" *ngIf="engine.loading as l" [class.error]="l.state == 'error'">
-    <ng-container *ngIf="l.state == 'loading'">
-      Cargando instrumento {{ (l.progress * 100) | number:'1.0-0' }}%
-      <span class="bar"><i [style.width.%]="l.progress * 100"></i></span>
-    </ng-container>
-    <ng-container *ngIf="l.state == 'error'">No se pudo cargar el instrumento ({{ l.message }}). Revisa la conexion.</ng-container>
-  </div>
-  <app-piano></app-piano>
-  <app-looper></app-looper>
-  <app-roll-editor></app-roll-editor>
-  <app-synth-panel></app-synth-panel>
+
+  <!-- Barra de estado -->
+  <footer class="statusbar">
+    <span>Voces <b>{{ engine.voiceCount }}</b></span>
+    <span class="sep"></span>
+    <span *ngIf="sound.audioState == 'running'">Audio {{ sound.sampleRate / 1000 | number:'1.0-1' }} kHz<ng-container *ngIf="latencyMs"> &middot; {{ latencyMs }} ms</ng-container></span>
+    <span *ngIf="sound.audioState != 'running'" class="bad">Audio inactivo</span>
+    <span class="sep"></span>
+    <span *ngIf="midi.lastEvent">MIDI {{ midi.lastEvent }}</span>
+    <span *ngIf="engine.sustain" class="on">Sustain</span>
+    <span class="spacer"></span>
+    <span class="hide-narrow"><kbd>Esc</kbd> modo visual</span>
+    <button class="ghost" (click)="ui.toggleHelp()"><kbd>F1</kbd> atajos</button>
+  </footer>
 </div>
-<button class="zenToggle" [class.zen]="ui.zen" [class.hint]="zenHint" (click)="toggleZen()"
-  [title]="ui.zen ? 'Mostrar la interfaz (Esc)' : 'Ocultar la interfaz y ver solo el arte (Esc)'">
-  {{ ui.zen ? 'Mostrar interfaz' : 'Ocultar interfaz' }} <small>Esc</small>
+
+<!-- Ayuda: atajos -->
+<div class="overlay" *ngIf="ui.helpOpen" (click)="ui.helpOpen = false">
+  <div class="dialog" (click)="$event.stopPropagation()" role="dialog" aria-label="Atajos de teclado">
+    <header>
+      <h2>Atajos de teclado</h2>
+      <button class="ghost icon" (click)="ui.helpOpen = false" aria-label="Cerrar"><app-icon name="close" [size]="16"></app-icon></button>
+    </header>
+    <div class="groups">
+      <section *ngFor="let g of shortcuts">
+        <h3 class="label">{{ g.group }}</h3>
+        <div class="row" *ngFor="let s of g.items">
+          <span class="keys"><kbd *ngFor="let k of s.keys">{{ k }}</kbd></span>
+          <span class="text">{{ s.text }}</span>
+        </div>
+      </section>
+    </div>
+    <p class="foot">Tambien funciona con cualquier teclado MIDI (Chrome o Edge) y con pantallas tactiles.</p>
+  </div>
+</div>
+
+<button class="zenToggle" [class.hint]="zenHint" *ngIf="ui.zen" (click)="toggleZen()" title="Mostrar la interfaz (Esc)">
+  <app-icon name="eye" [size]="15"></app-icon> Mostrar interfaz <small>Esc</small>
 </button>

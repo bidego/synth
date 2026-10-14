@@ -1,102 +1,69 @@
 :host {
     display: block;
-    margin: 12px auto;
-    max-width: 1100px;
 }
-.looper {
-    background: rgba(15, 15, 28, 0.78);
-    border-radius: 8px;
-    padding: 8px 12px;
-    text-align: left;
-    font-size: 12px;
+.empty {
+    padding: 14px 4px 6px;
+    color: var(--dim);
 }
-.transport {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 16px;
+.empty p {
+    margin: 0 0 6px;
 }
-button {
-    background: #2a2d44;
-    color: #ddd;
-    border: 1px solid #444a70;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 12px;
-}
-button.on {
-    background: #ff5a8a;
-    border-color: #ff5a8a;
-    color: #fff;
-}
-button.rec {
-    color: #f55;
-}
-button.rec.on {
-    color: #fff;
-    background: #d22;
-    border-color: #d22;
-    animation: blink 1s infinite;
-}
-@keyframes blink {
-    50% { opacity: 0.6; }
-}
-.group button {
-    margin-left: 2px;
-}
-.beats i {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    margin-right: 4px;
-    border-radius: 50%;
-    background: #333857;
-}
-.beats i.on {
-    background: #7f7;
-}
-.beats i.on.count {
-    background: #fc6;
-}
-.bpm input {
-    width: 100px;
-    vertical-align: middle;
-}
-.hint {
-    margin-top: 6px;
-    opacity: 0.75;
+.empty b {
+    color: var(--text);
 }
 .track {
-    display: flex;
+    display: grid;
+    grid-template-columns: 30px 150px 1fr 90px auto;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     margin-top: 6px;
-    padding: 3px 4px;
-    border-radius: 4px;
-    border: 1px solid transparent;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.22);
 }
 .track.armed {
-    border-color: #d22;
+    border-color: var(--danger);
+}
+.track.editing {
+    background: rgba(92, 200, 255, 0.08);
+    border-color: var(--info);
 }
 .track.muted {
-    opacity: 0.5;
+    opacity: 0.55;
+}
+.arm {
+    padding: 4px 0;
+    font-weight: 700;
+}
+.arm.on {
+    background: var(--danger);
+    border-color: var(--danger);
 }
 .name {
-    width: 140px;
-    white-space: nowrap;
+    min-width: 0;
+    line-height: 1.25;
+}
+.name .n {
+    display: block;
+    font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .name small {
     display: block;
-    opacity: 0.6;
+    color: var(--dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .roll {
     position: relative;
-    flex: 1;
-    height: 44px;
-    background-color: rgba(255, 255, 255, 0.05);
-    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.14) 1px, transparent 1px);
+    height: 40px;
+    min-width: 0;
+    background-color: rgba(255, 255, 255, 0.04);
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.13) 1px, transparent 1px);
     border-radius: 3px;
     overflow: hidden;
 }
@@ -104,7 +71,7 @@ button.rec.on {
     position: absolute;
     height: 4px;
     min-width: 2px;
-    background: #6cf;
+    background: var(--info);
     border-radius: 1px;
 }
 .playhead {
@@ -113,47 +80,33 @@ button.rec.on {
     bottom: 0;
     width: 2px;
     background: #fff;
-    opacity: 0.8;
+    opacity: 0.85;
 }
-.track input[type=range] {
-    width: 70px;
+.vol {
+    width: 90px;
 }
-
-.project {
-    display: flex;
-    flex-wrap: wrap;
+.tools {
+    display: inline-flex;
+    gap: 4px;
+}
+.tools .icon {
+    display: inline-flex;
     align-items: center;
-    gap: 6px 8px;
-    margin-top: 8px;
-    padding-top: 6px;
-    border-top: 1px solid #333857;
+    gap: 5px;
 }
-.project input[type=text] {
-    width: 130px;
+.danger:hover:not(:disabled) {
+    color: var(--danger);
+    border-color: var(--danger);
 }
-.saved button + button {
-    margin-left: 1px;
-    opacity: 0.7;
-}
-.file {
-    position: relative;
-    padding: 1px 6px;
-    background: #2a2d44;
-    border: 1px solid #444a70;
-    border-radius: 3px;
-    cursor: pointer;
-}
-.file input {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    width: 100%;
-    cursor: pointer;
-}
-button:disabled {
-    opacity: 0.5;
-    cursor: default;
-}
-.msg {
-    color: #fc6;
+@media (max-width: 900px) {
+    .track {
+        grid-template-columns: 28px 1fr auto;
+        grid-template-areas: "arm name tools" "roll roll roll" "vol vol vol";
+    }
+    .arm { grid-area: arm; }
+    .name { grid-area: name; }
+    .roll { grid-area: roll; }
+    .vol { grid-area: vol; width: 100%; }
+    .tools { grid-area: tools; }
+    .tools .txt { display: none; }
 }

@@ -94,6 +94,7 @@ export class LooperService {
     public message = '';
 
     private saveTimer: any;
+    private counting = false;     // hay cuenta previa en curso: lo que se toque antes del beat 0 no se graba
     private startTime = 0;       // instante (AudioContext) del beat 0 del loop
     private schedFrom = 0;       // hasta donde ya se agendo
     private timer: any;
@@ -211,6 +212,7 @@ export class LooperService {
         // Chrome crea el contexto suspendido hasta que hay un gesto del usuario
         this.audioCtx.resume();
         const now = this.audioCtx.currentTime;
+        this.counting = withCountIn;
         this.startTime = now + 0.05 + (withCountIn ? BEATS_PER_BAR * this.beatDur : 0);
         this.schedFrom = now;
         this.playing = true;
@@ -333,9 +335,14 @@ export class LooperService {
     private capture(e: NoteEvent) {
         if (!this.recording || !this.playing)
             return;
-        const beat = this.absBeat;
-        if (beat < 0)   // cuenta previa: todavia no se graba
-            return;
+        let beat = this.absBeat;
+        if (beat < 0) {
+            // Cuenta previa: todavia no se graba. Sin cuenta previa, el margen de 50 ms de arranque
+            // no debe tragarse la primera nota: va al compas 0
+            if (this.counting && this.countingIn)
+                return;
+            beat = 0;
+        }
         if (e.type == 'on') {
             const track = this.armedTrack;
             // La primera nota fija el sonido de la pista (se pudo cambiar de preset al armarla)

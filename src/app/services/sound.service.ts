@@ -27,6 +27,14 @@ export class SoundService {
         return this.audioCtx.state;
     }
 
+    get sampleRate(): number {
+        return this.audioCtx.sampleRate;
+    }
+
+    get baseLatency(): number {
+        return (this.audioCtx as any).baseLatency || 0;
+    }
+
     /** Debe llamarse desde un gesto (click / touchend). */
     unlock() {
         this.unlocker.unlock();

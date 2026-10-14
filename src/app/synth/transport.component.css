@@ -1,0 +1,85 @@
+:host {
+    display: block;
+}
+.transport {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 22px;
+    padding: 6px 14px;
+    background: var(--panel);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    border-bottom: 1px solid var(--border);
+}
+.buttons {
+    display: flex;
+    gap: 6px;
+}
+.buttons button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 76px;
+    justify-content: center;
+    padding: 6px 12px;
+    font-weight: 600;
+}
+.rec {
+    color: var(--danger);
+}
+.rec.on {
+    color: #fff;
+    background: var(--danger);
+    border-color: var(--danger);
+    animation: blink 1s infinite;
+}
+@keyframes blink {
+    50% { opacity: 0.65; }
+}
+.beats {
+    display: inline-flex;
+    gap: 5px;
+}
+.beats i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+}
+.beats i.on {
+    background: var(--ok);
+    box-shadow: 0 0 8px var(--ok);
+}
+.beats i.on.count {
+    background: var(--warn);
+    box-shadow: 0 0 8px var(--warn);
+}
+.field {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.bpm input {
+    width: 110px;
+}
+.bpm b {
+    min-width: 28px;
+    font-family: var(--mono);
+    font-size: 14px;
+}
+.checks {
+    gap: 14px;
+}
+.checks label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--dim);
+    cursor: pointer;
+}
+@media (max-width: 700px) {
+    .txt { display: none; }
+    .buttons button { min-width: 0; }
+    .transport { gap: 8px 14px; padding: 6px 10px; }
+}

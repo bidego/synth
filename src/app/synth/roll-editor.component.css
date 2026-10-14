@@ -1,12 +1,16 @@
 :host {
     display: block;
-    margin: 12px auto;
-    max-width: 1100px;
+}
+:host(:empty) {
+    display: none;
 }
 .editor {
-    background: rgba(15, 15, 28, 0.85);
-    border-radius: 8px;
-    padding: 8px 12px;
+    background: var(--panel);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    border: 1px solid var(--info);
+    border-radius: var(--radius);
+    padding: 8px 12px 12px;
     font-size: 12px;
     text-align: left;
 }
@@ -19,26 +23,6 @@
 }
 .bar small {
     opacity: 0.6;
-}
-button {
-    background: #2a2d44;
-    color: #ddd;
-    border: 1px solid #444a70;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 12px;
-}
-button.on {
-    background: #ff5a8a;
-    border-color: #ff5a8a;
-    color: #fff;
-}
-button:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-.group button {
-    margin-left: 2px;
 }
 .close {
     margin-left: auto;
@@ -85,4 +69,10 @@ button:disabled {
 }
 .lane {
     cursor: ns-resize;
+}
+
+.group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }

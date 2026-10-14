@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { SynthEngine } from '../services/synth.engine';
 import { WaveType, FilterType, LfoTarget, LayerConfig } from '../services/presets';
-import { noteName, KEY_SPAN } from '../services/keyboard-map';
 
 interface Knob {
     label: string;
@@ -55,11 +54,6 @@ export class SynthPanelComponent {
         return { label: 'Rate', key: 'rate', min: 0.1, max: 30, step: 0.1, unit: 'Hz' };
     }
 
-    get range(): string {
-        const base = this.engine.baseMidi;
-        return noteName(base) + ' - ' + noteName(base + KEY_SPAN - 1);
-    }
-
     setNum(obj: any, key: string, value) {
         obj[key] = parseFloat(value);
     }
@@ -68,10 +62,6 @@ export class SynthPanelComponent {
         const lfo = this.engine.patch.lfo;
         lfo.target = target;
         lfo.depth = Math.min(lfo.depth, this.lfoDepthRange.max);
-    }
-
-    setLevel(value) {
-        this.engine.level = parseFloat(value);
     }
 
     addLayer() {

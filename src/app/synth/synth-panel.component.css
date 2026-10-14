@@ -1,101 +1,74 @@
 :host {
     display: block;
 }
-.panel {
-    background: rgba(15, 15, 28, 0.78);
-    border-radius: 8px;
-    padding: 10px 14px;
-    text-align: left;
-}
-.head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 20px;
-}
-h3 {
-    margin: 0;
-}
-h3 small {
-    color: #8ab;
-    font-weight: normal;
-    font-size: 12px;
-}
 .desc {
-    font-size: 12px;
-    opacity: 0.7;
-    flex: 1;
+    margin: 4px 0 10px;
+    color: var(--dim);
 }
-.octave small, .voices {
-    font-size: 12px;
-    opacity: 0.75;
+.drumsNote {
+    margin: 4px 0;
+    color: var(--dim);
 }
 .sections {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px 28px;
-    margin-top: 8px;
+    gap: 16px 36px;
 }
 section h4 {
-    margin: 4px 0;
-    color: #9cf;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--info);
 }
 .waves {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
 }
-button {
-    background: #2a2d44;
-    color: #ddd;
-    border: 1px solid #444a70;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 12px;
-}
-button.on {
-    background: #ff5a8a;
-    border-color: #ff5a8a;
-    color: #fff;
+.waves .remove {
+    margin-left: 6px;
+    border-radius: var(--radius-sm);
 }
 .own {
-    font-size: 10px;
-    color: #fc6;
     align-self: center;
+    margin-left: 8px;
+    font-size: 10px;
+    color: var(--warn);
 }
 .layer {
-    margin-bottom: 6px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid #333857;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.layer:last-child {
+    border-bottom: none;
 }
 .knobs {
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 8px 14px;
 }
 .knobs.two {
     display: grid;
     grid-template-columns: repeat(2, auto);
-    gap: 4px 14px;
 }
 .knob {
     display: flex;
     flex-direction: column;
+    gap: 2px;
     font-size: 11px;
 }
+.knob > span {
+    color: var(--dim);
+}
 .knob input[type=range] {
-    width: 110px;
-    margin: 1px 0;
+    width: 120px;
+    margin: 0;
 }
 .knob output {
-    opacity: 0.7;
-}
-.level input {
-    width: 90px;
-}
-
-.drumsNote {
-    margin-top: 8px;
-    font-size: 12px;
-    opacity: 0.8;
+    font-family: var(--mono);
+    font-size: 11px;
 }
