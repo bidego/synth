@@ -21,6 +21,11 @@ export class UiService {
     // Panel de ayuda con los atajos y menu de proyecto de la cabecera
     public helpOpen = false;
     public menuOpen = false;
+    // Transporte: barra completa, compacta (una linea) o flotante (ventanita arrastrable)
+    public transportMode: 'full' | 'compact' | 'floating' = 'full';
+    // Linea de tiempo (debajo del transporte), colapsable
+    public timelineOpen = true;
+    public floatPos: { x: number; y: number } = { x: -1, y: -1 };   // -1: posicion por defecto (arriba a la derecha)
     // Paneles colapsables del area principal: id -> abierto
     public panels: { [id: string]: boolean } = {};
     // Secciones colapsables del panel de sonidos
@@ -59,6 +64,12 @@ export class UiService {
                     this.sidebarOpen = saved.sidebarOpen;
                 if (saved.view == 'rack' || saved.view == 'patch')
                     this.view = saved.view;
+                if (['full', 'compact', 'floating'].indexOf(saved.transportMode) >= 0)
+                    this.transportMode = saved.transportMode;
+                if (typeof saved.timelineOpen == 'boolean')
+                    this.timelineOpen = saved.timelineOpen;
+                if (saved.floatPos && isFinite(saved.floatPos.x) && isFinite(saved.floatPos.y))
+                    this.floatPos = { x: saved.floatPos.x, y: saved.floatPos.y };
                 if (saved.panels && typeof saved.panels == 'object')
                     this.panels = saved.panels;
                 if (saved.sections && typeof saved.sections == 'object')
@@ -141,6 +152,21 @@ export class UiService {
         this.save();
     }
 
+    setTransportMode(mode: 'full' | 'compact' | 'floating') {
+        this.transportMode = mode;
+        this.save();
+    }
+
+    toggleTimeline() {
+        this.timelineOpen = !this.timelineOpen;
+        this.save();
+    }
+
+    setFloatPos(x: number, y: number) {
+        this.floatPos = { x: Math.round(x), y: Math.round(y) };
+        this.save();
+    }
+
     toggleHelp() {
         this.helpOpen = !this.helpOpen;
     }
@@ -166,7 +192,7 @@ export class UiService {
     private save() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                sidebarOpen: this.sidebarOpen, view: this.view, panels: this.panels, sections: this.sections
+                sidebarOpen: this.sidebarOpen, view: this.view, transportMode: this.transportMode, timelineOpen: this.timelineOpen, floatPos: this.floatPos, panels: this.panels, sections: this.sections
             }));
         } catch (e) {}
     }

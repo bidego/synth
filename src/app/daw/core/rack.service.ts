@@ -1,3 +1,4 @@
+import { moduleMeta } from '../modules/registry';
 import { Injectable, NgZone } from '@angular/core';
 import { Subject } from 'rxjs';
 import { RackGraph, ConnectResult } from './rack-graph';
@@ -90,6 +91,47 @@ export class RackService {
         this.selectedId = module.id;
         this.changed.next();
         return module;
+    }
+
+    /** Se puede duplicar todo lo que no sea unico (la salida de audio y el teclado/MIDI no). */
+    canDuplicate(id: string): boolean {
+        const m = this.graph.find(id);
+        const meta = m && moduleMeta(m.type);
+        return !!meta && !meta.unique;
+    }
+
+    /**
+     * Copia un dispositivo con todo su estado (sonido, efectos y pistas del secuenciador) justo debajo del original.
+     * La copia no hereda los cables: un instrumento queda conectado a un canal libre del mezclador, asi cada
+     * copia puede sonar por su propio canal; las notas se le dan a mano (teclado o cable).
+     */
+    duplicate(id: string): RackModule | null {
+        const src = this.graph.find(id);
+        if (!src || !this.canDuplicate(id)) {
+            this.message = 'Este dispositivo no se puede duplicar';
+            return null;
+        }
+        const copy = this.graph.add(src.type);
+        if (!copy) {
+            this.message = 'No se pudo duplicar (demasiados dispositivos)';
+            return null;
+        }
+        const defaultName = copy.name;
+        copy.setState(JSON.parse(JSON.stringify(src.getState())));
+        // Si el original conserva su nombre automatico la copia sigue la numeracion; si no, se marca como copia
+        const meta = moduleMeta(src.type);
+        copy.name = new RegExp('^' + meta.label + ' \\d+$').test(src.name) ? defaultName : (src.name + ' copia').slice(0, 40);
+        copy.pos = { x: src.pos.x + 40, y: src.pos.y + 90 };
+        // Queda justo despues del original en el rack
+        const list = this.graph.modules;
+        list.splice(list.indexOf(copy), 1);
+        list.splice(list.indexOf(src) + 1, 0, copy);
+        this.message = '';
+        if (copy.type == 'synth')
+            this.wireAudioOut(copy, 'out');
+        this.selectedId = copy.id;
+        this.changed.next();
+        return copy;
     }
 
     remove(id: string) {

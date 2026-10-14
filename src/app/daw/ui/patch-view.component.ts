@@ -12,6 +12,9 @@ interface CablePath {
     hit: string;  // el tramo central del cable: la zona donde se hace clic (los extremos quedan libres para los puertos)
     mx: number;   // punto medio, para el boton de borrar
     my: number;
+    from: string;   // modulos que une, para resaltar los cables del dispositivo seleccionado
+    to: string;
+    label: string;
 }
 
 interface Drag {
@@ -78,6 +81,28 @@ export class PatchViewComponent implements AfterViewChecked {
         return m.ports.filter(p => p.dir == 'out');
     }
 
+    /** Hay un dispositivo elegido con cables: los suyos se resaltan y el resto se atenua. */
+    get focusId(): string {
+        const id = this.rack.selectedId;
+        return id && this.paths.some(p => p.from == id || p.to == id) ? id : null;
+    }
+
+    related(c: CablePath): boolean {
+        const f = this.focusId;
+        return !!f && (c.from == f || c.to == f);
+    }
+
+    duplicate(m: RackModule, e: Event) {
+        e.stopPropagation();
+        this.rack.duplicate(m.id);
+    }
+
+    removeModule(m: RackModule, e: Event) {
+        e.stopPropagation();
+        if (window.confirm('Quitar "' + m.name + '" del rack? Se borran tambien sus cables.'))
+            this.rack.remove(m.id);
+    }
+
     typeLabel(m: RackModule): string {
         const meta = moduleMeta(m.type);
         return meta ? meta.label : m.type;
@@ -140,7 +165,9 @@ export class PatchViewComponent implements AfterViewChecked {
             const kind = g.find(c.fromModule).portDef(c.fromPort).kind;
             if (!a || !b)
                 return null;
-            return { id: c.id, kind, ...this.curve(a.x, a.y, b.x, b.y) };
+            const mf = g.find(c.fromModule), mt = g.find(c.toModule);
+            const label = mf.name + ' (' + mf.portDef(c.fromPort).label + ')  \u2192  ' + mt.name + ' (' + mt.portDef(c.toPort).label + ')';
+            return { id: c.id, kind, from: c.fromModule, to: c.toModule, label, ...this.curve(a.x, a.y, b.x, b.y) };
         }).filter(p => !!p);
         this.width = Math.max(wrap.clientWidth, ...g.modules.map(m => m.pos.x + NODE_W + 80));
         this.height = Math.max(wrap.clientHeight, ...g.modules.map(m => m.pos.y + 320));

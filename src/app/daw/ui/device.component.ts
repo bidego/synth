@@ -11,6 +11,7 @@ import { moduleMeta } from '../modules/registry';
         <span panel-meta>{{ meta?.label }}</span>
         <span panel-actions>
             <button class="ghost icon" (click)="rename()" title="Renombrar" aria-label="Renombrar"><app-icon name="edit" [size]="13"></app-icon></button>
+            <button class="ghost icon" *ngIf="rack.canDuplicate(module.id)" (click)="rack.duplicate(module.id)" title="Duplicar (con su sonido y sus pistas)" aria-label="Duplicar"><app-icon name="copy" [size]="13"></app-icon></button>
             <button class="ghost icon" (click)="rack.move(module.id, -1)" title="Subir en el rack" aria-label="Subir"><app-icon name="chevron-up" [size]="14"></app-icon></button>
             <button class="ghost icon" (click)="rack.move(module.id, 1)" title="Bajar en el rack" aria-label="Bajar"><app-icon name="chevron-down" [size]="14"></app-icon></button>
             <button class="ghost icon danger" (click)="remove()" title="Quitar del rack" aria-label="Quitar"><app-icon name="trash" [size]="13"></app-icon></button>

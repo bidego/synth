@@ -40,7 +40,9 @@ export class AppComponent {
     ] },
     { group: 'Transporte', items: [
       { keys: ['`'], text: 'Grabar / dejar de grabar (en los instrumentos armados)' },
-      { keys: ['Enter'], text: 'Reproducir / detener' }
+      { keys: ['Enter'], text: 'Reproducir / detener' },
+      { keys: ['←', '→'], text: 'Retroceder / adelantar un compas (mantene el boton para ir rapido)' },
+      { keys: ['Inicio'], text: 'Volver al comienzo del loop' }
     ] },
     { group: 'Rack', items: [
       { keys: ['Tab'], text: 'Alternar entre Rack y Cableado (con nada enfocado)' },
@@ -119,6 +121,16 @@ export class AppComponent {
     if (event.code == 'Tab' && (!target || target === document.body) && !event.shiftKey) {
       event.preventDefault();
       this.ui.setView(this.ui.view == 'rack' ? 'patch' : 'rack');
+      return;
+    }
+    // Mover la posicion del loop: Inicio = al comienzo, flechas = un compas (solo si nada tiene el foco)
+    if ((event.code == 'Home' || event.code == 'ArrowLeft' || event.code == 'ArrowRight') && (!target || target === document.body)
+        && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      if (event.code == 'Home')
+        this.transport.rewind();
+      else
+        this.transport.skipBars(event.code == 'ArrowLeft' ? -1 : 1);
       return;
     }
     if (event.code == 'F1') {

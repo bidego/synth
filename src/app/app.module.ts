@@ -15,6 +15,7 @@ import { LooperComponent } from './synth/looper.component';
 import { TransportService } from './daw/core/transport.service';
 import { RackService } from './daw/core/rack.service';
 import { ProjectService } from './daw/core/project.service';
+import { TimelineComponent } from './daw/ui/timeline.component';
 import { TransportBarComponent } from './daw/ui/transport-bar.component';
 import { RackViewComponent } from './daw/ui/rack-view.component';
 import { PatchViewComponent } from './daw/ui/patch-view.component';
@@ -39,6 +40,7 @@ import { ListenKeys } from './directives/listen.keys';
     LooperComponent,
     SidebarComponent,
     TransportBarComponent,
+    TimelineComponent,
     RackViewComponent,
     PatchViewComponent,
     DeviceComponent,

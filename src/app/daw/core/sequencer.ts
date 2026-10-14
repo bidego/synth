@@ -219,14 +219,13 @@ export class Sequencer implements TransportClient {
         const clock = this.env.clock;
         if (!this.armed || !clock || !clock.recording || !clock.playing || !this.armedTrack)
             return;
+        // Cuenta previa: todavia no se graba
+        if (clock.countingIn)
+            return;
         let beat = clock.absBeat;
-        if (beat < 0) {
-            // Cuenta previa: todavia no se graba. Sin cuenta previa, el margen de 50 ms de arranque
-            // no debe tragarse la primera nota: va al compas 0
-            if (clock.countingIn)
-                return;
+        // Sin cuenta previa, el margen de 50 ms de arranque no debe tragarse la primera nota: va al compas 0
+        if (beat < 0)
             beat = 0;
-        }
         if (e.type == 'on') {
             const track = this.armedTrack;
             // La primera nota fija el sonido de la pista (se pudo cambiar de preset al armarla)

@@ -9,6 +9,9 @@ import { Component, Input } from '@angular/core';
     [ngSwitch]="name">
     <circle *ngSwitchCase="'rec'" cx="12" cy="12" r="6.5" fill="currentColor" stroke="none"/>
     <polygon *ngSwitchCase="'play'" points="7,4.5 19.5,12 7,19.5" fill="currentColor" stroke="none"/>
+    <g *ngSwitchCase="'skip-back'" fill="currentColor" stroke="none"><rect x="5" y="5" width="2.6" height="14" rx="1"/><polygon points="19,5 9,12 19,19"/></g>
+    <g *ngSwitchCase="'rewind'" fill="currentColor" stroke="none"><polygon points="12,5.5 3,12 12,18.5"/><polygon points="21,5.5 12,12 21,18.5"/></g>
+    <g *ngSwitchCase="'forward'" fill="currentColor" stroke="none"><polygon points="12,5.5 21,12 12,18.5"/><polygon points="3,5.5 12,12 3,18.5"/></g>
     <rect *ngSwitchCase="'stop'" x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor" stroke="none"/>
     <polyline *ngSwitchCase="'chevron-down'" points="6 9 12 15 18 9"/>
     <polyline *ngSwitchCase="'chevron-up'" points="6 15 12 9 18 15"/>
@@ -18,6 +21,7 @@ import { Component, Input } from '@angular/core';
     <g *ngSwitchCase="'close'"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></g>
     <g *ngSwitchCase="'plus'"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></g>
     <g *ngSwitchCase="'search'"><circle cx="11" cy="11" r="6.5"/><line x1="16" y1="16" x2="20.5" y2="20.5"/></g>
+    <g *ngSwitchCase="'copy'"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></g>
     <g *ngSwitchCase="'lock'"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></g>
     <g *ngSwitchCase="'eye'"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></g>
     <g *ngSwitchCase="'eye-off'"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><line x1="4" y1="4" x2="20" y2="20"/></g>

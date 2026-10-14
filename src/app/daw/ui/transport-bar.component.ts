@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, HostBinding, HostListener, ViewChild } from '@angular/core';
+import { UiService } from '../../services/ui.service';
 import { TransportService, BAR_OPTIONS, SIGNATURE_DENOMINATORS, MAX_TRANSPOSE } from '../core/transport.service';
 import { RackService } from '../core/rack.service';
 
@@ -20,8 +21,109 @@ export class TransportBarComponent implements OnInit, OnDestroy {
         { label: '1/32', value: 0.125 }
     ];
     private timer: any;
+    // Compacto y flotante muestran lo esencial; el resto (compas, loop, cuantizar...) se abre con "Mas"
+    public more = false;
+    public modes: Array<{ id: 'full' | 'compact' | 'floating'; label: string; title: string }> = [
+        { id: 'full', label: 'Completo', title: 'Barra de transporte completa' },
+        { id: 'compact', label: 'Compacto', title: 'Una sola linea con lo esencial' },
+        { id: 'floating', label: 'Flotante', title: 'Ventana flotante que se arrastra y no ocupa lugar' }
+    ];
+    @ViewChild('box', { static: false }) private box: ElementRef<HTMLElement>;
+    private drag: { dx: number; dy: number } = null;
 
-    constructor(public transport: TransportService, public rack: RackService) {}
+    constructor(public transport: TransportService, public rack: RackService, public ui: UiService) {}
+
+    @HostBinding('class.floating') get floating(): boolean {
+        return this.ui.transportMode == 'floating';
+    }
+
+    get slim(): boolean {
+        return this.ui.transportMode != 'full';
+    }
+
+    setMode(mode: 'full' | 'compact' | 'floating') {
+        this.ui.setTransportMode(mode);
+        this.more = false;
+    }
+
+    /** Posicion de la ventana flotante (por defecto, arriba a la derecha). */
+    get floatStyle(): { [k: string]: string } {
+        if (!this.floating)
+            return {};
+        const p = this.ui.floatPos;
+        return p.x < 0 ? { top: '64px', right: '16px' } : { left: p.x + 'px', top: p.y + 'px' };
+    }
+
+    startDrag(e: PointerEvent) {
+        const el = this.box && this.box.nativeElement;
+        if (!el || e.button > 0)
+            return;
+        const r = el.getBoundingClientRect();
+        this.drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        e.preventDefault();
+    }
+
+    @HostListener('document:pointermove', ['$event'])
+    onMove(e: PointerEvent) {
+        if (!this.drag || !this.box)
+            return;
+        const el = this.box.nativeElement;
+        const x = Math.min(Math.max(0, e.clientX - this.drag.dx), Math.max(0, window.innerWidth - el.offsetWidth));
+        const y = Math.min(Math.max(0, e.clientY - this.drag.dy), Math.max(0, window.innerHeight - el.offsetHeight));
+        this.ui.floatPos = { x: Math.round(x), y: Math.round(y) };
+    }
+
+    // Un solo manejador por evento (Angular 8 se queda con uno solo si dos metodos escuchan el mismo evento)
+    @HostListener('document:pointerup')
+    @HostListener('document:pointercancel')
+    onPointerEnd() {
+        this.stopHold();
+        this.endDrag();
+    }
+
+    private endDrag() {
+        if (this.drag) {
+            this.drag = null;
+            this.ui.setFloatPos(this.ui.floatPos.x, this.ui.floatPos.y);
+        }
+    }
+
+    /** Si la ventana se achica, la flotante no debe quedar fuera de la pantalla. */
+    @HostListener('window:resize')
+    keepInside() {
+        const p = this.ui.floatPos;
+        if (!this.floating || p.x < 0 || !this.box)
+            return;
+        const el = this.box.nativeElement;
+        this.ui.floatPos = {
+            x: Math.min(p.x, Math.max(0, window.innerWidth - el.offsetWidth)),
+            y: Math.min(p.y, Math.max(0, window.innerHeight - el.offsetHeight))
+        };
+    }
+
+    // Avanzar / retroceder: un toque mueve un compas; mantenido, repite cada vez mas rapido
+    private holdTimer: any;
+    holdSkip(dir: number, e: PointerEvent) {
+        if (e.button > 0)
+            return;
+        this.stopHold();
+        this.transport.skipBars(dir);
+        this.holdTimer = setTimeout(() => {
+            this.holdTimer = setInterval(() => this.transport.skipBars(dir), 120);
+        }, 380);
+        e.preventDefault();
+    }
+
+    private stopHold() {
+        clearTimeout(this.holdTimer);
+        clearInterval(this.holdTimer);
+        this.holdTimer = null;
+    }
+
+    resetFloat() {
+        this.ui.setFloatPos(-1, -1);
+    }
 
     /** Nombres de los instrumentos que graban (los armados). */
     get armedNames(): string {

@@ -1,5 +1,13 @@
-<div class="transport" role="toolbar" aria-label="Transporte">
+<div #box class="transport" role="toolbar" aria-label="Transporte" [class.slim]="slim" [class.floating]="floating" [ngStyle]="floatStyle">
+    <div class="grip" *ngIf="floating" (pointerdown)="startDrag($event)" (dblclick)="resetFloat()" title="Arrastra para mover (doble clic: volver a la posicion inicial)" aria-hidden="true">
+        <i></i><i></i><i></i>
+    </div>
     <div class="buttons">
+        <span class="skip" role="group" aria-label="Mover la posicion">
+            <button class="icon" (click)="transport.rewind()" [disabled]="transport.recording" title="Ir al inicio (Inicio)" aria-label="Ir al inicio"><app-icon name="skip-back" [size]="13"></app-icon></button>
+            <button class="icon" (pointerdown)="holdSkip(-1, $event)" [disabled]="transport.recording" title="Atras un compas (←). Mantene apretado para retroceder rapido" aria-label="Atras"><app-icon name="rewind" [size]="13"></app-icon></button>
+            <button class="icon" (pointerdown)="holdSkip(1, $event)" [disabled]="transport.recording" title="Adelante un compas (→). Mantene apretado para avanzar rapido" aria-label="Adelante"><app-icon name="forward" [size]="13"></app-icon></button>
+        </span>
         <button class="rec" [class.on]="transport.recording" (click)="transport.toggleRecord()" title="Grabar (tecla ` )" aria-label="Grabar">
             <app-icon name="rec" [size]="14"></app-icon><span class="txt">Rec</span>
         </button>
@@ -21,12 +29,15 @@
     </div>
 
     <div class="field bpm">
-        <app-knob label="BPM" [size]="46" [value]="transport.bpm" [min]="40" [max]="240" [step]="1" [default]="100" [hideValue]="true"
+        <app-knob label="BPM" [size]="slim ? 36 : 46" [value]="transport.bpm" [min]="40" [max]="240" [step]="1" [default]="100" [hideValue]="true"
             (valueChange)="transport.setBpm($event)" ariaLabel="Tempo"></app-knob>
         <b>{{ transport.bpm }}</b>
         <button (click)="transport.tap()" title="Toca el ritmo para fijar el tempo">Tap</button>
     </div>
 
+    <button class="more" *ngIf="slim" [class.on]="more" (click)="more = !more" title="Compas, loop, cuantizar y transposicion">Mas <app-icon [name]="more ? 'chevron-up' : 'chevron-down'" [size]="11"></app-icon></button>
+
+    <div class="extra" *ngIf="!slim || more">
     <div class="field" title="Compas">
         <span class="label">Compas</span>
         <span class="stepper">
@@ -67,4 +78,9 @@
         <label><input type="checkbox" [checked]="transport.metronome" (change)="transport.setFlag('metronome', $event.target.checked)"> Metronomo</label>
         <label><input type="checkbox" [checked]="transport.countIn" (change)="transport.setFlag('countIn', $event.target.checked)"> Cuenta previa</label>
     </div>
+    </div>
+
+    <span class="modes" role="group" aria-label="Vista del transporte">
+        <button *ngFor="let m of modes" [class.on]="ui.transportMode == m.id" [title]="m.title" (click)="setMode(m.id)">{{ m.label }}</button>
+    </span>
 </div>
