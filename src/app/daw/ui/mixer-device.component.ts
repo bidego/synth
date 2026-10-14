@@ -1,5 +1,5 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
-import { MixerModule } from '../modules/mixer.module';
+import { MixerModule, AUX_BUSES } from '../modules/mixer.module';
 
 /** Mezclador: una tira por canal (fader, paneo, mute, solo y medidor) y el fader master. */
 @Component({
@@ -10,6 +10,12 @@ import { MixerModule } from '../modules/mixer.module';
         <span class="label">Canal {{ i + 1 }}</span>
         <input class="pan" type="range" min="-1" max="1" step="0.01" [value]="s.pan" (input)="module.setPan(i, $event.target.valueAsNumber)" title="Paneo" [attr.aria-label]="'Paneo canal ' + (i + 1)">
         <div class="pan-text">{{ panText(s.pan) }}</div>
+        <div class="sends">
+            <label *ngFor="let a of auxes" [title]="'Envio al aux ' + (a + 1)">
+                <span>A{{ a + 1 }}</span>
+                <input type="range" min="0" max="1.5" step="0.01" [value]="s.sends[a]" (input)="module.setSend(i, a, $event.target.valueAsNumber)" [attr.aria-label]="'Envio aux ' + (a + 1) + ' canal ' + (i + 1)">
+            </label>
+        </div>
         <div class="fader-box">
             <input class="fader" type="range" min="0" max="1.5" step="0.01" [value]="s.gain" (input)="module.setGain(i, $event.target.valueAsNumber)" orient="vertical" [attr.aria-label]="'Fader canal ' + (i + 1)">
             <div class="meter"><i [style.height.%]="levels[i] * 100"></i></div>
@@ -19,6 +25,15 @@ import { MixerModule } from '../modules/mixer.module';
             <button [class.mute]="s.mute" (click)="module.toggleMute(i)" title="Silenciar" [attr.aria-label]="'Mute canal ' + (i + 1)">M</button>
             <button [class.solo]="s.solo" (click)="module.toggleSolo(i)" title="Solo" [attr.aria-label]="'Solo canal ' + (i + 1)">S</button>
         </div>
+    </div>
+    <div class="strip aux">
+        <span class="label">Aux</span>
+        <div class="bus" *ngFor="let a of auxes">
+            <b>{{ a + 1 }}</b>
+            <label><span>Envio</span><input type="range" min="0" max="1.5" step="0.01" [value]="module.auxLevel[a]" (input)="module.setAuxLevel(a, $event.target.valueAsNumber)" [attr.aria-label]="'Nivel del bus aux ' + (a + 1)"></label>
+            <label><span>Retorno</span><input type="range" min="0" max="1.5" step="0.01" [value]="module.returnLevel[a]" (input)="module.setReturn(a, $event.target.valueAsNumber)" [attr.aria-label]="'Retorno ' + (a + 1)"></label>
+        </div>
+        <small>Cablea Aux n a un efecto y su salida al Retorno n (o usa el boton "Envio aux" del efecto).</small>
     </div>
     <div class="strip master">
         <span class="label">Master</span>
@@ -37,6 +52,15 @@ import { MixerModule } from '../modules/mixer.module';
 .strip.master { margin-left: 10px; border-color: var(--border-strong); }
 .strip.muted { opacity: 0.6; }
 .pan { width: 60px; margin: 0; }
+.sends { display: flex; flex-direction: column; gap: 1px; width: 62px; }
+.sends label { display: flex; align-items: center; gap: 3px; font-size: 9px; color: var(--info); }
+.sends input { width: 44px; margin: 0; }
+.strip.aux { width: 150px; align-items: stretch; margin-left: 10px; }
+.strip.aux .bus { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border-top: 1px solid var(--border); }
+.strip.aux .bus b { color: var(--info); }
+.strip.aux label { display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 10px; color: var(--dim); }
+.strip.aux input { width: 80px; margin: 0; }
+.strip.aux small { font-size: 9px; color: var(--dim); line-height: 1.3; }
 .pan-text { font-size: 10px; color: var(--dim); font-family: var(--mono); }
 .fader-box { display: flex; gap: 6px; height: 130px; }
 .fader { writing-mode: vertical-lr; direction: rtl; width: 22px; height: 130px; margin: 0; }
@@ -51,6 +75,7 @@ import { MixerModule } from '../modules/mixer.module';
 })
 export class MixerDeviceComponent implements OnInit, OnDestroy {
     @Input() module: MixerModule;
+    public auxes = Array.from({ length: AUX_BUSES }, (_, i) => i);
     public levels: Array<number> = [];
     public masterLevel = 0;
     private timer: any;

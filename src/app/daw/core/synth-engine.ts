@@ -110,17 +110,21 @@ export class SynthEngine {
         this.noteOnMidi(id, this.baseMidi + offset, 1);
     }
 
-    /** Nota absoluta (MIDI 0..127) con velocidad 0..1. */
-    noteOnMidi(id: string, midi: number, velocity: number) {
-        // Retrigger de una nota que solo seguia viva por el pedal
-        this.noteOffNow(id);
-        // Chrome crea el contexto suspendido hasta que hay un gesto del usuario
-        if ((this.env.ctx as any).resume)
+    /**
+     * Nota absoluta (MIDI 0..127) con velocidad 0..1. Con `when` (instante del AudioContext) la nota
+     * se agenda en vez de sonar ya: asi las notas del secuenciador de otro instrumento caen justo.
+     */
+    noteOnMidi(id: string, midi: number, velocity: number, when?: number) {
+        // Retrigger de una nota que solo seguia viva por el pedal (las agendadas tienen id propio)
+        if (when === undefined)
+            this.noteOffNow(id);
+        // Chrome crea el contexto suspendido hasta que hay un gesto del usuario (el offline no se reanuda)
+        if (this.env.live && (this.env.ctx as any).resume)
             (this.env.ctx as AudioContext).resume();
         if (this.voices.size >= MAX_VOICES)
             this.voices.values().next().value.release(true);
         const sounding = Math.max(0, Math.min(127, midi + this.transposeFor(this.patch)));
-        const voice = createVoice(this.env.ctx, this.patchOut, this.patch, sounding, velocity, this.bend, undefined, this.library);
+        const voice = createVoice(this.env.ctx, this.patchOut, this.patch, sounding, velocity, this.bend, when, this.library);
         // onended de WebAudio llega fuera de la zona: sin esto la pantalla no refresca el contador
         voice.onEnded = () => this.env.run(() => {
             this.voices.delete(voice);
@@ -129,14 +133,29 @@ export class SynthEngine {
         this.voices.add(voice);
         this.held.set(id, { voice, midi });
         // Se emite la nota tocada (sin transponer): lo que se graba es lo que se toco
-        this.noteEvents.next({ type: 'on', midi, velocity });
+        this.emitAt(when, { type: 'on', midi, velocity });
     }
 
-    noteOff(id: string) {
+    // Lo que graba el secuenciador debe caer cuando la nota suena, no cuando se agenda
+    private emitAt(when: number | undefined, e: NoteEvent) {
+        const delay = when === undefined || !this.env.live ? 0 : (when - this.env.ctx.currentTime) * 1000;
+        if (delay > 1)
+            setTimeout(() => this.noteEvents.next(e), delay);
+        else
+            this.noteEvents.next(e);
+    }
+
+    noteOff(id: string, when?: number) {
         const h = this.held.get(id);
         if (!h)
             return;
         this.held.delete(id);
+        if (when !== undefined) {
+            // Soltado agendado (notas del secuenciador): no depende del pedal de sustain
+            h.voice.release(false, when);
+            this.emitAt(when, { type: 'off', midi: h.midi, velocity: 0 });
+            return;
+        }
         if (this.sustain)
             this.sustained.set(h.voice, h.midi);
         else
@@ -179,8 +198,8 @@ export class SynthEngine {
     /** Mensaje que llega por el cable de notas. */
     receive(msg: NoteMsg) {
         switch (msg.type) {
-            case 'on': this.noteOnMidi('cable:' + msg.midi, msg.midi, msg.velocity); break;
-            case 'off': this.noteOff('cable:' + msg.midi); break;
+            case 'on': this.noteOnMidi(msg.id || 'cable:' + msg.midi, msg.midi, msg.velocity, msg.when); break;
+            case 'off': this.noteOff(msg.id || 'cable:' + msg.midi, msg.when); break;
             case 'sustain': this.setSustain(msg.on); break;
             case 'bend': this.setBend(msg.cents); break;
             case 'allOff': this.allNotesOff(); break;

@@ -9,7 +9,8 @@ import { SoundService } from '../../services/sound.service';
 import { MidiService } from '../../services/midi.service';
 import { SynthStudioModule } from '../modules/synth-studio.module';
 import { OutputModule } from '../modules/output.module';
-import { MixerModule, MIXER_CHANNELS } from '../modules/mixer.module';
+import { MixerModule, MIXER_CHANNELS, AUX_BUSES } from '../modules/mixer.module';
+import { EffectModule } from '../modules/effect.module';
 
 /**
  * El rack en vivo: el grafo de dispositivos y cables sobre el AudioContext real, mas lo que la
@@ -167,6 +168,50 @@ export class RackService {
         const out = g.ofType('output')[0];
         if (out && !g.cablesOf(out.id, 'in').length)
             g.connect(m.id, port, out.id, 'in');
+    }
+
+    // --- Envios aux ---
+
+    get mixer(): MixerModule | undefined {
+        return this.graph.ofType<MixerModule>('mixer')[0];
+    }
+
+    /** Este efecto esta cableado como envio aux (aux -> efecto -> retorno) de ese bus? (aux: 0..) */
+    isSend(effectId: string, aux: number): boolean {
+        const mixer = this.mixer;
+        if (!mixer)
+            return false;
+        const g = this.graph;
+        return g.cables.some(c => c.fromModule == mixer.id && c.fromPort == 'aux' + (aux + 1) && c.toModule == effectId && c.toPort == 'in')
+            && g.cables.some(c => c.fromModule == effectId && c.fromPort == 'out' && c.toModule == mixer.id && c.toPort == 'ret' + (aux + 1));
+    }
+
+    /**
+     * Usa un efecto como envio aux: mezclador (aux n) -> efecto -> mezclador (retorno n), y lo deja al 100 %
+     * de mezcla (en un envio el efecto solo tiene que dar la parte "mojada"). Reemplaza el cableado que
+     * tuviera el efecto en su entrada y salida.
+     */
+    wireAsSend(effectId: string, aux: number): boolean {
+        const g = this.graph, mixer = this.mixer, fx = g.find(effectId) as EffectModule;
+        if (!mixer || !fx || aux < 0 || aux >= AUX_BUSES) {
+            this.message = 'Hace falta un mezclador en el rack';
+            return false;
+        }
+        g.disconnectPort(fx.id, 'in');
+        g.disconnectPort(fx.id, 'out');
+        const a = g.connect(mixer.id, 'aux' + (aux + 1), fx.id, 'in');
+        const b = a.ok ? g.connect(fx.id, 'out', mixer.id, 'ret' + (aux + 1)) : a;
+        this.message = b.ok ? '' : (b.error || '');
+        if (b.ok && fx.paramDefs.some(d => d.id == 'mix'))
+            fx.setParam('mix', 1);
+        return b.ok;
+    }
+
+    /** Saca al efecto del envio: quita los cables de su entrada y su salida. */
+    unwireSend(effectId: string) {
+        this.graph.disconnectPort(effectId, 'in');
+        this.graph.disconnectPort(effectId, 'out');
+        this.message = '';
     }
 
     // --- Grabacion y loop ---

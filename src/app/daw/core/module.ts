@@ -39,6 +39,18 @@ export abstract class RackModule {
 
     dispose(): void {}
 
+    /**
+     * Rutas internas: pares [entrada, salida] por los que la senal de una entrada llega a una salida.
+     * Sirve para detectar bucles por puerto. Por defecto toda entrada llega a toda salida del mismo
+     * tipo; los modulos que no lo cumplen (mezclador, instrumento) lo redefinen.
+     */
+    routes(): Array<[string, string]> {
+        const pairs: Array<[string, string]> = [];
+        this.ports.filter(p => p.dir == 'in').forEach(i =>
+            this.ports.filter(o => o.dir == 'out' && o.kind == i.kind).forEach(o => pairs.push([i.id, o.id])));
+        return pairs;
+    }
+
     portDef(id: string): PortDef | undefined {
         return this.ports.find(p => p.id == id);
     }

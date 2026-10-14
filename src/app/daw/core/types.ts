@@ -22,8 +22,10 @@ export interface CableModel {
 
 /** Mensajes que viajan por los cables de notas (MIDI simplificado). */
 export type NoteMsg =
-    | { type: 'on'; midi: number; velocity: number }
-    | { type: 'off'; midi: number }
+    // `when` = instante del AudioContext en que debe sonar (el secuenciador agenda con adelanto);
+    // `id` distingue notas de la misma altura que se superponen
+    | { type: 'on'; midi: number; velocity: number; when?: number; id?: string }
+    | { type: 'off'; midi: number; when?: number; id?: string }
     | { type: 'sustain'; on: boolean }
     | { type: 'bend'; cents: number }
     | { type: 'allOff' };

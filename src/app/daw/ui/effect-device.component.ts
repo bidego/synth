@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { EffectModule, ParamDef } from '../modules/effect.module';
+import { RackService } from '../core/rack.service';
 
 /** Panel generico de un efecto o dinamico: los controles salen de la descripcion de sus parametros. */
 @Component({
@@ -14,6 +15,14 @@ import { EffectModule, ParamDef } from '../modules/effect.module';
             <div class="m" title="Nivel de salida"><i [style.width.%]="level * 100"></i></div>
             <div class="gr" *ngIf="hasReduction" title="Reduccion de ganancia"><i [style.width.%]="reductionPct"></i><small>{{ reduction | number:'1.1-1' }} dB</small></div>
         </div>
+    </div>
+    <div class="send" *ngIf="rack.mixer">
+        <span class="label">Envio aux</span>
+        <button *ngFor="let a of auxes" [class.on]="rack.isSend(module.id, a)" (click)="toggleSend(a)"
+            [title]="rack.isSend(module.id, a) ? 'Quitar del envio ' + (a + 1) : 'Cablear como envio aux ' + (a + 1) + ' del mezclador (aux -> efecto -> retorno) al 100 % de mezcla'">
+            Aux {{ a + 1 }}
+        </button>
+        <small>Usalo como efecto compartido: cada canal manda lo que quiera con su perilla de envio.</small>
     </div>
     <div class="params" [class.off]="module.bypass">
         <ng-container *ngFor="let d of module.paramDefs">
@@ -45,6 +54,8 @@ import { EffectModule, ParamDef } from '../modules/effect.module';
 .gr { height: 12px; }
 .gr i { position: absolute; right: 0; top: 0; bottom: 0; background: var(--info); }
 .gr small { position: absolute; left: 6px; top: -1px; font-size: 9px; font-family: var(--mono); color: #fff; mix-blend-mode: difference; }
+.send { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.send small { color: var(--dim); font-size: 11px; }
 .params { display: flex; flex-wrap: wrap; gap: 12px 26px; }
 .params.off { opacity: 0.45; }
 .param { display: flex; flex-direction: column; gap: 3px; min-width: 130px; }
@@ -55,9 +66,19 @@ output { font-family: var(--mono); font-size: 11px; color: var(--dim); }
 })
 export class EffectDeviceComponent implements OnInit, OnDestroy {
     @Input() module: any;
+    public auxes = [0, 1];
     public level = 0;
     public reduction = 0;
     private timer: any;
+
+    constructor(public rack: RackService) {}
+
+    toggleSend(aux: number) {
+        if (this.rack.isSend(this.module.id, aux))
+            this.rack.unwireSend(this.module.id);
+        else
+            this.rack.wireAsSend(this.module.id, aux);
+    }
 
     get hasReduction(): boolean {
         return typeof this.module.reduction == 'function';

@@ -110,3 +110,8 @@
     .tools { grid-area: tools; }
     .tools .txt { display: none; }
 }
+
+.tools .target button {
+    padding: 3px 7px;
+    font-size: 11px;
+}

@@ -1,6 +1,6 @@
 import { Subscription } from 'rxjs';
 import { RackModule } from './module';
-import { CableModel, ModuleEnv, PortKind } from './types';
+import { CableModel, ModuleEnv } from './types';
 import { MODULE_META, createModule, moduleMeta } from '../modules/registry';
 
 export interface ConnectResult {
@@ -86,32 +86,48 @@ export class RackGraph {
             return { ok: false, error: 'No se puede unir ' + (a.kind == 'audio' ? 'audio con notas' : 'notas con audio') };
         if (this.cables.some(c => c.fromModule == fromModule && c.fromPort == fromPort && c.toModule == toModule && c.toPort == toPort))
             return { ok: false, error: 'Ese cable ya existe' };
-        if (this.reaches(a.kind, toModule, fromModule))
+        if (fromModule == toModule)
+            return { ok: false, error: 'Un dispositivo no se puede conectar consigo mismo' };
+        if (this.reaches(toModule, toPort, fromModule, fromPort))
             return { ok: false, error: 'Ese cable crearia un bucle' };
         return { ok: true };
     }
 
-    // Hay camino de `start` a `target` siguiendo los cables de ese tipo? (tambien detecta unirse a si mismo)
-    private reaches(kind: PortKind, start: string, target: string): boolean {
-        if (start == target)
-            return true;
+    /**
+     * Hay un camino de la entrada (module, port) a la salida (targetModule, targetPort)? Se sigue la
+     * senal por puertos: dentro de un dispositivo segun sus rutas internas, y fuera por los cables.
+     * Por puerto (y no por dispositivo) para permitir un envio aux: el mezclador manda al efecto y el
+     * efecto vuelve al mezclador por el retorno, que no regresa al bus aux (no hay bucle de senal).
+     */
+    private reaches(module: string, port: string, targetModule: string, targetPort: string): boolean {
+        const goal = targetModule + ':' + targetPort;
         const seen = new Set<string>();
-        const stack = [start];
+        const stack = [module + ':' + port];   // empieza en un puerto de entrada
         while (stack.length) {
-            const id = stack.pop();
-            if (id == target)
+            const key = stack.pop();
+            if (key == goal)
                 return true;
-            if (seen.has(id))
+            if (seen.has(key))
                 continue;
-            seen.add(id);
-            const mod = this.find(id);
-            this.cables.forEach(c => {
-                if (c.fromModule != id)
-                    return;
-                const p = mod && mod.portDef(c.fromPort);
-                if (p && p.kind == kind)
-                    stack.push(c.toModule);
-            });
+            seen.add(key);
+            const [mid, pid] = key.split(':');
+            const mod = this.find(mid);
+            const def = mod && mod.portDef(pid);
+            if (!def)
+                continue;
+            if (def.dir == 'in') {
+                // De una entrada a las salidas que alimenta
+                mod.routes().forEach(([i, o]) => {
+                    if (i == pid)
+                        stack.push(mid + ':' + o);
+                });
+            } else {
+                // De una salida, por sus cables, a las entradas conectadas
+                this.cables.forEach(c => {
+                    if (c.fromModule == mid && c.fromPort == pid)
+                        stack.push(c.toModule + ':' + c.toPort);
+                });
+            }
         }
         return false;
     }

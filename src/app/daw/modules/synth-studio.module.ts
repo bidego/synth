@@ -14,7 +14,8 @@ export class SynthStudioModule extends RackModule {
     readonly type = 'synth';
     readonly ports: ReadonlyArray<PortDef> = [
         { id: 'notes', kind: 'note', dir: 'in', label: 'Notas' },
-        { id: 'out', kind: 'audio', dir: 'out', label: 'Audio' }
+        { id: 'out', kind: 'audio', dir: 'out', label: 'Audio' },
+        { id: 'seq', kind: 'note', dir: 'out', label: 'Secuenciador' }
     ];
 
     public readonly chain: MasterChain;
@@ -26,7 +27,8 @@ export class SynthStudioModule extends RackModule {
         super(env);
         this.chain = new MasterChain(env.ctx);
         this.engine = new SynthEngine(env, this.chain.input);
-        this.sequencer = new Sequencer(env, this.engine, this.chain.input);
+        // Las pistas con destino "salida" mandan sus notas por el puerto Secuenciador
+        this.sequencer = new Sequencer(env, this.engine, this.chain.input, msg => this.noteOut.next(msg));
         // Los efectos que trae cada preset se aplican a este instrumento
         this.engine.onPatchFx = fx => this.setFx(fx);
         this.chain.setFx(this.fx, env.live);
@@ -34,6 +36,12 @@ export class SynthStudioModule extends RackModule {
 
     audioPort(id: string): AudioNode | null {
         return id == 'out' ? this.chain.output : null;
+    }
+
+    // Las notas que entran tocan este instrumento; las que salen son las del secuenciador: no hay
+    // camino de una a otra (si lo hubiera, un cable de la salida a la entrada seria un bucle)
+    routes(): Array<[string, string]> {
+        return [];
     }
 
     receive(msg: NoteMsg, port: string) {
