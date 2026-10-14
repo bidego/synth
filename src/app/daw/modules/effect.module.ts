@@ -64,10 +64,10 @@ export abstract class EffectModule extends RackModule {
     protected init(fxInput: AudioNode, fxOutput: AudioNode) {
         this.inNode.connect(fxInput);
         fxOutput.connect(this.fxGain);
-        this.paramDefs.forEach(def => {
-            this.values[def.id] = def.default;
-            this.apply(def.id, def.default);
-        });
+        // Primero todos los valores y despues aplicarlos: algunos efectos combinan varios parametros
+        // (ej. el delay calcula su tiempo con sync + division + time)
+        this.paramDefs.forEach(def => this.values[def.id] = def.default);
+        this.paramDefs.forEach(def => this.apply(def.id, def.default));
     }
 
     /** Aplica el valor de un parametro al circuito. */

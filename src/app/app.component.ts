@@ -152,8 +152,10 @@ export class AppComponent {
   // y las teclas de notas tienen que seguir llegando
   @HostListener('document:click', ['$event'])
   releaseButtonFocus(event: Event) {
+    // El clic suele caer en un icono (svg) dentro del boton, no en el boton mismo
     const target = event.target as HTMLElement;
-    if (target && target.tagName == 'BUTTON')
-      target.blur();
+    const button = target && target.closest ? target.closest('button') : null;
+    if (button)
+      button.blur();
   }
 }
