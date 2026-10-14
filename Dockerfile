@@ -23,5 +23,8 @@ COPY server/package.json server/server.js server/git.js server/store.js server/p
 COPY deploy/start.sh /start.sh
 COPY landing/ /usr/share/nginx/html/
 COPY --from=build /app/dist/syntotec-app /usr/share/nginx/html/app
+# Version de la compilacion en los archivos de la landing (?v=...): evita mezclar un JS/CSS viejo en cache con el HTML nuevo
+ARG BUILD_COMMIT=local
+RUN V="${BUILD_COMMIT}-$(date +%s)" && sed -i "s/__V__/$V/g" /usr/share/nginx/html/index.html
 EXPOSE 80
 CMD ["/start.sh"]

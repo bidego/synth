@@ -12,7 +12,7 @@
 <meta property="og:image" content="/img/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.ico">
-<link rel="stylesheet" href="/landing/landing.css">
+<link rel="stylesheet" href="/landing/landing.css?v=__V__">
 <script>
 // Los enlaces compartidos viejos (/#s=...) y los nuevos (#c=, #p=, #demo=) abren la app
 if (/^#(s|c|p|demo)=/.test(location.hash)) location.replace('/app/' + location.search + location.hash);
@@ -24,8 +24,9 @@ if (/^#(s|c|p|demo)=/.test(location.hash)) location.replace('/app/' + location.s
   var seen = false;
   try { seen = sessionStorage.getItem('syntotec.intro') === '1'; } catch (e) {}
   if (/[?&]intro=0\b/.test(location.search) || location.hash.length > 1 || seen) h.classList.add('no-intro');
-  // Red de seguridad: si el JS de la pagina no llegara a cargar, la web no se queda oculta
-  setTimeout(function () { h.classList.add('intro-done'); }, 60000);
+  // Red de seguridad: si el JS de la pagina no arranca (no carga, falla, o es una version vieja guardada en cache), la intro
+  // se quita sola y la web queda visible y usable. Nunca debe quedar una animacion tapando o mezclada con la pagina.
+  setTimeout(function () { if (!window.__syntotecLanding) h.classList.add('no-intro'); }, 6000);
 })();
 </script>
 <script type="application/ld+json">
@@ -252,6 +253,6 @@ if (/^#(s|c|p|demo)=/.test(location.hash)) location.replace('/app/' + location.s
 </footer>
 
 <noscript><p class="noscript">Esta página usa JavaScript para la galería y la intro. <a href="/app/">Abrí Syntotec</a> directamente.</p></noscript>
-<script src="/landing/landing.js" defer></script>
+<script src="/landing/landing.js?v=__V__" defer></script>
 </body>
 </html>

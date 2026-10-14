@@ -4,6 +4,8 @@
    Todo texto que viene del servidor se inserta con textContent: nunca como HTML. */
 (function () {
   'use strict';
+  // Avisa al <head> que el JS arranco (si no llega a hacerlo, la intro se quita sola)
+  window.__syntotecLanding = true;
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -307,11 +309,13 @@
   }
 
   var startedAt = 0;
-  // Cualquier interaccion: antes de INTRO_MIN_S solo sirve para desbloquear el audio; despues, cierra la intro
+  var audibleSince = 0;
+  // Cualquier interaccion: si todavia no suena, solo desbloquea el audio (el navegador lo exige) y NO cierra la intro;
+  // si ya suena, la cierra una vez que se escucho INTRO_MIN_S segundos
   function onInteract(e) {
     if (e.type === 'keydown' && e.key === 'Escape') { closeIntro(1); return; }
     if (player.ctx && player.ctx.state === 'suspended') player.ctx.resume();
-    if ((performance.now() - startedAt) / 1000 >= INTRO_MIN_S) closeIntro(1.6);
+    if (audible() && audibleSince && (performance.now() - audibleSince) / 1000 >= INTRO_MIN_S) closeIntro(1.6);
   }
 
   function startIntro() {
@@ -350,11 +354,13 @@
       if (!introOpen) return;
       var t = (performance.now() - startedAt) / 1000;
       if (audible()) {
+        if (!audibleSince) audibleSince = performance.now();
         introBar.parentNode.classList.add('on');
         introBar.style.width = (player.position * 100).toFixed(1) + '%';
         intro.classList.add('playing');
         setMusicButton(true);
-        hint('playing' + (t >= INTRO_MIN_S ? '-skip' : ''), t >= INTRO_MIN_S
+        var ts = (performance.now() - audibleSince) / 1000;
+        hint('playing' + (ts >= INTRO_MIN_S ? '-skip' : ''), ts >= INTRO_MIN_S
           ? nodes('Suena ', el('b', '', 'Funkito D'), ' · tocá o apretá una tecla para entrar')
           : nodes('Suena ', el('b', '', 'Funkito D'), ', un proyecto hecho en Syntotec'));
       } else if (t > 1.2) {
@@ -368,8 +374,21 @@
     })();
   }
 
+  // Si algo de la intro fallara (navegadores con proteccion de audio, extensiones...), la web queda usable igual
+  function abortIntro() {
+    introOpen = false;
+    root.classList.add('no-intro');
+    $$('main, .footer, .nav').forEach(function (n) { n.removeAttribute('inert'); });
+    vj.level = 0.4;
+  }
+  window.addEventListener('error', function () { if (introOpen) abortIntro(); });
+  window.addEventListener('unhandledrejection', function () { if (introOpen && !player.playing && !player.buffer && !player.loading) abortIntro(); });
   if (!root.classList.contains('no-intro')) {
-    startIntro();
+    try {
+      startIntro();
+    } catch (e) {
+      abortIntro();
+    }
   } else {
     vj.level = 0.4;
   }
