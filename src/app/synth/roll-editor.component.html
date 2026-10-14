@@ -1,0 +1,49 @@
+<div class="editor" *ngIf="track as t">
+    <div class="bar">
+        <b>Editando {{ t.name }} <small>{{ t.patch.name }}</small></b>
+        <span class="seg">
+            <button [class.on]="tool == 'select'" (click)="setTool('select')" title="Seleccionar y mover">Seleccion</button>
+            <button [class.on]="tool == 'draw'" (click)="setTool('draw')" title="Clic en un espacio vacio para crear una nota">Lapiz</button>
+        </span>
+        <span class="seg" title="Grilla">
+            <button *ngFor="let g of grids" [class.on]="grid == g.value" (click)="setGrid(g.value)">{{ g.label }}</button>
+        </span>
+        <span class="zoom"><span class="label">Zoom</span><app-fader [horizontal]="true" [length]="110" [min]="8" [max]="240" [step]="1" [default]="40" [value]="ppb" (valueChange)="setZoom($event)" ariaLabel="Zoom horizontal"></app-fader></span>
+        <button (click)="close()" class="close icon" title="Cerrar el editor"><app-icon name="close" [size]="12"></app-icon> Cerrar</button>
+    </div>
+    <div class="bar">
+        <span class="group">
+            <button (click)="quantize()" title="Ajusta el inicio de las notas a la grilla (seleccionadas, o todas)">Cuantizar</button>
+            Transponer
+            <button (click)="transpose(-12)">-12</button><button (click)="transpose(-1)">-1</button>
+            <button (click)="transpose(1)">+1</button><button (click)="transpose(12)">+12</button>
+        </span>
+        <span class="group">
+            <button (click)="selectAll()" title="Ctrl+A">Todo</button>
+            <button (click)="deleteSelected()" [disabled]="!selected.size" title="Suprimir / Borrar (tambien doble clic sobre una nota)">Borrar</button>
+            <button (click)="undo()" [disabled]="!canUndo" title="Ctrl+Z">Deshacer</button>
+            <button (click)="redo()" [disabled]="!canRedo" title="Ctrl+Shift+Z">Rehacer</button>
+        </span>
+        <span class="group">
+            <button (click)="extendRange(1)" title="Mostrar una octava mas aguda">+ agudos</button>
+            <button (click)="extendRange(-1)" title="Mostrar una octava mas grave">+ graves</button>
+            <button (click)="doubleLoop()" title="Duplica los compases y copia las notas de todas las pistas">Duplicar compases x2</button>
+        </span>
+        <span class="tip" title="Mantene Ctrl apretado mientras arrastras una nota (o varias seleccionadas) para copiarlas"><kbd>Ctrl</kbd> + arrastrar = copiar</span>
+        <span class="status">{{ selected.size }} seleccionadas &middot; {{ t.notes.length }} notas <span class="msg" *ngIf="message">&middot; {{ message }}</span></span>
+    </div>
+    <div class="scroll">
+        <div class="row">
+            <canvas #gutter class="gutter"></canvas>
+            <canvas #roll class="roll"
+                [attr.data-ppb]="ppb" [attr.data-lo]="lo" [attr.data-hi]="hi"
+                (pointerdown)="onDown($event)" (pointermove)="onMove($event)" (pointerup)="onUp($event)" (pointercancel)="onUp($event)"
+                (dblclick)="onDoubleClick($event)" (contextmenu)="$event.preventDefault()"></canvas>
+        </div>
+        <div class="row">
+            <div class="gutter velLabel">Velocidad<br><small>arrastra una barra</small></div>
+            <canvas #lane class="lane" (pointerdown)="onLaneDown($event)" (pointermove)="onLaneMove($event)"
+                (pointerup)="onUp($event)" (pointercancel)="onUp($event)"></canvas>
+        </div>
+    </div>
+</div>

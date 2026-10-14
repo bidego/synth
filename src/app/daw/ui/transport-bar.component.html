@@ -1,0 +1,87 @@
+<div #box class="transport" role="toolbar" aria-label="Transporte" [class.slim]="slim" [class.floating]="floating" [ngStyle]="floatStyle">
+    <div class="grip" *ngIf="floating" (pointerdown)="startDrag($event)" (dblclick)="resetFloat()" title="Arrastra para mover (doble clic: volver a la posicion inicial)" aria-hidden="true">
+        <i></i><i></i><i></i>
+    </div>
+    <div class="buttons">
+        <span class="skip" role="group" aria-label="Mover la posicion">
+            <button class="icon" (click)="transport.rewind()" [disabled]="transport.recording" title="Ir al inicio (Inicio)" aria-label="Ir al inicio"><app-icon name="skip-back" [size]="13"></app-icon></button>
+            <button class="icon" (pointerdown)="holdSkip(-1, $event)" [disabled]="transport.recording" title="Atras un compas (←). Mantene apretado para retroceder rapido" aria-label="Atras"><app-icon name="rewind" [size]="13"></app-icon></button>
+            <button class="icon" (pointerdown)="holdSkip(1, $event)" [disabled]="transport.recording" title="Adelante un compas (→). Mantene apretado para avanzar rapido" aria-label="Adelante"><app-icon name="forward" [size]="13"></app-icon></button>
+        </span>
+        <button class="rec" [class.on]="transport.recording" (click)="transport.toggleRecord()" title="Grabar (tecla ` )" aria-label="Grabar">
+            <app-icon name="rec" [size]="14"></app-icon><span class="txt">Rec</span>
+        </button>
+        <button class="play" [class.on]="transport.playing && !transport.recording" (click)="transport.togglePlay()" title="Reproducir / detener (Enter)" aria-label="Reproducir o detener">
+            <app-icon [name]="transport.playing ? 'stop' : 'play'" [size]="14"></app-icon><span class="txt">{{ transport.playing ? 'Stop' : 'Play' }}</span>
+        </button>
+    </div>
+
+    <div class="target" *ngIf="transport.recording" [class.none]="!rack.armedSynths.length" title="Los instrumentos armados son los que graban lo que tocas">
+        <app-icon name="rec" [size]="9"></app-icon> Grabando en <b>{{ armedNames }}</b>
+    </div>
+
+    <div class="position" title="Compas y pulso dentro del loop">
+        <span class="label">Pos</span>
+        <b>{{ transport.positionText }}</b>
+        <span class="beats" aria-hidden="true">
+            <i *ngFor="let d of dots" [class.on]="transport.beatInBar == d" [class.count]="transport.countingIn"></i>
+        </span>
+    </div>
+
+    <div class="field bpm">
+        <app-knob label="BPM" [size]="slim ? 36 : 46" [value]="transport.bpm" [min]="40" [max]="240" [step]="1" [default]="100" [hideValue]="true"
+            (valueChange)="transport.setBpm($event)" ariaLabel="Tempo"></app-knob>
+        <b>{{ transport.bpm }}</b>
+        <button (click)="transport.tap()" title="Toca el ritmo para fijar el tempo">Tap</button>
+    </div>
+
+    <button class="more" *ngIf="slim" [class.on]="more" (click)="more = !more" title="Compas, loop, cuantizar y transposicion">Mas <app-icon [name]="more ? 'chevron-up' : 'chevron-down'" [size]="11"></app-icon></button>
+
+    <div class="extra" *ngIf="!slim || more">
+    <div class="field" title="Compas">
+        <span class="label">Compas</span>
+        <span class="stepper">
+            <button class="icon" (click)="transport.setSignature(transport.numerator - 1, transport.denominator)" aria-label="Menos pulsos"><app-icon name="chevron-left" [size]="12"></app-icon></button>
+            <b>{{ transport.numerator }}</b>
+            <button class="icon" (click)="transport.setSignature(transport.numerator + 1, transport.denominator)" aria-label="Mas pulsos"><app-icon name="chevron-right" [size]="12"></app-icon></button>
+        </span>
+        <span class="seg">
+            <button *ngFor="let d of denominators" [class.on]="transport.denominator == d" (click)="transport.setSignature(transport.numerator, d)">/{{ d }}</button>
+        </span>
+    </div>
+
+    <div class="field">
+        <span class="label">Loop (compases)</span>
+        <span class="seg">
+            <button *ngFor="let b of barOptions" [class.on]="transport.bars == b" (click)="transport.setBars(b)">{{ b }}</button>
+        </span>
+    </div>
+
+    <div class="field">
+        <span class="label">Cuantizar</span>
+        <span class="seg">
+            <button *ngFor="let q of quantizes" [class.on]="transport.quantize == q.value" (click)="transport.setQuantize(q.value)">{{ q.label }}</button>
+        </span>
+    </div>
+
+    <div class="field" title="Sube o baja todos los instrumentos de notas (no a las baterias)">
+        <span class="label">Transponer</span>
+        <span class="stepper">
+            <button class="icon" (click)="transport.setTranspose(transport.transpose - 1)" [disabled]="transport.transpose <= -maxTranspose" aria-label="Bajar un semitono"><app-icon name="chevron-left" [size]="12"></app-icon></button>
+            <b class="tr" [class.active]="transport.transpose != 0" (click)="transport.setTranspose(0)" title="Clic para volver a 0">{{ transposeText }}</b>
+            <button class="icon" (click)="transport.setTranspose(transport.transpose + 1)" [disabled]="transport.transpose >= maxTranspose" aria-label="Subir un semitono"><app-icon name="chevron-right" [size]="12"></app-icon></button>
+        </span>
+        <span class="dim">st</span>
+    </div>
+
+    <div class="field checks">
+        <label><input type="checkbox" [checked]="transport.metronome" (change)="transport.setFlag('metronome', $event.target.checked)"> Metronomo</label>
+        <label><input type="checkbox" [checked]="transport.countIn" (change)="transport.setFlag('countIn', $event.target.checked)"> Cuenta previa</label>
+        <label title="Al grabar, el movimiento de las perillas y faders queda grabado y se repite en cada vuelta del loop"><input type="checkbox" [checked]="automation.armed" (change)="automation.setArmed($event.target.checked)"> Grabar automatizacion</label>
+    </div>
+    </div>
+
+    <span class="modes" role="group" aria-label="Vista del transporte">
+        <button *ngFor="let m of modes" [class.on]="ui.transportMode == m.id" [title]="m.title" (click)="setMode(m.id)">{{ m.label }}</button>
+    </span>
+</div>

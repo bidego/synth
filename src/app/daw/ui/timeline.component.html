@@ -1,0 +1,42 @@
+<div class="timeline" [class.closed]="!ui.timelineOpen">
+    <div class="head">
+        <button class="toggle ghost" (click)="ui.toggleTimeline()" [attr.aria-expanded]="ui.timelineOpen" title="Mostrar u ocultar la linea de tiempo">
+            <app-icon [name]="ui.timelineOpen ? 'chevron-down' : 'chevron-right'" [size]="13"></app-icon> Linea de tiempo
+        </button>
+        <span class="pos" title="Posicion actual (compas.pulso)">{{ transport.positionText }}</span>
+        <span class="hint" *ngIf="ui.timelineOpen && !transport.recording">Clic o arrastre para moverte &middot; parado, es desde donde arranca &middot; <kbd>Shift</kbd> salta de a compas</span>
+        <span class="hint" *ngIf="ui.timelineOpen && transport.recording">No se puede mover la posicion mientras graba</span>
+        <span class="spacer"></span>
+        <button class="small" *ngIf="ui.timelineOpen && transport.startBeat > 0" (click)="transport.rewind()" title="Vuelve el punto de partida al comienzo">Partir del inicio</button>
+        <button class="small" *ngIf="ui.timelineOpen && transport.playing && !transport.recording" (click)="transport.setStartHere()" title="Fija el punto de partida donde esta el cursor">Partir de aca</button>
+    </div>
+
+    <div class="body" *ngIf="ui.timelineOpen">
+        <div class="labels">
+            <div class="corner"></div>
+            <div class="lane-label" *ngFor="let l of shownLanes" [class.muted]="l.muted" [class.auto]="l.auto" [title]="l.tip || l.label">
+                <span class="txt">{{ l.label }}</span>
+                <span class="lane-acts" *ngIf="l.auto">
+                    <button class="ghost icon" (click)="toggleLane(l)" [class.off]="!l.auto.enabled" [title]="l.auto.enabled ? 'Desactivar esta automatizacion' : 'Activar esta automatizacion'" aria-label="Activar o desactivar la automatizacion"><app-icon [name]="l.auto.enabled ? 'eye' : 'eye-off'" [size]="11"></app-icon></button>
+                    <button class="ghost icon" (click)="removeLane(l)" title="Borrar esta automatizacion" aria-label="Borrar la automatizacion"><app-icon name="trash" [size]="11"></app-icon></button>
+                </span>
+            </div>
+            <div class="lane-label more" *ngIf="hiddenLanes">+{{ hiddenLanes }} pistas</div>
+        </div>
+        <div class="grid" #ruler [class.locked]="transport.recording" (pointerdown)="startSeek($event)">
+            <div class="ruler">
+                <span class="bar" *ngFor="let b of bars" [style.left.%]="b.pct"><em *ngIf="b.label">{{ b.n }}</em></span>
+            </div>
+            <div class="rows">
+                <div class="lane" *ngFor="let l of shownLanes" [class.muted]="l.muted"></div>
+                <canvas #canvas class="notes" [style.height.px]="lanesHeight"></canvas>
+            </div>
+            <div class="lane empty" *ngIf="!lanes.length">Todavia no hay pistas: apreta Rec y toca para grabar una; mover una perilla mientras grabas queda como automatizacion</div>
+            <!-- Lineas de compas y de pulso sobre toda la grilla -->
+            <span class="vline bar" *ngFor="let b of bars" [style.left.%]="b.pct"></span>
+            <span class="vline beat" *ngFor="let p of beatTicks" [style.left.%]="p"></span>
+            <span class="start" *ngIf="transport.startBeat > 0" [style.left.%]="startPct" title="Punto de partida"></span>
+            <span class="cursor" [class.playing]="transport.playing" [style.left.%]="cursorPct"></span>
+        </div>
+    </div>
+</div>

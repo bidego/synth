@@ -1,14 +1,45 @@
-<div class="piano" [style.width.px]="width" (mouseleave)="up()">
+<div class="toolbar">
+    <div class="sound">
+        <app-icon name="music" [size]="14"></app-icon>
+        <b>{{ engine.patch.name }}</b>
+        <small>{{ engine.patch.category }}</small>
+        <ng-container *ngIf="engine.loading as l">
+            <span class="chip warn" *ngIf="l.state == 'loading'"><i></i>Cargando {{ (l.progress * 100) | number:'1.0-0' }}%</span>
+            <span class="chip danger" *ngIf="l.state == 'error'"><i></i>Error al cargar</span>
+        </ng-container>
+    </div>
+
+    <div class="ctl octave">
+        <span class="label">Octava</span>
+        <button class="icon" (click)="engine.shiftOctave(-1)" title="Octava abajo (flecha abajo)" aria-label="Octava abajo"><app-icon name="chevron-left" [size]="14"></app-icon></button>
+        <b>{{ engine.octave > 0 ? '+' : '' }}{{ engine.octave }}</b>
+        <button class="icon" (click)="engine.shiftOctave(1)" title="Octava arriba (flecha arriba)" aria-label="Octava arriba"><app-icon name="chevron-right" [size]="14"></app-icon></button>
+        <small class="range">{{ range }}</small>
+    </div>
+
+    <div class="ctl level">
+        <app-knob label="Nivel" [size]="38" [value]="engine.level" [min]="0" [max]="0.8" [step]="0.01" [default]="0.3" (valueChange)="setLevel($event)" ariaLabel="Nivel del sonido"></app-knob>
+    </div>
+
+    <span class="chip voices" [class.ok]="engine.voiceCount"><i></i>Voces <b>{{ engine.voiceCount }}</b></span>
+</div>
+
+<div class="piano">
     <div *ngFor="let key of keys"
         class="key" [class.black]="key.black" [class.on]="engine.isHeld(key.offset)"
-        [style.left.px]="key.left" [style.width.px]="key.width"
-        (mousedown)="down(key)" (mouseup)="up()">
+        [style.left.%]="key.left" [style.width.%]="key.width"
+        (pointerdown)="down(key, $event)" (pointerup)="up($event)"
+        (pointerleave)="up($event)" (pointercancel)="up($event)">
         <span class="lbl top">{{ label(key.top) }}</span>
         <span class="lbl bottom">{{ label(key.bottom) }}</span>
         <span class="note">{{ name(key) }}</span>
     </div>
 </div>
+
 <div class="legend">
-    <span class="top">fila de arriba</span> /
-    <span class="bottom">fila de abajo</span> &middot; &uarr;&darr; cambian la octava
+    <span><i class="dot top"></i>fila de arriba</span>
+    <span><i class="dot bottom"></i>fila de abajo</span>
+    <span>mas abajo en la tecla = mas fuerte</span>
+    <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> octava</span>
+    <span><kbd>Espacio</kbd> sustain</span>
 </div>

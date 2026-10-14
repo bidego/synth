@@ -1,3 +1,5 @@
+import { BANK_FONTS, DRUM_KITS, familyOf } from './gm';
+
 export type WaveType = 'sine' | 'square' | 'sawtooth' | 'triangle';
 export type FilterType = 'lowpass' | 'highpass' | 'bandpass';
 export type LfoTarget = 'pitch' | 'filter' | 'amp';
@@ -40,7 +42,18 @@ export interface FxConfig {
     reverbMix: number;      // 0..1
 }
 
+/** Instrumento de un banco de muestras: `id` es el programa GM (sampler) o la variacion de kit (kit). */
+export interface SampleSource {
+    font: string;
+    id: number;
+}
+
 export interface Patch {
+    // synth: osciladores; drums: percusion sintetizada; sampler: instrumento de un banco de muestras;
+    // kit: bateria GM de muestras (cada tecla es una pieza)
+    kind?: 'synth' | 'drums' | 'sampler' | 'kit';
+    drumStyle?: '808' | 'punch';
+    sample?: SampleSource;
     name: string;
     category: string;
     description: string;
@@ -55,6 +68,8 @@ export interface Patch {
 export type Preset = Patch;
 
 export const DEFAULT_ENV: EnvConfig = { attack: 0.005, decay: 0.1, sustain: 1, release: 0.05 };
+// Los instrumentos de muestras ya traen su caida natural: la envolvente solo suaviza ataque y cola
+export const SAMPLER_ENV: EnvConfig = { attack: 0.003, decay: 0.1, sustain: 1, release: 0.4 };
 export const DEFAULT_FILTER: FilterConfig = { type: 'lowpass', cutoff: 18000, q: 0.7, envAmount: 0, envDecay: 0.3, track: 0.5 };
 export const DEFAULT_LFO: LfoConfig = { rate: 5, depth: 0, target: 'pitch' };
 export const DEFAULT_FX: FxConfig = { delayTime: 0.3, delayFeedback: 0.35, delayMix: 0, reverbMix: 0 };
@@ -81,6 +96,24 @@ const patch = (name: string, category: string, description: string, o: Partial<P
     octave: 0,
     ...o
 });
+
+/** Patch para un instrumento de un banco de muestras. */
+export const makeSamplerPatch = (font: string, program: number, name: string, o: Partial<Patch> = {}): Patch => {
+    const fontLabel = BANK_FONTS.filter(f => f.id == font).map(f => f.label)[0] || font;
+    return patch(name, 'Sampled', fontLabel + ' - programa ' + program, {
+        kind: 'sampler', sample: { font, id: program }, env: SAMPLER_ENV, level: 0.5,
+        // Los bajos (programas 32-39) suenan una octava mas abajo
+        octave: familyOf(program) == 4 ? -1 : 0,
+        ...o
+    });
+};
+
+export const makeKitPatch = (kitId: number, name: string, o: Partial<Patch> = {}): Patch =>
+    patch(name, 'Kits', 'Bateria GM de muestras (FluidR3). Cada tecla es una pieza; la fila de abajo arranca en el bombo', {
+        kind: 'kit', sample: { font: 'FluidR3_GM', id: kitId }, level: 0.6, fx: { reverbMix: 0.12 }, ...o
+    });
+
+const FLUID = 'FluidR3_GM';
 
 export const PRESETS: Array<Preset> = [
     patch('Supersaw Lead', 'Lead', 'Tres sierras desafinadas, filtro con barrido y vibrato', {
@@ -162,10 +195,122 @@ export const PRESETS: Array<Preset> = [
         lfo: lfo(6.5, 0.25, 'amp'),
         fx: { reverbMix: 0.45 }
     }),
+    patch('Drum Machine', 'Drums', 'Kit de percusion: Z=bombo, D=caja, V=hat, X/C/B/N/M toms y mas (mismo kit en cada octava)', {
+        kind: 'drums', drumStyle: 'punch', level: 0.5,
+        fx: { reverbMix: 0.12 }
+    }),
+    patch('808 Kit', 'Drums', 'Bombo largo y caja electronica estilo TR-808', {
+        kind: 'drums', drumStyle: '808', level: 0.55,
+        fx: { delayTime: 0.19, delayFeedback: 0.25, delayMix: 0.1, reverbMix: 0.1 }
+    }),
     patch('Sci-Fi Siren', 'FX', 'Pitch LFO enorme: cada nota es una sirena', {
         layers: [layer('sawtooth', { volume: 0.5 }), layer('square', { ratio: 2, detune: 12, volume: 0.25 })],
         env: env(0.05, 0.1, 1, 0.3),
         lfo: lfo(2.5, 700, 'pitch'),
         fx: { delayTime: 0.33, delayFeedback: 0.5, delayMix: 0.35, reverbMix: 0.3 }
-    })
+    }),
+    // --- Bancos de muestras (se descargan la primera vez y quedan en cache) ---
+    makeSamplerPatch(FLUID, 0, 'Grand Piano', { fx: { reverbMix: 0.2 } }),
+    makeSamplerPatch(FLUID, 4, 'Rhodes', { fx: { reverbMix: 0.2 } }),
+    makeSamplerPatch(FLUID, 11, 'Vibraphone', { fx: { reverbMix: 0.3 } }),
+    makeSamplerPatch(FLUID, 19, 'Church Organ (muestras)', { fx: { reverbMix: 0.4 } }),
+    makeSamplerPatch(FLUID, 24, 'Nylon Guitar', { fx: { reverbMix: 0.2 } }),
+    makeSamplerPatch(FLUID, 33, 'Finger Bass'),
+    makeSamplerPatch(FLUID, 48, 'Strings (muestras)', { env: { ...SAMPLER_ENV, attack: 0.15, release: 0.8 }, fx: { reverbMix: 0.45 } }),
+    makeSamplerPatch(FLUID, 52, 'Choir Aahs', { env: { ...SAMPLER_ENV, attack: 0.25, release: 1 }, fx: { reverbMix: 0.5 } }),
+    makeSamplerPatch(FLUID, 56, 'Trumpet', { fx: { reverbMix: 0.2 } }),
+    makeSamplerPatch(FLUID, 65, 'Alto Sax', { fx: { reverbMix: 0.2 } }),
+    makeSamplerPatch(FLUID, 73, 'Flute', { fx: { reverbMix: 0.25 } }),
+    makeKitPatch(0, 'Standard Kit'),
+    makeKitPatch(8, 'Room Kit', { fx: { reverbMix: 0.3 } }),
+    makeKitPatch(16, 'Power Kit'),
+    makeKitPatch(24, 'Electronic Kit'),
+    makeKitPatch(25, 'TR-808 (muestras)', { fx: { delayTime: 0.19, delayFeedback: 0.25, delayMix: 0.1, reverbMix: 0.1 } })
 ];
+
+// --- Validacion de datos externos (archivos importados, localStorage) ---
+
+const num = (v: any, min: number, max: number, fallback: number): number =>
+    typeof v == 'number' && isFinite(v) ? Math.max(min, Math.min(max, v)) : fallback;
+const oneOf = <T>(v: any, options: Array<T>, fallback: T): T => options.indexOf(v) >= 0 ? v : fallback;
+const text = (v: any, fallback: string, max = 60): string => typeof v == 'string' ? v.slice(0, max) : fallback;
+
+function sanitizeEnv(e: any, fallback: EnvConfig): EnvConfig {
+    e = e && typeof e == 'object' ? e : {};
+    return {
+        attack: num(e.attack, 0, 10, fallback.attack),
+        decay: num(e.decay, 0.005, 10, fallback.decay),
+        sustain: num(e.sustain, 0, 1, fallback.sustain),
+        release: num(e.release, 0.01, 10, fallback.release)
+    };
+}
+
+/** Devuelve un Patch seguro: cualquier valor faltante, de tipo erroneo o fuera de rango se corrige. */
+export function sanitizePatch(raw: any): Patch {
+    const r = raw && typeof raw == 'object' ? raw : {};
+    const waves: Array<WaveType> = ['sine', 'square', 'sawtooth', 'triangle'];
+    const layersRaw = Array.isArray(r.layers) && r.layers.length ? r.layers.slice(0, 6) : [{}];
+    const f = r.filter && typeof r.filter == 'object' ? r.filter : {};
+    const l = r.lfo && typeof r.lfo == 'object' ? r.lfo : {};
+    const lfoTarget = oneOf<LfoTarget>(l.target, ['pitch', 'filter', 'amp'], 'pitch');
+    const fx = r.fx && typeof r.fx == 'object' ? r.fx : {};
+    // La fuente de muestras forma parte de una URL: solo se aceptan fuentes conocidas e ids numericos
+    let kind: Patch['kind'] = oneOf<Patch['kind']>(r.kind, ['synth', 'drums', 'sampler', 'kit'], 'synth');
+    let sample: SampleSource;
+    if (kind == 'sampler' || kind == 'kit') {
+        const rs = r.sample && typeof r.sample == 'object' ? r.sample : {};
+        const fonts = BANK_FONTS.filter(f => kind == 'sampler' || f.kits).map(f => f.id);
+        const font = oneOf<string>(rs.font, fonts, fonts[0]);
+        const id = Math.round(num(rs.id, 0, 127, 0));
+        if (kind == 'kit' && DRUM_KITS.every(k => k.id != id))
+            kind = 'synth';
+        else
+            sample = { font, id };
+    }
+    return {
+        name: text(r.name, 'Patch'),
+        category: text(r.category, 'Custom'),
+        description: text(r.description, '', 200),
+        kind: kind,
+        sample: sample,
+        drumStyle: oneOf<'808' | 'punch'>(r.drumStyle, ['808', 'punch'], 'punch'),
+        layers: layersRaw.map((x: any) => {
+            x = x && typeof x == 'object' ? x : {};
+            return {
+                wave: oneOf<WaveType>(x.wave, waves, 'sawtooth'),
+                ratio: num(x.ratio, 0.25, 8, 1),
+                detune: num(x.detune, -1200, 1200, 0),
+                volume: num(x.volume, 0, 1, 0.5),
+                env: x.env ? sanitizeEnv(x.env, DEFAULT_ENV) : undefined
+            };
+        }),
+        env: sanitizeEnv(r.env, DEFAULT_ENV),
+        filter: {
+            type: oneOf<FilterType>(f.type, ['lowpass', 'highpass', 'bandpass'], 'lowpass'),
+            cutoff: num(f.cutoff, 20, 20000, DEFAULT_FILTER.cutoff),
+            q: num(f.q, 0.1, 30, DEFAULT_FILTER.q),
+            envAmount: num(f.envAmount, 0, 20000, 0),
+            envDecay: num(f.envDecay, 0.005, 10, DEFAULT_FILTER.envDecay),
+            track: num(f.track, 0, 1, DEFAULT_FILTER.track)
+        },
+        lfo: {
+            rate: num(l.rate, 0.05, 40, DEFAULT_LFO.rate),
+            depth: num(l.depth, 0, lfoTarget == 'amp' ? 1 : 6000, 0),
+            target: lfoTarget
+        },
+        level: num(r.level, 0, 0.8, 0.3),
+        octave: Math.round(num(r.octave, -3, 3, 0)),
+        fx: sanitizeFx(fx)
+    };
+}
+
+/** Efectos master validados (viene de un archivo o del navegador). */
+export function sanitizeFx(raw: any): FxConfig {
+    const fx = raw && typeof raw == 'object' ? raw : {};
+    return {
+        delayTime: num(fx.delayTime, 0, 1, DEFAULT_FX.delayTime),
+        delayFeedback: num(fx.delayFeedback, 0, 0.9, DEFAULT_FX.delayFeedback),
+        delayMix: num(fx.delayMix, 0, 1, 0),
+        reverbMix: num(fx.reverbMix, 0, 1, 0)
+    };
+}

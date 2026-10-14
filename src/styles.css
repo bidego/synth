@@ -1,5 +1,216 @@
-/* You can add global styles to this file, and also import other style files */
+/* Sistema de diseno: tokens, elementos base y utilidades compartidas por todos los componentes */
 
+:root {
+  --bg: #06070d;
+  --panel: rgba(14, 16, 30, 0.86);
+  --panel-solid: #0e101e;
+  --raised: rgba(34, 38, 66, 0.9);
+  --raised-hover: rgba(54, 60, 102, 0.95);
+  --border: #2a2f4e;
+  --border-strong: #3d4470;
+  --text: #e8eaf4;
+  --dim: #8d93b3;
+  --accent: #ff4f87;
+  --accent-soft: rgba(255, 79, 135, 0.18);
+  --info: #5cc8ff;
+  --ok: #5fe08a;
+  --warn: #ffc857;
+  --danger: #ff5560;
+  --radius: 8px;
+  --radius-sm: 5px;
+  --font: Inter, -apple-system, 'Segoe UI', Roboto, system-ui, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --blur: blur(10px) saturate(1.2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Solo <html> pinta el fondo: el arte VJ (canvas con z-index negativo) va detras del <body>,
+   asi que el body tiene que ser transparente o lo tapa */
+html {
+  background: var(--bg);
+}
 body {
+  background: transparent;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  color: var(--text);
+  font: 13px/1.4 var(--font);
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* --- Controles base --- */
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+button:hover:not(:disabled) {
+  background: var(--raised-hover);
+  border-color: var(--border-strong);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+button.on, button.active {
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+button.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+button.ghost:hover:not(:disabled) {
+  background: var(--raised);
+}
+button.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 8px;
+}
+button:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--info);
+  outline-offset: 1px;
+}
+
+input[type=range] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+input[type=text], input[type=search] {
+  font: inherit;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+}
+input[type=text]:focus, input[type=search]:focus {
+  border-color: var(--info);
+  outline: none;
+}
+input[type=checkbox] {
+  accent-color: var(--accent);
+}
+
+/* Grupo segmentado: botones pegados que funcionan como un solo control */
+.seg {
+  display: inline-flex;
+}
+.seg button {
+  border-radius: 0;
+  margin-left: -1px;
+  padding: 3px 9px;
+}
+.seg button:first-child {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  margin-left: 0;
+}
+.seg button:last-child {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.seg button.on {
+  position: relative;
+  z-index: 1;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--dim);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.chip i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+.chip.ok {
+  color: var(--ok);
+  border-color: rgba(95, 224, 138, 0.4);
+}
+.chip.ok i {
+  background: var(--ok);
+}
+.chip.warn {
+  color: var(--warn);
+  border-color: rgba(255, 200, 87, 0.4);
+}
+.chip.warn i {
+  background: var(--warn);
+}
+.chip.danger {
+  color: var(--danger);
+  border-color: rgba(255, 85, 96, 0.5);
+}
+.chip.danger i {
+  background: var(--danger);
+}
+
+/* Etiqueta pequena para titulos de seccion y de controles */
+.label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+kbd {
+  font: 11px var(--mono);
+  padding: 1px 6px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--text);
+}
+
+/* Barras de desplazamiento discretas */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }

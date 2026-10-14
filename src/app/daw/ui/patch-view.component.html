@@ -1,0 +1,52 @@
+<div class="bar">
+    <span class="legend"><i class="dot audio"></i> Audio <i class="dot note"></i> Notas</span>
+    <span class="help">Arrastra de un puerto a otro para unirlos &middot; al elegir un dispositivo se resaltan sus cables &middot; clic en un cable y <kbd>Supr</kbd> (o su X) para quitarlo &middot; doble clic o <kbd>Shift</kbd> + clic en un puerto lo desconecta</span>
+    <span class="spacer"></span>
+    <span class="error" *ngIf="rack.message" role="alert">{{ rack.message }}</span>
+    <button (click)="autoLayout()" title="Acomoda los dispositivos de izquierda a derecha segun el flujo de la senal">Ordenar</button>
+</div>
+
+<div class="patch" #wrap (pointerdown)="clearSelection()">
+    <svg class="cables" [attr.width]="width" [attr.height]="height">
+        <path *ngFor="let c of paths" class="cable" [class.audio]="c.kind == 'audio'" [class.note]="c.kind == 'note'" [class.sel]="selectedCable == c.id" [class.rel]="related(c)" [class.dim]="focusId && !related(c) && selectedCable != c.id" [attr.d]="c.d"></path>
+        <path *ngIf="drag" class="cable temp" [class.audio]="drag.kind == 'audio'" [class.note]="drag.kind == 'note'" [attr.d]="dragPath"></path>
+    </svg>
+
+    <div class="node" *ngFor="let m of rack.modules" [class.selected]="rack.selectedId == m.id"
+        [style.left.px]="m.pos.x" [style.top.px]="m.pos.y" (pointerdown)="$event.stopPropagation(); rack.select(m.id)">
+        <div class="head" (pointerdown)="startMove(m, $event)">
+            <span class="title"><b>{{ m.name }}</b><small>{{ typeLabel(m) }}</small></span>
+            <span class="acts" (pointerdown)="$event.stopPropagation()">
+                <button class="ghost icon" *ngIf="rack.canDuplicate(m.id)" (click)="duplicate(m, $event)" title="Duplicar (con su sonido y sus pistas)" aria-label="Duplicar"><app-icon name="copy" [size]="12"></app-icon></button>
+                <button class="ghost icon del" (click)="removeModule(m, $event)" title="Quitar del rack" aria-label="Quitar"><app-icon name="trash" [size]="12"></app-icon></button>
+            </span>
+        </div>
+        <div class="ports">
+            <div class="col in">
+                <div class="port" *ngFor="let p of inPorts(m)">
+                    <i class="jack" [class.audio]="p.kind == 'audio'" [class.note]="p.kind == 'note'" [class.used]="connected(m, p)" [class.ok]="canDrop(m, p)"
+                        [attr.data-j]="m.id + ':' + p.id" (pointerdown)="startCable(m, p, $event)" [title]="p.label + ' (' + (p.kind == 'audio' ? 'audio' : 'notas') + ') - arrastra para conectar, doble clic o Shift + clic para desconectar'"></i>
+                    <span>{{ p.label }}</span>
+                </div>
+            </div>
+            <div class="col out">
+                <div class="port" *ngFor="let p of outPorts(m)">
+                    <span>{{ p.label }}</span>
+                    <i class="jack" [class.audio]="p.kind == 'audio'" [class.note]="p.kind == 'note'" [class.used]="connected(m, p)" [class.ok]="canDrop(m, p)"
+                        [attr.data-j]="m.id + ':' + p.id" (pointerdown)="startCable(m, p, $event)" [title]="p.label + ' (' + (p.kind == 'audio' ? 'audio' : 'notas') + ') - arrastra para conectar, doble clic o Shift + clic para desconectar'"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Capa superior: solo el tramo central de cada cable recibe clics, asi se pueden elegir aunque pasen por detras de un nodo -->
+    <svg class="hits" [attr.width]="width" [attr.height]="height">
+        <g *ngFor="let c of paths">
+            <path class="hit" [attr.d]="c.hit" (pointerdown)="selectCable(c.id, $event)" (dblclick)="deleteCable(c.id)"><title>{{ c.label }}</title></path>
+            <g class="del" *ngIf="selectedCable == c.id" (pointerdown)="$event.stopPropagation()" (click)="deleteCable(c.id)">
+                <circle [attr.cx]="c.mx" [attr.cy]="c.my" r="10"></circle>
+                <path [attr.d]="'M' + (c.mx - 4) + ' ' + (c.my - 4) + ' L' + (c.mx + 4) + ' ' + (c.my + 4) + ' M' + (c.mx + 4) + ' ' + (c.my - 4) + ' L' + (c.mx - 4) + ' ' + (c.my + 4)"></path>
+            </g>
+        </g>
+    </svg>
+</div>

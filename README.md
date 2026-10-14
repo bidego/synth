@@ -25,3 +25,131 @@ Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protrac
 ## Further help
 
 To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+
+
+## Bancos de sonido y creditos
+
+Ademas de los sintetizadores, la app toca instrumentos de **muestras reales** (128 instrumentos General MIDI y kits de bateria).
+Los datos estan **alojados en este repositorio** (`src/assets/sounds`, unos 58 MB) y los sirve la propia app: no dependen
+de ningun servidor externo. Tienen el formato de [WebAudioFont](https://github.com/surikov/webaudiofont) (S. Surikov) y
+`scripts/fetch-sounds.sh` los regenera o actualiza. Cada instrumento se descarga la primera vez que se elige y queda
+guardado en el navegador (Cache Storage), asi que despues funciona sin conexion.
+
+| Banco | Credito / licencia |
+|---|---|
+| FluidR3 GM (instrumentos y kits de bateria) | (c) 2000-2002, 2008 Frank Wen. Licencia estilo MIT; el aviso de copyright debe mantenerse en trabajos derivados. |
+| GeneralUser GS (instrumentos) | S. Christian Collins. Su licencia (v2.0) permite usarlo en proyectos de software; el autor aclara que hereda los derechos de las muestras y que no puede garantizar su origen al 100 %. Ver https://www.schristiancollins.com/generaluser.php |
+
+## Landing y proyectos publicos
+
+La raiz del sitio (`/`) es la **landing** (`landing/`, HTML + CSS + JS sin dependencias) y la app vive en `/app/`. Los enlaces
+viejos (`/#s=...`) y los nuevos (`#c=`, `#p=`, `#demo=`) se redirigen solos a la app.
+
+- **Intro:** una vez por visita arranca con el arte VJ de la app y el logo animado, y con un clic suena la musica de un proyecto
+  real (`landing/audio/intro.mp3`, el render del proyecto *Funkito D* hecho con el propio Syntotec). Se salta con Esc o
+  `?intro=0`; con movimiento reducido no anima.
+- **Nuestros proyectos:** proyectos de ejemplo estaticos en `landing/demos/` (`<slug>.json` + `index.json`, que se regenera con
+  `node scripts/build-demos.js`). Se abren en la app con `#demo=<slug>`.
+- **Galeria:** los ultimos proyectos publicos del backend (`GET /api/public`). Cada proyecto guardado se publica desde
+  *Proyecto > (globo)* con aviso previo, autor y descripcion; `#p=<id>` lo abre en la app. El texto que viene del servidor
+  se inserta siempre como texto, nunca como HTML. Moderacion: `ADMIN_TOKEN` habilita `DELETE /api/admin/public/<id>`;
+  `FEATURED_PIDS` marca destacados; `MAX_PUBLIC_PER_OWNER` limita las publicaciones por usuario.
+- **Enlaces cortos:** con backend, *Copiar enlace* guarda una copia de la sesion en el servidor (`shares/<codigo>.json` en el
+  repo) y da un enlace de ~10 caracteres (`#c=`); sin backend sigue siendo el enlace largo con la sesion adentro.
+- Para regenerar el audio y las capturas: abrir el proyecto con `#demo=funkito-d`, exportar el WAV y pasarlo por
+  `ffmpeg -i funkito.wav -af loudnorm=I=-15:TP=-1.5 -b:a 128k landing/audio/intro.mp3`.
+
+## Backend: los proyectos guardados van a un repositorio git
+
+La app funciona sola, pero si hay un backend (`server/`), los proyectos que se **guardan con nombre** se envian ahi y
+quedan versionados en un repositorio git: **el repositorio es la base de datos**. El servidor lo clona al arrancar,
+carga todo en memoria (las lecturas no tocan git) y agrupa los cambios en commits (uno cada pocos segundos) que sube con
+un token que vive **solo en el servidor** (variable `GIT_TOKEN`: nunca llega al navegador, a los logs ni a la
+configuracion de git; se entrega a git por `GIT_ASKPASS`).
+
+Hay dos formas de desplegarlo:
+
+**A. Un solo contenedor (lo mas simple; por ejemplo una plataforma con un servicio por branch).** La imagen del
+`Dockerfile` ya trae nginx y el backend. Si el servicio tiene la variable `GIT_REPO_URL`, el backend arranca solo; si no,
+arranca solo la web. Alcanza con cargar estas variables en el panel de la plataforma (el token como secreto):
+
+| Variable | Valor |
+|---|---|
+| `GIT_REPO_URL` | `https://github.com/USUARIO/syntotec-data.git` (repo **privado**) |
+| `GIT_TOKEN` | token fine-grained con *Contents: Read and write* **solo** sobre ese repo |
+| `GIT_BRANCH` | `main` (opcional) |
+
+No hace falta `API_UPSTREAM` ni abrir otro puerto: el backend escucha solo dentro del contenedor y nginx le reenvia `/api`.
+Al apagar el contenedor (SIGTERM o SIGQUIT) el backend versiona lo pendiente antes de salir. `/data` puede ser un volumen,
+pero no hace falta: el repo es la base de datos y se vuelve a clonar al arrancar.
+
+**B. Servicios separados** (`docker compose`):
+
+```
+cp .env.example .env              # GIT_REPO_URL y GIT_TOKEN
+docker compose --profile backend up --build
+```
+
+La web usa `API_UPSTREAM=http://api:3000`; el backend sale de `server/Dockerfile`.
+
+- nginx reenvia `/api` al backend (`API_UPSTREAM`). Sin backend la app sigue andando solo con el navegador.
+- Cada navegador genera una **clave** al azar (64 hex, en `localStorage`); con ella se identifica ante el servidor. En el
+  repo el dueno es un hash de la clave, asi que quien lea el repo no puede deducirla. Para ver los proyectos en otro
+  navegador: *Proyecto > Servidor > Copiar clave* y en el otro *Usar otra clave*. Quien tenga la clave puede ver y
+  cambiar esos proyectos.
+- Sin conexion el proyecto queda guardado igual y se reenvia solo (con espera creciente); al arrancar la app trae los
+  proyectos del servidor que falten y sube los que el servidor no tenga. Gana la version con fecha de guardado mas nueva.
+- Archivos: `projects/<hash-del-dueno>/<id>.json`. Limites: 4 MB por proyecto, 200 por usuario, 120 pedidos/min por clave y 600/min por IP. La IP sale del final de `X-Forwarded-For`; si hay un balanceador de la plataforma delante de nginx, poner `PROXY_HOPS=2` (si no, todos los usuarios cuentan como una sola IP).
+- El puerto del backend no debe quedar expuesto a internet: solo nginx habla con el (en el contenedor unico escucha en 127.0.0.1).
+- Si se borra un proyecto en un navegador y otro navegador con la misma clave todavia lo tiene, ese lo vuelve a subir en
+  su proxima sincronizacion (no hay marca de borrado compartida).
+- El historial de git crece con cada version guardada: para un uso intenso conviene podar o archivar el repo de vez en cuando.
+- Variables: ver `.env.example` y `server/server.js` (`COMMIT_DELAY_MS`, `PULL_INTERVAL_MS` para traer ediciones hechas a mano en el repo, etc.).
+- Pruebas del backend (con un remoto git real): `cd server && node test.js`.
+
+## Automatizacion
+
+Con **Rec** activo y la casilla *Grabar automatizacion* del transporte (viene marcada), el movimiento de una perilla o fader
+queda grabado en el loop y se repite en cada vuelta. Cada parametro tiene su pista en la linea de tiempo (curva azul), donde se
+puede desactivar o borrar; el control se pinta de azul si esta automatizado y de rojo mientras graba. Mientras se sostiene el
+control manda el usuario; al soltarlo vuelve la pista. Se guarda en el proyecto, se copia al duplicar un dispositivo y suena
+tambien en el WAV exportado. Se pueden automatizar los parametros de **efectos y dinamicos**, el **mezclador** (faders, paneo,
+envios aux, retornos, master), el **nivel de la salida** y el **volumen de cada pista** de un instrumento. Los parametros del
+sintetizador (filtro, LFO...) todavia no: el sonido de una pista queda fijo al grabarla.
+
+## Syntotec DAW (rack modular)
+
+La aplicacion es un DAW tipo rack: un **host** con transporte global y un rack de **modulos** que se
+conectan con **cables**. *Syntotec Synth Studio* (sintetizador + sampler + baterias + secuenciador) es uno
+de esos modulos y se pueden poner varios.
+
+**Transporte global:** play / stop / grabar, tempo (con tap), compas (numerador y denominador), largo del
+loop (1 a 64 compases), cuantizacion, metronomo, cuenta previa y **transposicion general** en semitonos.
+
+**Dispositivos:** Syntotec Synth Studio, Teclado / MIDI, Salida de audio, Mezclador de 8 canales (fader,
+paneo, mute, solo y medidores), efectos (delay sincronizable al BPM, reverb, chorus, distorsion,
+ecualizador de 3 bandas), dinamica (compresor, limitador) y patcheras (splitter 1>4, merger 4>1).
+
+**Vistas:** *Rack* (el panel frontal de cada dispositivo) y *Cableado* (los dispositivos como nodos con
+puertos; se arrastra de un puerto a otro para tender un cable). Los cables de audio unen nodos de WebAudio
+reales; los de notas reenvian mensajes. No se permiten bucles ni unir tipos distintos. Tab alterna la vista.
+
+**Estructura del codigo** (todo en este proyecto, en capas):
+
+- `src/app/synth/` y `src/app/services/`: el motor del instrumento (voces, presets, sampler, bancos GM).
+- `src/app/daw/core/`: `TransportService`, `RackGraph` (grafo puro, sin Angular), `RackService`,
+  `Sequencer` (pistas por instrumento), `ProjectService` (guardado, migracion y export).
+- `src/app/daw/modules/`: un archivo por tipo de dispositivo; se registran en `registry.ts`.
+- `src/app/daw/ui/`: vistas Rack y Cableado y los paneles de cada dispositivo.
+
+Los modulos no dependen de la pantalla ni del `AudioContext` en vivo: el **export a WAV reconstruye el rack
+completo** (mismos dispositivos, ajustes y cables) sobre un `OfflineAudioContext`. Para agregar un
+dispositivo: crear la clase (extiende `RackModule` o `EffectModule`), registrarla en `registry.ts` y,
+si no es un efecto, darle su panel en `daw/ui`.
+
+## Teclado, MIDI y proyectos
+
+- Teclado de la compu (por posicion fisica): fila `Z X C V B N M , . /` y fila `Q W E R T Y U I O P`, con `S D G H J L ;` y `2 3 5 6 7 9 0` como teclas negras. `↑ ↓` cambian la octava, espacio = sustain. Estas teclas pasan por el modulo *Teclado / MIDI*, que las envia por cable a uno o mas instrumentos (capas).
+- MIDI: cualquier controlador USB/Bluetooth (Web MIDI; Chrome/Edge, en `https` o `localhost`).
+- Transporte: `Enter` play/stop, `` ` `` grabar en los instrumentos armados. Cada instrumento tiene su secuenciador (pistas, overdub, editor de notas con copia por Ctrl + arrastrar).
+- Guardado: autoguardado en el navegador, proyectos con nombre, exportar/importar `.json` (version 2; los proyectos de la version anterior, de un solo instrumento, se migran solos) y exportar **WAV** del rack completo (16 bits, con efectos y mezcla).

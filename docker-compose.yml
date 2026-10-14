@@ -1,5 +1,22 @@
+# Solo la web:                 docker compose up --build
+# Web + backend de proyectos:  cp .env.example .env  (completar GIT_REPO_URL y GIT_TOKEN)
+#                              docker compose --profile backend up --build
 services:
   synth:
     build: .
     ports:
       - "8080:80"
+    environment:
+      # A donde reenvia nginx /api (si el backend no esta, la app sigue andando solo con el navegador)
+      API_UPSTREAM: http://api:3000
+
+  api:
+    profiles: ["backend"]
+    build: ./server
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - syntotec-data:/data
+
+volumes:
+  syntotec-data:

@@ -1,87 +1,61 @@
-<div class="panel" *ngIf="engine.patch as p">
-    <div class="head">
-        <h3>{{ p.name }} <small>{{ p.category }}</small></h3>
-        <span class="desc">{{ p.description }}</span>
-        <span class="octave">
-            Octava
-            <button (click)="engine.shiftOctave(-1)">&minus;</button>
-            <b>{{ engine.octave }}</b>
-            <button (click)="engine.shiftOctave(1)">+</button>
-            <small>{{ range }}</small>
-        </span>
-        <label class="knob level">
-            <span>Level</span>
-            <input type="range" min="0" max="0.8" step="0.01" [value]="engine.level" (input)="setLevel($event.target.value)">
-            <output>{{ engine.level }}</output>
-        </label>
-        <span class="voices">Voces: {{ engine.voiceCount }}</span>
-    </div>
+<div class="patch" *ngIf="engine.patch as p">
+    <p class="desc">{{ p.description }}</p>
 
-    <div class="sections">
-        <section class="osc">
-            <h4>Osc <button (click)="addLayer()" title="Agregar capa">+</button></h4>
+    <div class="drumsNote" *ngIf="p.kind == 'drums' || p.kind == 'kit'">
+        Kit de percusion: cada tecla es una pieza (nombre en el teclado). Grabalo con el looper para armar ritmos.
+    </div>
+    <div class="drumsNote" *ngIf="p.kind == 'sampler'">
+        Instrumento de muestras reales (banco {{ p.sample?.font }}, programa {{ p.sample?.id }}). Abajo se puede ajustar ataque, release, filtro y LFO.
+    </div>
+    <div class="sections" *ngIf="p.kind != 'drums' && p.kind != 'kit'">
+        <section class="osc" *ngIf="p.kind != 'sampler'">
+            <h4>Osc <button class="icon" (click)="addLayer()" title="Agregar capa" aria-label="Agregar capa"><app-icon name="plus" [size]="12"></app-icon></button></h4>
             <div class="layer" *ngFor="let l of p.layers; let i = index">
-                <div class="waves">
-                    <button *ngFor="let w of waves" [class.on]="l.wave == w" (click)="l.wave = w">{{ w }}</button>
-                    <button class="remove" (click)="removeLayer(i)" title="Quitar capa">&times;</button>
+                <div class="waves seg">
+                    <button *ngFor="let w of waves" [class.on]="l.wave == w" (click)="setWave(l, w)">{{ w }}</button>
+                    <button class="remove icon" (click)="removeLayer(i)" title="Quitar capa" aria-label="Quitar capa"><app-icon name="close" [size]="12"></app-icon></button>
                     <span class="own" *ngIf="l.env" title="Esta capa tiene envolvente propia">env propia</span>
                 </div>
                 <div class="knobs">
-                    <label class="knob" *ngFor="let k of layerKnobs">
-                        <span>{{ k.label }}</span>
-                        <input type="range" [min]="k.min" [max]="k.max" [step]="k.step" [value]="l[k.key]"
-                            (input)="setNum(l, k.key, $event.target.value)">
-                        <output>{{ l[k.key] }}{{ k.unit }}</output>
-                    </label>
+                    <app-knob *ngFor="let k of layerKnobs" [label]="k.label" [size]="48" [value]="l[k.key]" [min]="k.min" [max]="k.max" [step]="k.step"
+                        [default]="k.default" [bipolar]="!!k.bipolar" [unit]="k.unit" (valueChange)="setNum(l, k.key, $event)"></app-knob>
                 </div>
             </div>
         </section>
 
         <section>
             <h4>Amp env</h4>
-            <div class="knobs two">
-                <label class="knob" *ngFor="let k of envKnobs">
-                    <span>{{ k.label }}</span>
-                    <input type="range" [min]="k.min" [max]="k.max" [step]="k.step" [value]="p.env[k.key]"
-                        (input)="setNum(p.env, k.key, $event.target.value)">
-                    <output>{{ p.env[k.key] }}{{ k.unit }}</output>
-                </label>
+            <div class="adsr">
+                <div class="ch" *ngFor="let k of envKnobs">
+                    <app-fader [length]="96" [value]="p.env[k.key]" [min]="k.min" [max]="k.max" [step]="k.step" [default]="k.default"
+                        (valueChange)="setNum(p.env, k.key, $event)" [ariaLabel]="'Envolvente ' + k.key"></app-fader>
+                    <span class="letter">{{ k.label }}</span>
+                    <span class="val">{{ p.env[k.key] | number:'1.2-2' }}{{ k.unit }}</span>
+                </div>
             </div>
         </section>
 
         <section>
             <h4>Filter</h4>
-            <div class="waves">
-                <button *ngFor="let t of filterTypes" [class.on]="p.filter.type == t" (click)="p.filter.type = t">{{ t }}</button>
+            <div class="waves seg">
+                <button *ngFor="let t of filterTypes" [class.on]="p.filter.type == t" (click)="setFilterType(t)">{{ t }}</button>
             </div>
-            <div class="knobs two">
-                <label class="knob" *ngFor="let k of filterKnobs">
-                    <span>{{ k.label }}</span>
-                    <input type="range" [min]="k.min" [max]="k.max" [step]="k.step" [value]="p.filter[k.key]"
-                        (input)="setNum(p.filter, k.key, $event.target.value)">
-                    <output>{{ p.filter[k.key] }}{{ k.unit }}</output>
-                </label>
+            <div class="knobs wrap">
+                <app-knob *ngFor="let k of filterKnobs" [label]="k.label" [size]="46" [value]="p.filter[k.key]" [min]="k.min" [max]="k.max" [step]="k.step"
+                    [default]="k.default" [log]="!!k.log" [unit]="k.unit" (valueChange)="setNum(p.filter, k.key, $event)"></app-knob>
             </div>
         </section>
 
         <section>
             <h4>LFO</h4>
-            <div class="waves">
+            <div class="waves seg">
                 <button *ngFor="let t of lfoTargets" [class.on]="p.lfo.target == t" (click)="setLfoTarget(t)">{{ t }}</button>
             </div>
-            <div class="knobs two">
-                <label class="knob">
-                    <span>{{ lfoRateKnob.label }}</span>
-                    <input type="range" [min]="lfoRateKnob.min" [max]="lfoRateKnob.max" [step]="lfoRateKnob.step" [value]="p.lfo.rate"
-                        (input)="setNum(p.lfo, 'rate', $event.target.value)">
-                    <output>{{ p.lfo.rate }}{{ lfoRateKnob.unit }}</output>
-                </label>
-                <label class="knob">
-                    <span>{{ lfoDepthRange.label }}</span>
-                    <input type="range" [min]="lfoDepthRange.min" [max]="lfoDepthRange.max" [step]="lfoDepthRange.step" [value]="p.lfo.depth"
-                        (input)="setNum(p.lfo, 'depth', $event.target.value)">
-                    <output>{{ p.lfo.depth }}{{ lfoDepthRange.unit }}</output>
-                </label>
+            <div class="knobs">
+                <app-knob [label]="lfoRateKnob.label" [size]="46" [value]="p.lfo.rate" [min]="lfoRateKnob.min" [max]="lfoRateKnob.max" [step]="lfoRateKnob.step"
+                    [default]="lfoRateKnob.default" [unit]="lfoRateKnob.unit" (valueChange)="setNum(p.lfo, 'rate', $event)"></app-knob>
+                <app-knob [label]="lfoDepthRange.label" [size]="46" [value]="p.lfo.depth" [min]="lfoDepthRange.min" [max]="lfoDepthRange.max" [step]="lfoDepthRange.step"
+                    [default]="0" [unit]="lfoDepthRange.unit" (valueChange)="setNum(p.lfo, 'depth', $event)"></app-knob>
             </div>
         </section>
     </div>

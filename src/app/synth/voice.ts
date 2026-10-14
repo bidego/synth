@@ -21,10 +21,14 @@ export class Voice {
     private lfo: OscillatorNode;
     private nodes: Array<AudioNode> = [];
     private envs: Array<{ gain: GainNode, env: EnvConfig }> = [];
+    private baseDetune: Array<number> = [];
     private released = false;
+    private releasedAt = Infinity;
 
-    constructor(private ctx: AudioContext, destination: AudioNode, patch: Patch, freq: number) {
-        const t = ctx.currentTime;
+    /** `when` agenda el inicio en el tiempo del AudioContext (looper); por defecto, ahora.
+     *  `velocity` 0..1 escala el volumen de las capas; `bend` son cents de pitch bend inicial. */
+    constructor(private ctx: BaseAudioContext, destination: AudioNode, patch: Patch, freq: number, velocity = 1, bend = 0, when?: number) {
+        const t = when !== undefined ? when : ctx.currentTime;
         const f = patch.filter;
 
         const filter = ctx.createBiquadFilter();
@@ -42,19 +46,23 @@ export class Voice {
         amp.connect(destination);
         this.nodes.push(filter, amp);
 
+        // Curva suave: una nota floja sigue escuchandose
+        const vel = 0.15 + 0.85 * velocity;
         patch.layers.forEach(layer => {
             if (layer.volume <= 0)
                 return;
+            const peak = layer.volume * vel;
             const e = layer.env || patch.env;
             const osc = ctx.createOscillator();
             osc.type = layer.wave;
             osc.frequency.value = freq * layer.ratio;
-            osc.detune.value = layer.detune;
+            osc.detune.value = layer.detune + bend;
+            this.baseDetune.push(layer.detune);
             const gain = ctx.createGain();
             const attack = Math.max(e.attack, 0.003);
             gain.gain.setValueAtTime(0, t);
-            gain.gain.linearRampToValueAtTime(layer.volume, t + attack);
-            gain.gain.setTargetAtTime(layer.volume * e.sustain, t + attack, Math.max(e.decay, 0.005) / 3);
+            gain.gain.linearRampToValueAtTime(peak, t + attack);
+            gain.gain.setTargetAtTime(peak * e.sustain, t + attack, Math.max(e.decay, 0.005) / 3);
             osc.connect(gain);
             gain.connect(filter);
             osc.start(t);
@@ -91,12 +99,20 @@ export class Voice {
             setTimeout(() => this.dispose());
     }
 
+    /** Pitch bend en cents, sobre el detune propio de cada capa. */
+    setBend(cents: number) {
+        const t = this.ctx.currentTime;
+        this.oscs.forEach((o, i) => o.detune.setTargetAtTime(this.baseDetune[i] + cents, t, 0.01));
+    }
+
     /** Suelta la nota. `fast` = robo de voz, release corto para no cortar con un click. */
-    release(fast = false) {
-        if (this.released)
+    release(fast = false, when?: number) {
+        const t = when !== undefined ? when : this.ctx.currentTime;
+        // Un release agendado en el futuro todavia puede adelantarse (ej. al frenar el looper)
+        if (this.released && t >= this.releasedAt)
             return;
         this.released = true;
-        const t = this.ctx.currentTime;
+        this.releasedAt = t;
         let longest = 0;
         this.envs.forEach(({ gain, env }) => {
             const release = fast ? 0.03 : Math.max(env.release, 0.01);

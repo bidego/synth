@@ -1,0 +1,117 @@
+<button class="trigger" [class.open]="ui.menuOpen" (click)="toggle()" aria-haspopup="true" [attr.aria-expanded]="ui.menuOpen">
+    <app-icon name="folder" [size]="15"></app-icon>
+    <span class="txt">Proyecto<ng-container *ngIf="project.projectName">: <b>{{ project.projectName }}</b></ng-container></span>
+    <app-icon name="chevron-down" [size]="13"></app-icon>
+</button>
+
+<div class="menu" *ngIf="ui.menuOpen" role="menu">
+    <div class="section">
+        <div class="label">Proyecto</div>
+        <div class="row">
+            <button class="icon" (click)="project.newProject()" title="Vuelve al rack inicial">
+                <app-icon name="plus" [size]="14"></app-icon> Proyecto nuevo
+            </button>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="label">Guardar</div>
+        <div class="row">
+            <input type="text" placeholder="Nombre del proyecto" maxlength="40" [value]="project.projectName"
+                (input)="project.projectName = $event.target.value" (keydown.enter)="project.saveNamed()" (keydown.escape)="ui.menuOpen = false" aria-label="Nombre del proyecto">
+            <button class="primary icon" (click)="project.saveNamed()" title="Guardar en este navegador">
+                <app-icon name="save" [size]="14"></app-icon> Guardar
+            </button>
+        </div>
+        <p class="note">Ademas, todo se autoguarda en este navegador.</p>
+    </div>
+
+    <div class="section">
+        <div class="label">Abrir <small>({{ project.saved.length }})</small></div>
+        <div class="empty" *ngIf="!project.saved.length">Todavia no hay proyectos guardados.</div>
+        <ul class="saved">
+            <li *ngFor="let s of project.saved">
+                <button class="open" (click)="project.loadNamed(s.name)" title="Abrir este proyecto">
+                    <span class="n">{{ s.name }}</span>
+                    <small>{{ s.modules }} dispositivos &middot; {{ savedAt(s.savedAt) }}</small>
+                </button>
+                <button class="ghost icon pubbtn" *ngIf="sync.online" [class.on]="s.pub" (click)="openPublish(s)"
+                    [title]="s.pub ? 'Publicado: ver, copiar el enlace o dejar de publicar' : 'Publicar este proyecto en la landing'" [attr.aria-label]="s.pub ? 'Publicado' : 'Publicar'"><app-icon name="globe" [size]="14"></app-icon></button>
+                <button class="ghost icon" (click)="project.deleteNamed(s.name)" title="Borrar" aria-label="Borrar"><app-icon name="trash" [size]="14"></app-icon></button>
+                <div class="publish" *ngIf="publishing == s.name">
+                    <div class="note warn" *ngIf="!s.pub">Al publicarlo, <b>cualquiera</b> podra ver y abrir este proyecto, y aparecera en la landing. Si lo volves a guardar, la version publica se actualiza. Podes dejar de publicarlo cuando quieras.</div>
+                    <input type="text" placeholder="Tu nombre o alias (opcional)" maxlength="30" [value]="pubAuthor" (input)="pubAuthor = $event.target.value" aria-label="Autor">
+                    <textarea placeholder="Contanos algo del proyecto (opcional)" maxlength="240" rows="2" [value]="pubDescription" (input)="pubDescription = $event.target.value" aria-label="Descripcion"></textarea>
+                    <div class="row wrap">
+                        <button class="primary" [disabled]="pubBusy" (click)="doPublish(s)">{{ s.pub ? 'Actualizar' : 'Publicar' }}</button>
+                        <button *ngIf="s.pub" (click)="copyPublicLink(s)">Copiar enlace publico</button>
+                        <button *ngIf="s.pub" class="danger" [disabled]="pubBusy" (click)="doUnpublish(s)">Dejar de publicar</button>
+                    </div>
+                    <div class="note err" *ngIf="pubError" role="alert">{{ pubError }}</div>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <div class="section sync">
+        <div class="label">Servidor</div>
+        <div class="state" [ngClass]="sync.status">
+            <i></i><span>{{ sync.label }}</span>
+            <small *ngIf="sync.lastSync && sync.status == 'ok'">&middot; {{ savedAt(sync.lastSync) }} {{ sync.lastSync | date:'HH:mm' }}</small>
+            <small *ngIf="sync.unsent">&middot; {{ sync.unsent }} sin enviar</small>
+        </div>
+        <label class="chk"><input type="checkbox" [checked]="sync.enabled" (change)="sync.setEnabled($event.target.checked)"> Enviar al servidor los proyectos que guardo</label>
+        <div class="row wrap" *ngIf="sync.enabled">
+            <button class="icon" (click)="project.syncNow()" title="Trae los proyectos del servidor y sube los que falten">Sincronizar ahora</button>
+        </div>
+        <div class="row wrap key" *ngIf="sync.enabled && sync.status != 'off'">
+            <span class="keytext" title="Tu clave de sincronizacion (no se muestra completa)">{{ sync.keyShort }}</span>
+            <button class="icon" (click)="copyKey()" title="Copiar la clave completa">Copiar clave</button>
+            <button class="icon" (click)="changeKey()" title="Usar la clave de otro navegador para ver sus proyectos">Usar otra clave</button>
+        </div>
+        <p class="note" *ngIf="sync.enabled && sync.status != 'off'">Al guardar, el proyecto tambien se envia al servidor. Con la misma clave ves tus proyectos en otro navegador: quien la tenga puede verlos y cambiarlos, no la compartas.</p>
+    </div>
+
+    <div class="section">
+        <div class="label">Archivos</div>
+        <div class="row wrap">
+            <button class="icon" (click)="project.exportFile()" title="Descargar el proyecto como archivo .json">
+                <app-icon name="download" [size]="14"></app-icon> Exportar .json
+            </button>
+            <label class="file icon" title="Abrir un proyecto .json">
+                <app-icon name="upload" [size]="14"></app-icon> Importar .json
+                <input type="file" accept=".json,application/json" (change)="onImport($event)">
+            </label>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="label">Compartir</div>
+        <div class="row wrap">
+            <button class="primary icon" (click)="project.copyShareLink()" title="Copia un enlace con la sesion completa adentro">
+                <app-icon name="upload" [size]="14"></app-icon> Copiar enlace
+            </button>
+            <button class="icon" *ngIf="project.canNativeShare" (click)="project.nativeShare()" title="Usa el menu de compartir del dispositivo">Compartir...</button>
+        </div>
+        <input type="text" class="link" readonly *ngIf="project.shareUrl" [value]="project.shareUrl" (focus)="$event.target.select()" aria-label="Enlace para compartir">
+        <p class="note" *ngIf="sync.online">Con el servidor el enlace es <b>corto</b>: la sesion queda guardada ahi y cualquiera con el enlace la abre.</p>
+        <p class="note" *ngIf="!sync.online">Sin servidor el enlace lleva toda la sesion adentro (rack, cables, ajustes, pistas y tempo), por eso es largo: quien lo abra ve lo mismo.</p>
+        <p class="note">Tu sesion actual no se pierde: queda guardada.</p>
+    </div>
+
+    <div class="section">
+        <div class="label">Audio</div>
+        <div class="row wrap">
+            <span class="seg">
+                <button *ngFor="let n of passOptions" [class.on]="project.exportPasses == n" (click)="project.exportPasses = n">{{ n }}</button>
+            </span>
+            <span class="dim">vuelta(s) &middot; {{ project.exportSeconds | number:'1.0-0' }} s</span>
+        </div>
+        <button class="primary icon wide" (click)="project.exportWav()" [disabled]="project.exporting"
+            title="Renderiza todo el rack a un WAV sin perdida (16 bits, estereo, con los efectos y la mezcla)">
+            <app-icon name="download" [size]="14"></app-icon> {{ project.exporting ? 'Exportando...' : 'Exportar WAV' }}
+        </button>
+    </div>
+
+    <div class="msg" *ngIf="project.message" role="status">{{ project.message }}</div>
+</div>

@@ -1,0 +1,91 @@
+:host {
+    display: block;
+}
+:host(:empty) {
+    display: none;
+}
+.editor {
+    background: var(--panel);
+    -webkit-backdrop-filter: var(--blur);
+    backdrop-filter: var(--blur);
+    border: 1px solid var(--info);
+    border-radius: var(--radius);
+    padding: 8px 12px 12px;
+    font-size: 12px;
+    text-align: left;
+}
+.bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 16px;
+    margin-bottom: 6px;
+}
+.bar small {
+    opacity: 0.6;
+}
+.close {
+    margin-left: auto;
+}
+.status {
+    opacity: 0.75;
+}
+.msg {
+    color: #fc6;
+}
+.scroll {
+    max-height: 420px;
+    overflow: auto;
+    border: 1px solid #333857;
+    border-radius: 4px;
+}
+.row {
+    display: flex;
+    width: max-content;
+}
+.gutter {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    flex: none;
+    width: 64px;
+    background: #171829;
+}
+.velLabel {
+    height: 64px;
+    box-sizing: border-box;
+    padding: 6px 4px;
+    font-size: 11px;
+    color: #9cf;
+}
+.velLabel small {
+    opacity: 0.6;
+    font-size: 9px;
+}
+.roll, .lane {
+    display: block;
+    touch-action: none;
+    user-select: none;
+}
+.lane {
+    cursor: ns-resize;
+}
+
+.group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tip {
+    color: var(--dim);
+}
+.tip kbd {
+    margin-right: 2px;
+}
+
+.zoom {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}

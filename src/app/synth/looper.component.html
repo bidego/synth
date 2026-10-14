@@ -1,0 +1,36 @@
+<div class="empty" *ngIf="!looper.tracks.length">
+    <p><b>Todavia no hay pistas.</b></p>
+    <p>Apreta <kbd>Rec</kbd> (o la tecla <kbd>`</kbd>) y toca: se graba en loop. Segui tocando para sumar capas encima.
+       <b>+ Pista</b> crea otra pista con el sonido actual.</p>
+</div>
+
+<div class="track" *ngFor="let t of looper.tracks" [class.armed]="looper.armedId == t.id" [class.muted]="t.muted" [class.editing]="looper.editingId == t.id" [class.focused]="looper.selectedId == t.id">
+    <button class="arm" [class.on]="looper.armedId == t.id" (click)="looper.arm(t)" title="Grabar en esta pista" aria-label="Armar para grabar">R</button>
+    <div class="name pick" role="button" tabindex="0" (click)="focus(t)" (keydown.enter)="focus(t)" (keydown.space)="focus(t); $event.preventDefault()"
+        [attr.aria-pressed]="looper.selectedId == t.id"
+        [title]="looper.selectedId == t.id ? 'Pista en foco: el sonido que elijas cambia el instrumento de esta pista. Clic para soltarla' : 'Clic para poner el instrumento de esta pista en el sintetizador; despues, elegir otro sonido lo cambia'">
+        <span class="n">{{ t.name }}</span>
+        <small>{{ t.patch.name }}<ng-container *ngIf="looper.selectedId == t.id"> &middot; en foco</ng-container></small>
+    </div>
+    <div class="roll" [style.backgroundSize]="gridSize">
+        <i class="note" *ngFor="let n of t.notes"
+            [style.left.%]="n.start / looper.loopBeats * 100" [style.width.%]="noteWidth(n)"
+            [style.bottom.%]="noteBottom(t, n)"></i>
+        <i class="playhead" *ngIf="looper.playing" [style.left.%]="looper.position * 100"></i>
+    </div>
+    <app-fader class="vol" [horizontal]="true" [length]="88" [min]="0" [max]="1" [step]="0.01" [default]="1" [value]="t.volume" [autoModule]="module.id" [autoParam]="'track.' + t.id + '.volume'" (valueChange)="looper.setVolume(t, $event)" ariaLabel="Volumen de la pista" label="Volumen"></app-fader>
+    <div class="tools">
+        <span class="seg target" title="A donde va el sonido de esta pista: al propio instrumento, a la salida de notas (para tocar otro instrumento) o a los dos">
+            <button [class.on]="t.target == 'local'" (click)="looper.setTarget(t, 'local')">Propio</button>
+            <button [class.on]="t.target == 'out'" (click)="looper.setTarget(t, 'out')">Salida</button>
+            <button [class.on]="t.target == 'both'" (click)="looper.setTarget(t, 'both')">Ambos</button>
+        </span>
+        <button class="icon" [class.on]="looper.editingId == t.id" (click)="looper.toggleEditor(t)" title="Editar las notas en un piano roll">
+            <app-icon name="edit" [size]="13"></app-icon><span class="txt">Editar</span>
+        </button>
+        <button [class.on]="t.muted" (click)="looper.toggleMute(t)" title="Silenciar" aria-label="Silenciar">M</button>
+        <button class="icon" (click)="looper.undoTake(t)" title="Deshacer la ultima pasada de grabacion" aria-label="Deshacer la ultima pasada"><app-icon name="undo" [size]="13"></app-icon></button>
+        <button (click)="looper.clearTrack(t)" title="Borrar todas las notas de la pista">Limpiar</button>
+        <button class="icon danger" (click)="looper.removeTrack(t)" title="Quitar la pista" aria-label="Quitar la pista"><app-icon name="trash" [size]="13"></app-icon></button>
+    </div>
+</div>

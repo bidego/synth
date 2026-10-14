@@ -1,0 +1,122 @@
+:host {
+    display: block;
+}
+.empty {
+    padding: 14px 4px 6px;
+    color: var(--dim);
+}
+.empty p {
+    margin: 0 0 6px;
+}
+.empty b {
+    color: var(--text);
+}
+.track {
+    display: grid;
+    grid-template-columns: 30px 150px 1fr 90px auto;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.22);
+}
+.track.armed {
+    border-color: var(--danger);
+}
+.track.editing {
+    background: rgba(92, 200, 255, 0.08);
+    border-color: var(--info);
+}
+.track.muted {
+    opacity: 0.55;
+}
+.arm {
+    padding: 4px 0;
+    font-weight: 700;
+}
+.arm.on {
+    background: var(--danger);
+    border-color: var(--danger);
+}
+.name {
+    min-width: 0;
+    line-height: 1.25;
+}
+.name .n {
+    display: block;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.name.pick { cursor: pointer; border-radius: 4px; padding: 1px 4px; margin: -1px -4px; }
+.name.pick:hover { background: rgba(255, 255, 255, 0.06); }
+.name.pick:focus-visible { outline: 1px solid var(--info); }
+.track.focused { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-soft); }
+.track.focused .name small { color: var(--accent); }
+.name small {
+    display: block;
+    color: var(--dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.roll {
+    position: relative;
+    height: 40px;
+    min-width: 0;
+    background-color: rgba(255, 255, 255, 0.04);
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.13) 1px, transparent 1px);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.note {
+    position: absolute;
+    height: 4px;
+    min-width: 2px;
+    background: var(--info);
+    border-radius: 1px;
+}
+.playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #fff;
+    opacity: 0.85;
+}
+.vol {
+    width: 90px;
+}
+.tools {
+    display: inline-flex;
+    gap: 4px;
+}
+.tools .icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.danger:hover:not(:disabled) {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+@media (max-width: 900px) {
+    .track {
+        grid-template-columns: 28px 1fr auto;
+        grid-template-areas: "arm name tools" "roll roll roll" "vol vol vol";
+    }
+    .arm { grid-area: arm; }
+    .name { grid-area: name; }
+    .roll { grid-area: roll; }
+    .vol { grid-area: vol; width: 100%; }
+    .tools { grid-area: tools; }
+    .tools .txt { display: none; }
+}
+
+.tools .target button {
+    padding: 3px 7px;
+    font-size: 11px;
+}
