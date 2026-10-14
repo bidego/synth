@@ -42,9 +42,39 @@ navegador (Cache Storage), asi que despues funcionan sin conexion.
 La app solo *lee* esos archivos desde su servidor original; si se decide copiarlos al repo o a un servidor propio,
 hay que cumplir con las licencias de arriba.
 
-## Teclado, MIDI y looper
+## Syntotec DAW (rack modular)
 
-- Teclado de la compu (por posicion fisica): fila `Z X C V B N M , . /` y fila `Q W E R T Y U I O P`, con `S D G H J L ;` y `2 3 5 6 7 9 0` como teclas negras. `↑ ↓` cambian la octava, espacio = sustain.
+La aplicacion es un DAW tipo rack: un **host** con transporte global y un rack de **modulos** que se
+conectan con **cables**. *Syntotec Synth Studio* (sintetizador + sampler + baterias + secuenciador) es uno
+de esos modulos y se pueden poner varios.
+
+**Transporte global:** play / stop / grabar, tempo (con tap), compas (numerador y denominador), largo del
+loop (1 a 64 compases), cuantizacion, metronomo, cuenta previa y **transposicion general** en semitonos.
+
+**Dispositivos:** Syntotec Synth Studio, Teclado / MIDI, Salida de audio, Mezclador de 8 canales (fader,
+paneo, mute, solo y medidores), efectos (delay sincronizable al BPM, reverb, chorus, distorsion,
+ecualizador de 3 bandas), dinamica (compresor, limitador) y patcheras (splitter 1>4, merger 4>1).
+
+**Vistas:** *Rack* (el panel frontal de cada dispositivo) y *Cableado* (los dispositivos como nodos con
+puertos; se arrastra de un puerto a otro para tender un cable). Los cables de audio unen nodos de WebAudio
+reales; los de notas reenvian mensajes. No se permiten bucles ni unir tipos distintos. Tab alterna la vista.
+
+**Estructura del codigo** (todo en este proyecto, en capas):
+
+- `src/app/synth/` y `src/app/services/`: el motor del instrumento (voces, presets, sampler, bancos GM).
+- `src/app/daw/core/`: `TransportService`, `RackGraph` (grafo puro, sin Angular), `RackService`,
+  `Sequencer` (pistas por instrumento), `ProjectService` (guardado, migracion y export).
+- `src/app/daw/modules/`: un archivo por tipo de dispositivo; se registran en `registry.ts`.
+- `src/app/daw/ui/`: vistas Rack y Cableado y los paneles de cada dispositivo.
+
+Los modulos no dependen de la pantalla ni del `AudioContext` en vivo: el **export a WAV reconstruye el rack
+completo** (mismos dispositivos, ajustes y cables) sobre un `OfflineAudioContext`. Para agregar un
+dispositivo: crear la clase (extiende `RackModule` o `EffectModule`), registrarla en `registry.ts` y,
+si no es un efecto, darle su panel en `daw/ui`.
+
+## Teclado, MIDI y proyectos
+
+- Teclado de la compu (por posicion fisica): fila `Z X C V B N M , . /` y fila `Q W E R T Y U I O P`, con `S D G H J L ;` y `2 3 5 6 7 9 0` como teclas negras. `↑ ↓` cambian la octava, espacio = sustain. Estas teclas pasan por el modulo *Teclado / MIDI*, que las envia por cable a uno o mas instrumentos (capas).
 - MIDI: cualquier controlador USB/Bluetooth (Web MIDI; Chrome/Edge, en `https` o `localhost`).
-- Looper multipista con overdub: `Enter` play/stop, `` ` `` grabar. Hasta 64 compases por loop.
-- Guardado: autoguardado en el navegador, proyectos con nombre, exportar/importar `.json` y exportar **WAV** (render offline, 16 bits, con efectos).
+- Transporte: `Enter` play/stop, `` ` `` grabar en los instrumentos armados. Cada instrumento tiene su secuenciador (pistas, overdub, editor de notas con copia por Ctrl + arrastrar).
+- Guardado: autoguardado en el navegador, proyectos con nombre, exportar/importar `.json` (version 2; los proyectos de la version anterior, de un solo instrumento, se migran solos) y exportar **WAV** del rack completo (16 bits, con efectos y mezcla).
