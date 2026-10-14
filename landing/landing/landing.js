@@ -80,7 +80,7 @@
     for (i = 0; i < nb; i++) b += this.spectrum[i];
     b = b / nb / 255;
     this.energy += (e - this.energy) * 0.25;
-    this.bass += (b - this.bass) * 0.35;
+    this.bass += (b - this.bass) * 0.55;
     this.hue = (this.hue + 0.5 + e * 4) % 360;
     this.clock += 0.016;
     var ambient = Math.max(0, Math.min(1, 1 - e * 25));
@@ -177,7 +177,7 @@
       this.ctx = new AC();
       this.analyser = this.ctx.createAnalyser();
       this.analyser.fftSize = 2048;
-      this.analyser.smoothingTimeConstant = 0.8;
+      this.analyser.smoothingTimeConstant = 0.55;
       this.gain = this.ctx.createGain();
       this.gain.connect(this.analyser);
       this.analyser.connect(this.ctx.destination);
@@ -250,7 +250,13 @@
       logoWave.setAttribute('d', d);
       logoWave.classList.add('live');
     }
-    document.documentElement.style.setProperty('--pulse', Math.min(1, vj.bass * 1.6).toFixed(3));
+    // El latido sigue las variaciones de los graves respecto de su promedio y su pico recientes: con un tema de graves
+    // sostenidos el logo igual late con cada golpe (y no queda fijo al maximo)
+    vj.bassAvg = (vj.bassAvg == null ? vj.bass : vj.bassAvg + (vj.bass - vj.bassAvg) * 0.04);
+    vj.bassPeak = Math.max(vj.bass, vj.bassAvg + ((vj.bassPeak == null ? vj.bass : vj.bassPeak) - vj.bassAvg) * 0.99);
+    var swing = vj.bassPeak - vj.bassAvg;
+    var pulse = swing < 0.01 ? 0 : Math.max(0, Math.min(1, 0.3 + 0.7 * (vj.bass - vj.bassAvg) / swing));
+    document.documentElement.style.setProperty('--pulse', pulse.toFixed(3));
   }
   (function loop() {
     if (!document.hidden) updateLogo();
@@ -258,36 +264,22 @@
   })();
 
   /* =====================================================================
-     Intro
+     Intro. Sin botones: arranca sola (la decision de mostrarla se toma en el <head>, antes del primer dibujo).
+     - Suena la musica si el navegador lo permite; si no, el primer toque o tecla la desbloquea.
+     - Termina cuando se acaba la musica, o con cualquier interaccion pasados INTRO_MIN_S segundos.
+     - Sin sonido (bloqueado y sin interaccion) se cierra sola a los INTRO_SILENT_S segundos.
      ===================================================================== */
+  var INTRO_MIN_S = 3;
+  var INTRO_SILENT_S = 7;
+  var root = document.documentElement;
   var intro = $('#intro');
   var introBar = $('#intro-bar');
   var introNow = $('#intro-now');
   var musicBtn = $('#music-toggle');
   var introOpen = false;
 
-  function seen() {
-    try { return sessionStorage.getItem(INTRO_SEEN) === '1'; } catch (e) { return false; }
-  }
   function markSeen() {
     try { sessionStorage.setItem(INTRO_SEEN, '1'); } catch (e) {}
-  }
-
-  function closeIntro(fade) {
-    if (!introOpen) return;
-    introOpen = false;
-    markSeen();
-    document.body.classList.remove('in-intro');
-    $$('main, .footer, .nav').forEach(function (n) { n.removeAttribute('inert'); });
-    intro.classList.add('leaving');
-    if (player.playing) player.fadeOut(fade || 2);
-    vj.level = 0.4;
-    setTimeout(function () { intro.hidden = true; }, 1200);
-    document.removeEventListener('keydown', introKeys);
-    setMusicButton(false);
-  }
-  function introKeys(e) {
-    if (e.key === 'Escape') closeIntro(1);
   }
   function setMusicButton(on) {
     if (!musicBtn) return;
@@ -295,48 +287,91 @@
     musicBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
     musicBtn.setAttribute('aria-label', on ? 'Pausar la música' : 'Escuchar la música de la intro');
   }
+  function audible() {
+    return !!(player.ctx && player.ctx.state === 'running' && player.playing);
+  }
+
+  function closeIntro(fade) {
+    if (!introOpen) return;
+    introOpen = false;
+    markSeen();
+    ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(function (t) { window.removeEventListener(t, onInteract, true); });
+    if (player.playing) player.fadeOut(fade || 1.6);
+    vj.level = 0.4;
+    // El contenido aparece (y la barra baja) mientras la intro se desvanece
+    root.classList.add('intro-done');
+    $$('main, .footer, .nav').forEach(function (n) { n.removeAttribute('inert'); });
+    intro.classList.add('leaving');
+    setTimeout(function () { intro.classList.add('gone'); }, 1300);
+    setMusicButton(false);
+  }
+
+  var startedAt = 0;
+  // Cualquier interaccion: antes de INTRO_MIN_S solo sirve para desbloquear el audio; despues, cierra la intro
+  function onInteract(e) {
+    if (e.type === 'keydown' && e.key === 'Escape') { closeIntro(1); return; }
+    if (player.ctx && player.ctx.state === 'suspended') player.ctx.resume();
+    if ((performance.now() - startedAt) / 1000 >= INTRO_MIN_S) closeIntro(1.6);
+  }
 
   function startIntro() {
     introOpen = true;
-    intro.hidden = false;
-    // El contenido queda inerte (sin foco ni lector de pantalla) hasta que termina la intro
-    $$('main, .footer, .nav').forEach(function (n) { n.setAttribute('inert', ''); });
-    document.body.classList.add('in-intro');
+    startedAt = performance.now();
     vj.level = 1;
+    $$('main, .footer, .nav').forEach(function (n) { n.setAttribute('inert', ''); });
+    ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(function (t) { window.addEventListener(t, onInteract, { capture: true, passive: true }); });
+    player.onEnd = function () { closeIntro(0.5); };
     player.preload();
-    document.addEventListener('keydown', introKeys);
-    $('#intro-play').addEventListener('click', function () {
-      var btn = this;
-      btn.disabled = true;
-      player.onEnd = function () { closeIntro(0.5); };
-      player.play(false).then(function () {
-        intro.classList.add('playing');
-        btn.hidden = true;
-        $('#intro-skip').textContent = 'Entrar a la web';
-        setMusicButton(true);
-      }).catch(function () {
-        // Sin audio (o sin permiso): la intro sigue siendo visual
-        intro.classList.add('nosound');
-        introNow.textContent = 'No se pudo reproducir el audio. Entrá a la web.';
-        btn.hidden = true;
-      });
-    });
-    $('#intro-skip').addEventListener('click', function () { closeIntro(1.2); });
-    // Progreso de la pista
+
+    var hintState = '';
+    function hint(state, html) {
+      if (state === hintState) return;
+      hintState = state;
+      introNow.classList.remove('show');
+      setTimeout(function () {
+        if (!introOpen) return;
+        introNow.textContent = '';
+        html.forEach(function (n) { introNow.appendChild(n); });
+        introNow.classList.add('show');
+      }, state === 'first' ? 0 : 350);
+    }
+    function nodes() {
+      var out = [], i;
+      for (i = 0; i < arguments.length; i++) out.push(typeof arguments[i] === 'string' ? document.createTextNode(arguments[i]) : arguments[i]);
+      return out;
+    }
+
+    // Intenta sonar sola; si el navegador lo bloquea, el audio queda esperando el primer gesto del usuario
+    player.play(false).then(function () {
+      player.ctx.onstatechange = function () { setMusicButton(audible()); };
+    }).catch(function () { /* sin audio: la intro sigue siendo visual */ });
+
     (function tick() {
       if (!introOpen) return;
-      if (player.playing) introBar.style.width = (player.position * 100).toFixed(1) + '%';
+      var t = (performance.now() - startedAt) / 1000;
+      if (audible()) {
+        introBar.parentNode.classList.add('on');
+        introBar.style.width = (player.position * 100).toFixed(1) + '%';
+        intro.classList.add('playing');
+        setMusicButton(true);
+        hint('playing' + (t >= INTRO_MIN_S ? '-skip' : ''), t >= INTRO_MIN_S
+          ? nodes('Suena ', el('b', '', 'Funkito D'), ' · tocá o apretá una tecla para entrar')
+          : nodes('Suena ', el('b', '', 'Funkito D'), ', un proyecto hecho en Syntotec'));
+      } else if (t > 1.2) {
+        hint('locked', nodes('Tocá la pantalla o apretá una tecla para escuchar'));
+      }
+      // Sin sonido no tiene sentido alargarla: unos segundos y entra sola
+      if (!audible() && t >= INTRO_SILENT_S) { closeIntro(0.8); return; }
+      // Red de seguridad: si el audio nunca terminara, no se queda para siempre
+      if (player.buffer && t > player.buffer.duration + 3) { closeIntro(0.5); return; }
       requestAnimationFrame(tick);
     })();
-    setTimeout(function () { var b = $('#intro-play'); if (b && !b.hidden) b.focus({ preventScroll: true }); }, 1700);
   }
 
-  // La intro se muestra una vez por visita; ?intro=0 la saltea; un enlace con ancla a una seccion tambien
-  var params = new URLSearchParams(location.search);
-  if (params.get('intro') === '0' || seen() || (location.hash && location.hash.length > 1)) {
-    vj.level = 0.4;
-  } else {
+  if (!root.classList.contains('no-intro')) {
     startIntro();
+  } else {
+    vj.level = 0.4;
   }
 
   // Boton de la barra: vuelve a tocar la musica del proyecto (con el arte detras del contenido)
