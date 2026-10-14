@@ -6,6 +6,8 @@ export interface RemoteItem {
     id: string;
     name: string;
     savedAt: number;
+    public?: boolean;
+    pid?: string;
 }
 
 interface PendingPut {
@@ -298,6 +300,44 @@ export class SyncService {
             return res.ok ? await res.json() : null;
         } catch (e) {
             return null;
+        }
+    }
+
+    /** El servidor esta disponible para compartir y publicar (hay conexion y la clave es aceptada). */
+    get online(): boolean {
+        return this.enabled && (this.status == 'ok' || this.status == 'syncing');
+    }
+
+    /** Sube una copia de la sesion y devuelve su codigo corto (null si no se pudo). Cualquiera con el codigo la abre. */
+    async createShare(name: string, data: any): Promise<string | null> {
+        if (!this.online)
+            return null;
+        try {
+            const res = await this.request('POST', '/shares', { name, savedAt: Date.now(), data });
+            if (!res.ok)
+                return null;
+            const j = await res.json();
+            return j && /^[0-9A-Za-z]{10}$/.test(j.code) ? j.code : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * Envia un proyecto ahora (sin cola) con datos de publicacion. Devuelve { pid } si quedo publico, {} si es privado,
+     * o { error } con el motivo.
+     */
+    async putNow(name: string, savedAt: number, data: any, extra: { public?: boolean; author?: string; description?: string }): Promise<{ pid?: string; error?: string }> {
+        if (!this.online)
+            return { error: 'No hay conexion con el servidor' };
+        try {
+            const res = await this.request('PUT', '/projects/' + projectId(name), Object.assign({ name, savedAt, data }, extra));
+            const j = await res.json().catch(() => ({}));
+            if (res.ok)
+                return { pid: j.pid };
+            return { error: j && j.error || 'El servidor no pudo guardarlo (' + res.status + ')' };
+        } catch (e) {
+            return { error: 'No hay conexion con el servidor' };
         }
     }
 

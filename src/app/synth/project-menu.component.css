@@ -155,3 +155,11 @@
 .sync .chk { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); cursor: pointer; margin-bottom: 6px; }
 .sync .key { align-items: center; }
 .sync .keytext { font-family: var(--mono); font-size: 12px; color: var(--dim); }
+
+.saved li { flex-wrap: wrap; }
+.pubbtn.on { color: var(--ok); }
+.publish { flex-basis: 100%; display: flex; flex-direction: column; gap: 6px; padding: 8px 4px 4px; }
+.publish textarea { resize: vertical; min-height: 44px; font: inherit; }
+.note.warn { color: var(--warn); }
+.note.err { color: var(--danger); }
+button.danger { color: var(--danger); }

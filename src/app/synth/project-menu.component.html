@@ -35,7 +35,20 @@
                     <span class="n">{{ s.name }}</span>
                     <small>{{ s.modules }} dispositivos &middot; {{ savedAt(s.savedAt) }}</small>
                 </button>
+                <button class="ghost icon pubbtn" *ngIf="sync.online" [class.on]="s.pub" (click)="openPublish(s)"
+                    [title]="s.pub ? 'Publicado: ver, copiar el enlace o dejar de publicar' : 'Publicar este proyecto en la landing'" [attr.aria-label]="s.pub ? 'Publicado' : 'Publicar'"><app-icon name="globe" [size]="14"></app-icon></button>
                 <button class="ghost icon" (click)="project.deleteNamed(s.name)" title="Borrar" aria-label="Borrar"><app-icon name="trash" [size]="14"></app-icon></button>
+                <div class="publish" *ngIf="publishing == s.name">
+                    <div class="note warn" *ngIf="!s.pub">Al publicarlo, <b>cualquiera</b> podra ver y abrir este proyecto, y aparecera en la landing. Si lo volves a guardar, la version publica se actualiza. Podes dejar de publicarlo cuando quieras.</div>
+                    <input type="text" placeholder="Tu nombre o alias (opcional)" maxlength="30" [value]="pubAuthor" (input)="pubAuthor = $event.target.value" aria-label="Autor">
+                    <textarea placeholder="Contanos algo del proyecto (opcional)" maxlength="240" rows="2" [value]="pubDescription" (input)="pubDescription = $event.target.value" aria-label="Descripcion"></textarea>
+                    <div class="row wrap">
+                        <button class="primary" [disabled]="pubBusy" (click)="doPublish(s)">{{ s.pub ? 'Actualizar' : 'Publicar' }}</button>
+                        <button *ngIf="s.pub" (click)="copyPublicLink(s)">Copiar enlace publico</button>
+                        <button *ngIf="s.pub" class="danger" [disabled]="pubBusy" (click)="doUnpublish(s)">Dejar de publicar</button>
+                    </div>
+                    <div class="note err" *ngIf="pubError" role="alert">{{ pubError }}</div>
+                </div>
             </li>
         </ul>
     </div>
@@ -81,7 +94,9 @@
             <button class="icon" *ngIf="project.canNativeShare" (click)="project.nativeShare()" title="Usa el menu de compartir del dispositivo">Compartir...</button>
         </div>
         <input type="text" class="link" readonly *ngIf="project.shareUrl" [value]="project.shareUrl" (focus)="$event.target.select()" aria-label="Enlace para compartir">
-        <p class="note">El enlace lleva toda la sesion adentro (rack, cables, ajustes, pistas y tempo), sin servidor: quien lo abra ve lo mismo. Tu sesion actual no se pierde: queda guardada.</p>
+        <p class="note" *ngIf="sync.online">Con el servidor el enlace es <b>corto</b>: la sesion queda guardada ahi y cualquiera con el enlace la abre.</p>
+        <p class="note" *ngIf="!sync.online">Sin servidor el enlace lleva toda la sesion adentro (rack, cables, ajustes, pistas y tempo), por eso es largo: quien lo abra ve lo mismo.</p>
+        <p class="note">Tu sesion actual no se pierde: queda guardada.</p>
     </div>
 
     <div class="section">

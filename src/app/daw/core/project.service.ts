@@ -10,6 +10,10 @@ import { encodeWav } from '../../services/wav';
 import { SynthStudioModule } from '../modules/synth-studio.module';
 import { SHARE_PREFIX, SHARE_SOFT_LIMIT, encodeShare, decodeShare } from './share';
 
+const SHORT_PREFIX = '#c=';
+const PUBLIC_PREFIX = '#p=';
+const DEMO_PREFIX = '#demo=';
+
 /** Un proyecto completo: transporte + rack (dispositivos, ajustes, pistas y cables). */
 export interface Project {
     version: number;
@@ -19,11 +23,18 @@ export interface Project {
     automation?: any;
 }
 
+export interface PublicMeta {
+    pid: string;
+    author: string;
+    description: string;
+}
+
 export interface SavedProject {
     name: string;
     savedAt: number;
     modules: number;
     data: any;
+    pub?: PublicMeta;
 }
 
 const STORAGE_PROJECTS = 'synth.projects';
@@ -148,7 +159,7 @@ export class ProjectService {
             .map(name => {
                 const data = all[name].data || {};
                 const modules = data.rack && Array.isArray(data.rack.modules) ? data.rack.modules.length : 1;
-                return { name, savedAt: all[name].savedAt, modules, data };
+                return { name, savedAt: all[name].savedAt, modules, data, pub: all[name].pub };
             })
             .sort((a, b) => b.savedAt - a.savedAt);
     }
@@ -163,7 +174,7 @@ export class ProjectService {
         if (all[name] && !window.confirm('Ya existe "' + name + '". Sobrescribir?'))
             return;
         this.projectName = name;
-        all[name] = { savedAt: Date.now(), data: this.toProject() };
+        all[name] = { savedAt: Date.now(), data: this.toProject(), pub: all[name] ? all[name].pub : undefined };
         if (this.write(STORAGE_PROJECTS, all)) {
             this.message = 'Guardado "' + name + '"';
             this.refreshSaved();
@@ -204,13 +215,25 @@ export class ProjectService {
             if (!local || local.savedAt < item.savedAt) {
                 const full = await this.sync.get(item.id);
                 if (full && full.data && typeof full.savedAt == 'number') {
-                    all[item.name] = { savedAt: full.savedAt, data: full.data };
+                    const meta = (full as any).public;
+                    all[item.name] = {
+                        savedAt: full.savedAt, data: full.data,
+                        pub: item.pid && meta ? { pid: item.pid, author: meta.author || '', description: meta.description || '' } : undefined
+                    };
                     pulled++;
                 }
             }
         }
         const remoteByName: { [name: string]: { savedAt: number } } = {};
         remote.forEach(r => remoteByName[r.name] = r);
+        // El estado de publicacion lo manda el servidor
+        remote.forEach(r => {
+            const l = all[r.name];
+            if (l && r.pid && !l.pub)
+                l.pub = { pid: r.pid, author: '', description: '' };
+            else if (l && !r.pid && l.pub && r.savedAt >= l.savedAt)
+                delete l.pub;
+        });
         Object.keys(all).forEach(name => {
             const r = remoteByName[name];
             if (!r || r.savedAt < all[name].savedAt)
@@ -256,10 +279,23 @@ export class ProjectService {
 
     // --- Compartir: la sesion completa dentro del hash de la URL ---
 
-    /** El enlace que lleva toda la sesion. No usa ningun servidor: quien lo abra ve lo mismo. */
+    // 'short': enlace corto (la sesion queda en el servidor); 'long': toda la sesion dentro del enlace
+    public shareKind: 'short' | 'long' | '' = '';
+
+    /**
+     * El enlace para compartir la sesion. Con servidor es corto (#c=codigo: la sesion se guarda ahi);
+     * sin servidor, o si falla, lleva toda la sesion adentro (#s=...) y funciona sin ningun servidor.
+     */
     async buildShareLink(): Promise<string> {
-        const payload = await encodeShare(JSON.stringify(this.toProject()));
-        return location.origin + location.pathname + location.search + SHARE_PREFIX + payload;
+        const base = location.origin + location.pathname + location.search;
+        const project = this.toProject();
+        const code = await this.sync.createShare((this.projectName || 'Sesion compartida').slice(0, 40), project);
+        if (code) {
+            this.shareKind = 'short';
+            return base + SHORT_PREFIX + code;
+        }
+        this.shareKind = 'long';
+        return base + SHARE_PREFIX + await encodeShare(JSON.stringify(project));
     }
 
     async copyShareLink() {
@@ -277,8 +313,9 @@ export class ProjectService {
         } catch (e) {
             // Sin permiso del portapapeles: queda el enlace a la vista para copiarlo a mano
         }
-        const big = size > SHARE_SOFT_LIMIT ? ' Es largo para un chat o un correo: si no entra, usa Exportar .json.' : '';
-        this.message = (copied ? 'Enlace copiado' : 'Copia el enlace de abajo') + ' (' + Math.round(size / 1000 * 10) / 10 + ' mil caracteres).' + big;
+        const big = this.shareKind == 'long' && size > SHARE_SOFT_LIMIT ? ' Es largo para un chat o un correo: si no entra, usa Exportar .json.' : '';
+        const how = this.shareKind == 'short' ? 'Enlace corto' : 'Enlace';
+        this.message = (copied ? how + ' copiado' : 'Copia el enlace de abajo') + ' (' + (size >= 1000 ? Math.round(size / 1000 * 10) / 10 + ' mil' : size) + ' caracteres).' + big;
     }
 
     /** El menu nativo de compartir del telefono o la computadora (si existe). */
@@ -291,23 +328,85 @@ export class ProjectService {
         }
     }
 
-    // Abre la sesion de un enlace compartido (hash #s=...). Es contenido no confiable: pasa por la misma
+    // Abre la sesion de un enlace: #s=... (toda la sesion adentro), #c=codigo (enlace corto del servidor),
+    // #p=id (proyecto publico) o #demo=nombre (proyecto de ejemplo). Es contenido no confiable: pasa por la misma
     // validacion que un archivo importado.
     private async loadFromHash() {
-        if (location.hash.indexOf(SHARE_PREFIX) != 0)
+        const hash = location.hash;
+        const kind = [SHARE_PREFIX, SHORT_PREFIX, PUBLIC_PREFIX, DEMO_PREFIX].find(p => hash.indexOf(p) == 0);
+        if (!kind)
             return;
-        const payload = location.hash.slice(SHARE_PREFIX.length);
+        const payload = hash.slice(kind.length);
         // El hash se saca de la URL enseguida: recargar no debe volver a pisar la sesion
         history.replaceState(null, '', location.pathname + location.search);
         try {
-            const data = await decodeShare(payload);
+            let data: any, label = 'Sesion compartida abierta', name = '';
+            if (kind == SHARE_PREFIX) {
+                data = await decodeShare(payload);
+            } else {
+                const url = kind == SHORT_PREFIX && /^[0-9A-Za-z]{10}$/.test(payload) ? 'api/shares/' + payload
+                    : kind == PUBLIC_PREFIX && /^p[a-f0-9]{14}$/.test(payload) ? 'api/public/' + payload
+                    : kind == DEMO_PREFIX && /^[a-z0-9-]{1,40}$/.test(payload) ? '/demos/' + payload + '.json' : '';
+                if (!url)
+                    throw new Error('El enlace no es valido');
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok)
+                    throw new Error(res.status == 404 ? 'El enlace no existe o ya no esta disponible' : 'No se pudo abrir el enlace (sin conexion con el servidor)');
+                const body = await res.json();
+                // Los compartidos y publicos traen { name, data }; los demos son el proyecto mismo
+                data = body && body.data && !body.rack ? body.data : body;
+                name = typeof body.name == 'string' ? body.name.slice(0, 40) : '';
+                if (kind != SHORT_PREFIX)
+                    label = (kind == DEMO_PREFIX ? 'Proyecto de ejemplo' : 'Proyecto publico') + (name ? ' "' + name + '"' : '') + ' abierto: apreta Play';
+            }
             this.keepCurrentSession();
-            this.message = this.load(data) ? 'Sesion compartida abierta' : 'El enlace no contiene una sesion valida';
+            const ok = this.load(data);
+            if (ok && name)
+                this.projectName = name;
+            this.message = ok ? label : 'El enlace no contiene una sesion valida';
             this.dirty();
         } catch (e) {
             this.message = e && e.message || 'El enlace no es valido';
         }
         this.zone.run(() => {});
+    }
+
+    // --- Publicar: un proyecto guardado puede verse (y abrirse) por cualquiera y aparece en la landing ---
+
+    /** Enlace publico directo a la app con el proyecto abierto. */
+    publicLink(pid: string): string {
+        return location.origin + location.pathname + PUBLIC_PREFIX + pid;
+    }
+
+    /** Publica un proyecto guardado (o actualiza su autor y descripcion). Devuelve el mensaje de error, o '' si salio bien. */
+    async publish(name: string, author: string, description: string): Promise<string> {
+        const all = this.read(STORAGE_PROJECTS) || {};
+        const s = all[name];
+        if (!s)
+            return 'No se encontro el proyecto';
+        const res = await this.sync.putNow(name, s.savedAt, s.data, { public: true, author, description });
+        if (!res.pid)
+            return res.error || 'No se pudo publicar';
+        s.pub = { pid: res.pid, author, description };
+        this.write(STORAGE_PROJECTS, all);
+        this.refreshSaved();
+        this.message = 'Publicado "' + name + '"';
+        return '';
+    }
+
+    async unpublish(name: string): Promise<string> {
+        const all = this.read(STORAGE_PROJECTS) || {};
+        const s = all[name];
+        if (!s)
+            return 'No se encontro el proyecto';
+        const res = await this.sync.putNow(name, s.savedAt, s.data, { public: false });
+        if (res.error)
+            return res.error;
+        delete s.pub;
+        this.write(STORAGE_PROJECTS, all);
+        this.refreshSaved();
+        this.message = '"' + name + '" ya no es publico';
+        return '';
     }
 
     // Antes de reemplazar la sesion por la de un enlace, la actual (si tiene notas) queda como proyecto guardado

@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener } from '@angular/core';
-import { ProjectService } from '../daw/core/project.service';
+import { ProjectService, SavedProject } from '../daw/core/project.service';
 import { UiService } from '../services/ui.service';
 import { SyncService } from '../daw/core/sync.service';
 
@@ -33,6 +33,60 @@ export class ProjectMenuComponent {
             this.project.importFile(input.files[0]);
         // Permite volver a elegir el mismo archivo
         input.value = '';
+    }
+
+    // --- Publicar un proyecto guardado ---
+    public publishing: string = null;      // nombre del proyecto cuyo formulario esta abierto
+    public pubAuthor = '';
+    public pubDescription = '';
+    public pubError = '';
+    public pubBusy = false;
+
+    openPublish(s: SavedProject) {
+        this.publishing = this.publishing == s.name ? null : s.name;
+        this.pubError = '';
+        this.pubAuthor = s.pub && s.pub.author || this.lastAuthor();
+        this.pubDescription = s.pub ? s.pub.description : '';
+    }
+
+    private lastAuthor(): string {
+        try {
+            return localStorage.getItem('synth.author') || '';
+        } catch (e) {
+            return '';
+        }
+    }
+
+    async doPublish(s: SavedProject) {
+        this.pubBusy = true;
+        this.pubError = await this.project.publish(s.name, this.pubAuthor.trim(), this.pubDescription.trim());
+        this.pubBusy = false;
+        if (!this.pubError) {
+            try {
+                localStorage.setItem('synth.author', this.pubAuthor.trim());
+            } catch (e) {}
+            this.publishing = null;
+        }
+    }
+
+    async doUnpublish(s: SavedProject) {
+        if (!window.confirm('Dejar de publicar "' + s.name + '"? Ya no se vera en la landing y su enlace publico deja de funcionar.'))
+            return;
+        this.pubBusy = true;
+        this.pubError = await this.project.unpublish(s.name);
+        this.pubBusy = false;
+        if (!this.pubError)
+            this.publishing = null;
+    }
+
+    async copyPublicLink(s: SavedProject) {
+        const url = this.project.publicLink(s.pub.pid);
+        try {
+            await navigator.clipboard.writeText(url);
+            this.project.message = 'Enlace publico copiado';
+        } catch (e) {
+            this.project.message = url;
+        }
     }
 
     /** Copia la clave de sincronizacion (para usarla en otro navegador). */
