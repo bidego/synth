@@ -26,6 +26,12 @@ function loadConfig(env) {
         maxBodyBytes: int(env.MAX_BODY_BYTES, 4 * 1024 * 1024),
         maxProjectsPerOwner: int(env.MAX_PROJECTS_PER_OWNER, 200),
         maxOwners: int(env.MAX_OWNERS, 10000),
+        maxPublicPerOwner: int(env.MAX_PUBLIC_PER_OWNER, 30),
+        maxSharesPerOwner: int(env.MAX_SHARES_PER_OWNER, 200),
+        // Ids (pid) de los proyectos destacados de la landing, separados por comas, en el orden en que se muestran
+        featuredPids: (env.FEATURED_PIDS || '').split(',').map(x => x.trim()).filter(x => /^p[a-f0-9]{14}$/.test(x)),
+        // Con este token se puede despublicar cualquier proyecto (DELETE /api/admin/public/:pid): moderacion
+        adminToken: env.ADMIN_TOKEN || '',
         // Pedidos por minuto: por clave de usuario (no se puede falsificar) y por IP (mas holgado: detras de un balanceador
         // todos los usuarios pueden compartir IP). PROXY_HOPS = cuantos proxies de confianza hay delante (nginx propio = 1;
         // con un balanceador de la plataforma delante de nginx = 2): se toma esa entrada contando desde el final de X-Forwarded-For.
@@ -91,7 +97,7 @@ async function createServer(config) {
         dir: path.join(config.dataDir, 'repo'),
         commitDelayMs: config.commitDelayMs, maxCommitWaitMs: config.maxCommitWaitMs, retryMs: config.retryMs,
         pullIntervalMs: config.pullIntervalMs, maxProjectsPerOwner: config.maxProjectsPerOwner,
-        maxOwners: config.maxOwners, log
+        maxOwners: config.maxOwners, maxPublicPerOwner: config.maxPublicPerOwner, maxSharesPerOwner: config.maxSharesPerOwner, featuredPids: config.featuredPids, log
     });
     // Si el repositorio no se puede preparar (URL o token mal puestos, sin red), el servidor NO se cae: queda en pie
     // contando el problema en /api/health y reintenta solo. Asi el error se ve sin tener que leer los logs del contenedor.
@@ -147,6 +153,53 @@ async function createServer(config) {
         if (parts[1] == 'health' && parts.length == 2 && req.method == 'GET')
             return send(res, 200, ready ? Object.assign({ ready: true }, store.health())
                 : { ok: false, ready: false, remote: !!config.remote, lastError: initError || 'preparando el repositorio' });
+        // Galeria publica: sin clave (cualquiera la ve), con cache corto
+        if (parts[1] == 'public' && parts.length <= 3 && req.method == 'GET') {
+            if (!ready)
+                throw new HttpError(503, 'El servidor todavia no pudo preparar su repositorio git');
+            const cacheHeaders = { 'Cache-Control': 'public, max-age=30' };
+            if (parts[2]) {
+                const item = /^p[a-f0-9]{14}$/.test(parts[2]) ? store.getPublic(parts[2]) : null;
+                if (!item)
+                    throw new HttpError(404, 'No existe ese proyecto publico');
+                return send(res, 200, item, cacheHeaders);
+            }
+            const q = url.searchParams;
+            return send(res, 200, store.listPublic({
+                limit: parseInt(q.get('limit'), 10), offset: parseInt(q.get('offset'), 10),
+                q: q.get('q') || '', featured: q.get('featured') == '1'
+            }), cacheHeaders);
+        }
+        // Enlaces cortos: crear requiere clave; abrir es publico (el codigo es el secreto del enlace)
+        if (parts[1] == 'shares' && parts.length <= 3) {
+            if (!ready)
+                throw new HttpError(503, 'El servidor todavia no pudo preparar su repositorio git');
+            if (req.method == 'GET' && parts[2]) {
+                const sh = store.getShare(parts[2]);
+                if (!sh)
+                    throw new HttpError(404, 'El enlace no existe o ya no esta disponible');
+                return send(res, 200, sh, { 'Cache-Control': 'public, max-age=3600' });
+            }
+            if (req.method == 'POST' && !parts[2]) {
+                const owner = ownerFromRequest(req);
+                if (!keyLimiter.allow(owner))
+                    throw new HttpError(429, 'Demasiados pedidos, espera un momento');
+                return send(res, 200, store.createShare(owner, await readBody(req, config.maxBodyBytes)));
+            }
+            throw new HttpError(405, 'Metodo no permitido');
+        }
+        // Moderacion: el administrador despublica cualquier proyecto
+        if (parts[1] == 'admin' && parts[2] == 'public' && parts.length == 4 && req.method == 'DELETE') {
+            const m = /^Bearer (.+)$/.exec(req.headers.authorization || '');
+            const a = Buffer.from(m ? m[1] : ''), b = Buffer.from(config.adminToken);
+            if (!config.adminToken || a.length != b.length || !require('crypto').timingSafeEqual(a, b))
+                throw new HttpError(401, 'No autorizado');
+            if (!ready)
+                throw new HttpError(503, 'El servidor todavia no pudo preparar su repositorio git');
+            if (!store.unpublish(parts[3]))
+                throw new HttpError(404, 'No existe ese proyecto publico');
+            return send(res, 204);
+        }
         if (parts[1] != 'projects' || parts.length > 3)
             throw new HttpError(404, 'No existe');
         if (!ready)

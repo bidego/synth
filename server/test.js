@@ -22,6 +22,7 @@ execFileSync('git', ['init', '--bare', remote]);
 execFileSync('git', ['symbolic-ref', 'HEAD', 'refs/heads/main'], { cwd: remote });
 const TOKEN = 'ghp_TESTTOKEN' + crypto.randomBytes(8).toString('hex');
 
+const owner2 = k => require('./store').ownerOf(k);
 const key = () => crypto.randomBytes(32).toString('hex');
 const project = (n = 1) => ({ name: 'Mi tema ' + n, savedAt: Date.now(), data: { version: 2, rack: { modules: [{ id: 'm1', type: 'synth' }], cables: [] }, transport: { bpm: 100 + n } } });
 const api = (port, method, url, { k, body, raw } = {}) => new Promise((resolve, reject) => {
@@ -212,6 +213,104 @@ const remoteCommits = () => { try { return parseInt(git(remote, 'rev-list', '--c
     ok('al aparecer el repositorio, se prepara solo', await until(async () => (await api(app.port, 'GET', '/api/health')).json.ready === true, 8000));
     r = await api(app.port, 'PUT', '/api/projects/x', { k: key(), body: project(1) });
     ok('y entonces guarda', r.status == 200, r.text);
+    await app.close();
+
+    console.log('Galeria publica');
+    app = await start(path.join(tmp, 'dataP'), { MAX_PUBLIC_PER_OWNER: '3', ADMIN_TOKEN: 'admin-secreto-123' });
+    const kP = key();
+    const richData = () => ({ version: 2, transport: { bpm: 120, bars: 2, numerator: 4, denominator: 4 }, rack: { modules: [
+        { id: 'm1', type: 'keyboard' },
+        { id: 'm2', type: 'synth', name: 'Synth', state: { sequencer: { tracks: [
+            { id: 1, name: 'Bajo', patch: { name: 'Sub Bass', kind: 'synth' }, notes: Array.from({ length: 10 }, (_, i) => ({ start: i * 0.5, dur: 0.4, midi: 36 + (i % 3), vel: 0.8, take: 1 })) },
+            { id: 2, name: 'Bombo', patch: { name: 'Standard Kit', kind: 'kit' }, notes: [{ start: 0, dur: 0.2, midi: 36 }, { start: 2, dur: 0.2, midi: 36 }] }
+        ] } } },
+        { id: 'm3', type: 'delay' }, { id: 'm4', type: 'output' }], cables: [] }, automation: { lanes: [{ module: 'm3', param: 'p.mix', points: [[0, 0.1]] }] } });
+    r = await api(app.port, 'PUT', '/api/projects/pub-uno', { k: kP, body: { name: 'Mi cancion', savedAt: Date.now(), data: richData() } });
+    ok('un proyecto nuevo es privado', r.status == 200 && r.json.pid === undefined, r.text);
+    r = await api(app.port, 'GET', '/api/public');
+    ok('la galeria publica empieza vacia y no pide clave', r.status == 200 && r.json.total == 0 && r.json.items.length == 0, r.text);
+    r = await api(app.port, 'PUT', '/api/projects/pub-uno', { k: kP, body: { name: 'Mi cancion', savedAt: Date.now() + 1, data: richData(), public: true, author: '  Gon\u2028zalo\n<img src=x onerror=alert(1)>  ', description: 'Un loop de prueba' } });
+    ok('publicar devuelve el id publico', r.status == 200 && /^p[a-f0-9]{14}$/.test(r.json.pid), r.text);
+    const pid = r.json.pid;
+    r = await api(app.port, 'GET', '/api/public');
+    const it = r.json.items[0] || {};
+    ok('el proyecto aparece en la galeria', r.json.total == 1 && it.pid == pid && it.name == 'Mi cancion', r.text.slice(0, 200));
+    ok('con sus estadisticas (bpm, pistas, notas, instrumentos, duracion)', it.stats && it.stats.bpm == 120 && it.stats.tracks == 2 && it.stats.notes == 12 && it.stats.instruments.join() == 'Sub Bass,Standard Kit' && it.stats.seconds == 4 && it.stats.effects == 1 && it.stats.automation == 1, JSON.stringify(it.stats));
+    ok('y una miniatura liviana con las notas', it.preview && it.preview.loopBeats == 8 && it.preview.tracks.length == 2 && it.preview.tracks[0].notes.length == 10 && it.preview.tracks[1].drums === true, JSON.stringify(it.preview).slice(0, 160));
+    ok('el listado publico no trae el proyecto entero', !('data' in it));
+    ok('el autor queda saneado (sin saltos ni caracteres de control)', !/[\n\u2028]/.test(it.author) && it.author.length <= 30, JSON.stringify(it.author));
+    ok('el listado no revela al dueno ni su clave', !r.text.includes(kP) && !r.text.includes(require('./store').ownerOf(kP)));
+    r = await api(app.port, 'GET', '/api/public/' + pid);
+    ok('cualquiera abre el proyecto publico completo', r.status == 200 && r.json.data.rack.modules.length == 4 && r.json.name == 'Mi cancion', r.text.slice(0, 120));
+    r = await api(app.port, 'GET', '/api/public/pabcdefabcdef12');
+    ok('un id publico inexistente: 404', r.status == 404);
+    r = await api(app.port, 'GET', '/api/public/..%2F..%2Fx');
+    ok('un id publico invalido: 404', r.status == 404);
+    r = await api(app.port, 'PUT', '/api/projects/pub-uno', { k: kP, body: { name: 'Mi cancion', savedAt: Date.now() + 2, data: richData() } });
+    ok('un guardado normal (sin el campo public) no despublica', r.status == 200 && r.json.pid == pid, r.text);
+    r = await api(app.port, 'GET', '/api/projects', { k: kP });
+    ok('el listado privado marca cuales son publicos', r.json.some(x => x.id == 'pub-uno' && x.public === true && x.pid == pid), r.text);
+    for (let i = 2; i <= 3; i++)
+        await api(app.port, 'PUT', '/api/projects/pub-' + i, { k: kP, body: { name: 'Tema ' + i, savedAt: Date.now(), data: richData(), public: true } });
+    r = await api(app.port, 'PUT', '/api/projects/pub-4', { k: kP, body: { name: 'Tema 4', savedAt: Date.now(), data: richData(), public: true } });
+    ok('maximo de proyectos publicos por usuario: 409', r.status == 409, r.text);
+    r = await api(app.port, 'GET', '/api/public?limit=2');
+    ok('paginado: limit', r.json.total == 3 && r.json.items.length == 2);
+    r = await api(app.port, 'GET', '/api/public?limit=2&offset=2');
+    ok('paginado: offset', r.json.items.length == 1);
+    ok('los mas recientes van primero', (await api(app.port, 'GET', '/api/public')).json.items[0].name == 'Tema 3');
+    r = await api(app.port, 'GET', '/api/public?q=cancion');
+    ok('busqueda por nombre', r.json.total == 1 && r.json.items[0].pid == pid);
+    r = await api(app.port, 'PUT', '/api/projects/pub-uno', { k: kP, body: { name: 'Mi cancion', savedAt: Date.now() + 3, data: richData(), public: false } });
+    ok('dejar de publicar', r.status == 200 && r.json.pid === undefined, r.text);
+    ok('sale de la galeria', (await api(app.port, 'GET', '/api/public/' + pid)).status == 404 && (await api(app.port, 'GET', '/api/public')).json.total == 2);
+    r = await api(app.port, 'GET', '/api/projects/pub-uno', { k: kP });
+    ok('y el dueno sigue teniendo su proyecto', r.status == 200 && r.json.name == 'Mi cancion');
+    const target = (await api(app.port, 'GET', '/api/public')).json.items[0].pid;
+    r = await api(app.port, 'DELETE', '/api/admin/public/' + target, { k: 'a'.repeat(32) });
+    ok('moderacion: una clave de usuario no sirve (401)', r.status == 401);
+    const adm = await new Promise(resolve => { const q = require('http').request({ host: '127.0.0.1', port: app.port, method: 'DELETE', path: '/api/admin/public/' + target, headers: { Authorization: 'Bearer admin-secreto-123' } }, res => { res.resume(); resolve(res.statusCode); }); q.end(); });
+    ok('moderacion: el administrador despublica (204)', adm == 204);
+    ok('y desaparece de la galeria', (await api(app.port, 'GET', '/api/public/' + target)).status == 404);
+    ok('la publicacion se versiona en el repo (campo public en el archivo)', await until(() => { try { return execFileSync('git', ['show', 'main:projects/' + owner2(kP) + '/pub-uno.json'], { cwd: remote, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).length > 10; } catch (e) { return false; } }, 8000));
+    await app.close();
+    app = await start(path.join(tmp, 'dataP2'), { FEATURED_PIDS: pid + ',pffffffffffffff' });
+    r = await api(app.port, 'GET', '/api/public?featured=1');
+    ok('un servidor nuevo levanta lo publicado desde el repo', r.status == 200, r.status);
+    await app.close();
+
+    console.log('Enlaces cortos');
+    app = await start(path.join(tmp, 'dataS'));
+    const kS = key();
+    const shareBody = Object.assign(project(1), { name: 'Para compartir' });
+    r = await api(app.port, 'POST', '/api/shares', { body: shareBody });
+    ok('crear un enlace requiere clave (401)', r.status == 401);
+    r = await api(app.port, 'POST', '/api/shares', { k: kS, body: shareBody });
+    ok('crear un enlace devuelve un codigo corto de 10 caracteres', r.status == 200 && /^[0-9A-Za-z]{10}$/.test(r.json.code) && r.json.created === true, r.text);
+    const code = r.json.code;
+    r = await api(app.port, 'GET', '/api/shares/' + code);
+    ok('cualquiera con el codigo abre la sesion (sin clave)', r.status == 200 && r.json.name == 'Para compartir' && r.json.data.transport.bpm == 101, r.text.slice(0, 100));
+    r = await api(app.port, 'POST', '/api/shares', { k: key(), body: shareBody });
+    ok('la misma sesion da el mismo codigo (no se duplica)', r.status == 200 && r.json.code == code && r.json.created === false, r.text);
+    r = await api(app.port, 'GET', '/api/shares/zzzzzzzzzz');
+    ok('un codigo que no existe: 404', r.status == 404);
+    for (const bad of ['..%2Fx', 'corto', 'x'.repeat(30), '%00%00%00%00%00%00%00%00%00%00']) {
+        r = await api(app.port, 'GET', '/api/shares/' + bad);
+        ok('codigo invalido rechazado: ' + bad.slice(0, 12), r.status == 404 || r.status == 400, r.status);
+    }
+    r = await api(app.port, 'POST', '/api/shares', { k: kS, body: { name: 'x', data: { hola: 1 } } });
+    ok('datos invalidos al compartir: 400', r.status == 400);
+    ok('el enlace corto llega al repo', await until(() => remoteFiles().some(f => f == 'shares/' + code + '.json'), 8000), remoteFiles().filter(f => f.startsWith('shares')).join());
+    await app.close();
+    app = await start(path.join(tmp, 'dataS2'));
+    r = await api(app.port, 'GET', '/api/shares/' + code);
+    ok('un servidor nuevo levanta los enlaces del repo', r.status == 200 && r.json.name == 'Para compartir', r.status);
+    await app.close();
+    app = await start(path.join(tmp, 'dataS3'), { MAX_SHARES_PER_OWNER: '2' });
+    const kQ = key();
+    for (let i = 0; i < 2; i++) await api(app.port, 'POST', '/api/shares', { k: kQ, body: Object.assign(project(20 + i), { name: 'q' + i }) });
+    r = await api(app.port, 'POST', '/api/shares', { k: kQ, body: Object.assign(project(30), { name: 'q3' }) });
+    ok('maximo de enlaces por usuario: 409', r.status == 409, r.status);
     await app.close();
 
     console.log('Sin remoto (solo repo local)');

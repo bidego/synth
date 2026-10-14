@@ -6,9 +6,12 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { summarize, previewOf, clean } = require('./publicdata');
 
 const ID_RE = /^[a-z0-9][a-z0-9-]{0,59}$/;
 const KEY_RE = /^[a-f0-9]{32,128}$/;
+const CODE_RE = /^[0-9A-Za-z]{10}$/;
+const B62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
 /** El dueño en el repositorio es un hash de su clave: quien lea el repo no puede deducir la clave. */
 function ownerOf(key) {
@@ -26,7 +29,7 @@ class HttpError extends Error {
 function validateProject(body) {
     if (!body || typeof body != 'object' || Array.isArray(body))
         throw new HttpError(400, 'El cuerpo debe ser un objeto JSON');
-    const name = typeof body.name == 'string' ? body.name.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 40) : '';
+    const name = typeof body.name == 'string' ? clean(body.name, 40) : '';
     if (!name)
         throw new HttpError(400, 'Falta el nombre del proyecto');
     const data = body.data;
@@ -35,7 +38,15 @@ function validateProject(body) {
     if (!isV2 && !isV1)
         throw new HttpError(400, 'Los datos no parecen un proyecto de Syntotec');
     const savedAt = typeof body.savedAt == 'number' && isFinite(body.savedAt) ? Math.round(body.savedAt) : Date.now();
-    return { name, savedAt, data };
+    // Publicacion: `public` ausente = no tocar lo que ya hay; true = publicar; false = dejar de publicar
+    const out = { name, savedAt, data };
+    if (typeof body.public == 'boolean')
+        out.public = body.public;
+    if (body.author !== undefined)
+        out.author = clean(body.author, 30);
+    if (body.description !== undefined)
+        out.description = clean(body.description, 240);
+    return out;
 }
 
 class Store {
@@ -52,6 +63,11 @@ class Store {
         this.pullIntervalMs = opts.pullIntervalMs || 0;
         this.maxProjectsPerOwner = opts.maxProjectsPerOwner || 200;
         this.maxOwners = opts.maxOwners || 10000;
+        this.maxPublicPerOwner = opts.maxPublicPerOwner || 30;
+        this.maxSharesPerOwner = opts.maxSharesPerOwner || 200;
+        this.shares = new Map();       // codigo -> { code, owner, name, createdAt, raw }
+        this.featuredPids = opts.featuredPids || [];
+        this.publicCache = null;      // lista ordenada de proyectos publicos (se arma al pedirla)
         this.log = opts.log || (() => {});
 
         this.owners = new Map();      // owner -> Map(id -> { id, name, savedAt, raw })
@@ -103,7 +119,7 @@ class Store {
                         const raw = fs.readFileSync(path.join(dir, file), 'utf8');
                         const rec = JSON.parse(raw);
                         const v = validateProject(rec);
-                        map.set(id, { id, name: v.name, savedAt: v.savedAt, raw });
+                        map.set(id, { id, name: v.name, savedAt: v.savedAt, raw, pub: this.pubOf(owner, id, rec.public, v.data) });
                     } catch (e) {
                         skipped++;
                     }
@@ -112,9 +128,43 @@ class Store {
                     owners.set(owner, map);
             }
         }
+        // Copias compartidas por enlace corto: shares/<codigo>.json
+        const shares = new Map();
+        const sdir = path.join(this.dir, 'shares');
+        if (fs.existsSync(sdir)) {
+            for (const file of fs.readdirSync(sdir)) {
+                const code = file.replace(/\.json$/, '');
+                if (!file.endsWith('.json') || !CODE_RE.test(code))
+                    continue;
+                try {
+                    const raw = fs.readFileSync(path.join(sdir, file), 'utf8');
+                    const rec = JSON.parse(raw);
+                    const v = validateProject(rec);
+                    shares.set(code, { code, owner: String(rec.owner || ''), name: v.name, createdAt: Math.round(Number(rec.createdAt) || 0), raw });
+                } catch (e) {
+                    skipped++;
+                }
+            }
+        }
+        this.shares = shares;
         if (skipped)
             this.log('archivos ignorados por no ser proyectos validos: ' + skipped);
         this.owners = owners;
+        this.publicCache = null;
+    }
+
+    /** Datos de publicacion de un proyecto (null si es privado): lo guardado mas los derivados (estadisticas y miniatura). */
+    pubOf(owner, id, saved, data) {
+        if (!saved || typeof saved != 'object')
+            return null;
+        return {
+            pid: 'p' + crypto.createHash('sha256').update(owner + ':' + id).digest('hex').slice(0, 14),
+            at: typeof saved.at == 'number' && isFinite(saved.at) ? Math.round(saved.at) : Date.now(),
+            author: clean(saved.author, 30),
+            description: clean(saved.description, 240),
+            stats: summarize(data),
+            preview: previewOf(data)
+        };
     }
 
     fileOf(owner, id) {
@@ -132,7 +182,7 @@ class Store {
     list(owner) {
         const map = this.owners.get(owner);
         return map ? Array.from(map.values())
-            .map(r => ({ id: r.id, name: r.name, savedAt: r.savedAt, size: r.raw.length }))
+            .map(r => ({ id: r.id, name: r.name, savedAt: r.savedAt, size: r.raw.length, public: !!r.pub, pid: r.pub ? r.pub.pid : undefined }))
             .sort((a, b) => b.savedAt - a.savedAt) : [];
     }
 
@@ -157,9 +207,29 @@ class Store {
             // Otro dispositivo guardo una version mas nueva: la mas vieja no la pisa
             throw new HttpError(409, 'El servidor tiene una version mas nueva', { savedAt: old.savedAt });
         }
-        const raw = JSON.stringify({ id, name: v.name, savedAt: v.savedAt, data: v.data });
+        // Publicacion: sin el campo `public` se conserva lo que habia (un guardado normal no despublica)
+        const before = old && old.pub;
+        let saved = null;
+        if (v.public === true || (v.public === undefined && before)) {
+            if (!before && v.public === true) {
+                let count = 0;
+                if (map)
+                    map.forEach(r => { if (r.pub) count++; });
+                if (count >= this.maxPublicPerOwner)
+                    throw new HttpError(409, 'Llegaste al maximo de ' + this.maxPublicPerOwner + ' proyectos publicos');
+            }
+            saved = {
+                at: before ? before.at : Date.now(),
+                author: v.author !== undefined ? v.author : (before ? before.author : ''),
+                description: v.description !== undefined ? v.description : (before ? before.description : '')
+            };
+        }
+        const envelope = { id, name: v.name, savedAt: v.savedAt, data: v.data };
+        if (saved)
+            envelope.public = saved;
+        const raw = JSON.stringify(envelope);
         if (old && old.raw === raw)
-            return { changed: false, savedAt: v.savedAt };
+            return { changed: false, savedAt: v.savedAt, pid: old.pub ? old.pub.pid : undefined };
         const file = this.fileOf(owner, id);
         fs.mkdirSync(path.dirname(file), { recursive: true });
         const tmp = file + '.tmp';
@@ -169,10 +239,12 @@ class Store {
             map = new Map();
             this.owners.set(owner, map);
         }
-        map.set(id, { id, name: v.name, savedAt: v.savedAt, raw });
+        const pub = this.pubOf(owner, id, saved, v.data);
+        map.set(id, { id, name: v.name, savedAt: v.savedAt, raw, pub });
+        this.publicCache = null;
         this.counts[old ? 'updated' : 'added']++;
         this.markDirty();
-        return { changed: true, savedAt: v.savedAt };
+        return { changed: true, savedAt: v.savedAt, pid: pub ? pub.pid : undefined };
     }
 
     remove(owner, id) {
@@ -187,7 +259,114 @@ class Store {
         try {
             fs.unlinkSync(this.fileOf(owner, id));
         } catch (e) {}
+        this.publicCache = null;
         this.counts.removed++;
+        this.markDirty();
+        return true;
+    }
+
+    // --- Enlaces cortos: copias de una sesion que cualquiera con el codigo puede abrir ---
+
+    /** Guarda una copia y devuelve su codigo. Misma sesion = mismo codigo (no se duplica). */
+    createShare(owner, body) {
+        const v = validateProject(body);
+        const digest = crypto.createHash('sha256').update(JSON.stringify({ name: v.name, data: v.data })).digest();
+        let code = '';
+        for (let i = 0; i < 10; i++)
+            code += B62[digest[i] % 62];
+        if (this.shares.has(code))
+            return { code, created: false };
+        let mine = 0;
+        this.shares.forEach(sh => { if (sh.owner == owner) mine++; });
+        if (mine >= this.maxSharesPerOwner)
+            throw new HttpError(409, 'Llegaste al maximo de ' + this.maxSharesPerOwner + ' enlaces compartidos');
+        const createdAt = Date.now();
+        const raw = JSON.stringify({ code, owner, name: v.name, createdAt, savedAt: createdAt, data: v.data });
+        const file = path.join(this.dir, 'shares', code + '.json');
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        fs.writeFileSync(file + '.tmp', raw);
+        fs.renameSync(file + '.tmp', file);
+        this.shares.set(code, { code, owner, name: v.name, createdAt, raw });
+        this.counts.added++;
+        this.markDirty();
+        return { code, created: true };
+    }
+
+    getShare(code) {
+        const sh = CODE_RE.test(code) ? this.shares.get(code) : null;
+        if (!sh)
+            return null;
+        const env = JSON.parse(sh.raw);
+        return { code, name: env.name, createdAt: env.createdAt, data: env.data };
+    }
+
+    // --- Galeria publica ---
+
+    /** Proyectos publicos, los mas recientes primero (con los destacados marcados). */
+    publicList() {
+        if (!this.publicCache) {
+            const all = [];
+            this.owners.forEach((map, owner) => map.forEach(r => {
+                if (r.pub)
+                    all.push({ owner, rec: r });
+            }));
+            all.sort((a, b) => b.rec.pub.at - a.rec.pub.at);
+            this.publicCache = all;
+        }
+        return this.publicCache;
+    }
+
+    countPublic() {
+        return this.publicList().length;
+    }
+
+    itemOf(entry) {
+        const r = entry.rec, p = r.pub;
+        return {
+            pid: p.pid, name: r.name, author: p.author, description: p.description, publishedAt: p.at, savedAt: r.savedAt,
+            stats: p.stats, preview: p.preview, featured: this.featuredPids.indexOf(p.pid) >= 0
+        };
+    }
+
+    /** { total, items } para la landing: `featured` devuelve solo los destacados (en el orden configurado). */
+    listPublic({ limit = 12, offset = 0, q = '', featured = false } = {}) {
+        limit = Math.max(1, Math.min(48, limit | 0 || 12));
+        offset = Math.max(0, offset | 0);
+        let list = this.publicList();
+        if (featured) {
+            const byPid = new Map(list.map(e => [e.rec.pub.pid, e]));
+            list = this.featuredPids.map(pid => byPid.get(pid)).filter(Boolean);
+        }
+        const needle = clean(q, 40).toLowerCase();
+        if (needle)
+            list = list.filter(e => (e.rec.name + ' ' + e.rec.pub.author).toLowerCase().indexOf(needle) >= 0);
+        return { total: list.length, items: list.slice(offset, offset + limit).map(e => this.itemOf(e)) };
+    }
+
+    /** Un proyecto publico completo (para abrirlo en la app). */
+    getPublic(pid) {
+        const entry = this.publicList().find(e => e.rec.pub.pid == pid);
+        if (!entry)
+            return null;
+        const env = JSON.parse(entry.rec.raw);
+        return Object.assign({ pid }, this.itemOf(entry), { data: env.data });
+    }
+
+    /** Moderacion: deja de publicar un proyecto sin tocar el resto. */
+    unpublish(pid) {
+        const entry = this.publicList().find(e => e.rec.pub.pid == pid);
+        if (!entry)
+            return false;
+        const rec = entry.rec;
+        const env = JSON.parse(rec.raw);
+        delete env.public;
+        rec.raw = JSON.stringify(env);
+        rec.pub = null;
+        const file = this.fileOf(entry.owner, rec.id);
+        fs.writeFileSync(file + '.tmp', rec.raw);
+        fs.renameSync(file + '.tmp', file);
+        this.publicCache = null;
+        this.counts.updated++;
         this.markDirty();
         return true;
     }
@@ -276,6 +455,8 @@ class Store {
             ok: !this.lastError,
             owners: this.owners.size,
             projects: this.countProjects(),
+            public: this.countPublic(),
+            shares: this.shares.size,
             pending: this.pending,
             unpushed: this.unpushed,
             remote: !!this.git.remote,
@@ -295,4 +476,4 @@ class Store {
     }
 }
 
-module.exports = { Store, HttpError, ownerOf, validateProject, ID_RE, KEY_RE };
+module.exports = { Store, HttpError, ownerOf, validateProject, ID_RE, KEY_RE, CODE_RE };
