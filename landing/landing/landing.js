@@ -363,8 +363,6 @@
         hint('playing' + (ts >= INTRO_MIN_S ? '-skip' : ''), ts >= INTRO_MIN_S
           ? nodes('Suena ', el('b', '', 'Funkito D'), ' · tocá o apretá una tecla para entrar')
           : nodes('Suena ', el('b', '', 'Funkito D'), ', un proyecto hecho en Syntotec'));
-      } else if (t > 1.2) {
-        hint('locked', nodes('Tocá la pantalla o apretá una tecla para escuchar'));
       }
       // Sin sonido no tiene sentido alargarla: unos segundos y entra sola
       if (!audible() && t >= INTRO_SILENT_S) { closeIntro(0.8); return; }
