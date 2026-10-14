@@ -269,3 +269,21 @@ main {
     display: none;
   }
 }
+
+/* Version: muy chica; en la vista arte queda discreta en una esquina */
+.version {
+  position: fixed;
+  left: 10px;
+  bottom: 8px;
+  z-index: 50;
+  font: 10px var(--mono);
+  letter-spacing: 0.05em;
+  color: #fff;
+  opacity: 0.35;
+  pointer-events: none;
+  mix-blend-mode: difference;
+}
+.statusbar .ver {
+  font-family: var(--mono);
+  opacity: 0.7;
+}

@@ -85,6 +85,8 @@
     <span class="spacer"></span>
     <span class="hide-narrow"><kbd>Esc</kbd> modo visual</span>
     <button class="ghost" (click)="ui.toggleHelp()"><kbd>F1</kbd> atajos</button>
+    <span class="sep"></span>
+    <span class="ver">v{{ version }}</span>
   </footer>
 </div>
 
@@ -107,6 +109,8 @@
     <p class="foot">Tambien funciona con cualquier teclado MIDI (Chrome o Edge) y con pantallas tactiles.</p>
   </div>
 </div>
+
+<span class="version" *ngIf="ui.zen" aria-hidden="true">v{{ version }}</span>
 
 <button class="zenToggle" [class.hint]="zenHint" *ngIf="ui.zen" (click)="toggleZen()" title="Mostrar la interfaz (Esc)">
   <app-icon name="eye" [size]="15"></app-icon> Mostrar interfaz <small>Esc</small>

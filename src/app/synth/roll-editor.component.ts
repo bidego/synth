@@ -178,6 +178,29 @@ export class RollEditorComponent implements DoCheck {
         return null;
     }
 
+    /**
+     * Convierte el arrastre en una copia: las notas originales vuelven a donde estaban al empezar y
+     * se arrastran clones de ellas (que pasan a ser la seleccion).
+     */
+    private startCopy(d: Drag) {
+        const originals = Array.from(d.origins.keys());
+        const clones = originals.map(n => {
+            const o = d.origins.get(n);
+            n.start = o.start; n.dur = o.dur; n.midi = o.midi;
+            return { ...n, take: 0 };
+        });
+        this.track.notes.push(...clones);
+        const origins = new Map<LoopNote, { start: number; dur: number; midi: number }>();
+        clones.forEach((c, i) => origins.set(c, d.origins.get(originals[i])));
+        d.note = clones[originals.indexOf(d.note)];
+        d.origins = origins;
+        d.copy = { originals, clones };
+        this.selected.clear();
+        clones.forEach(c => this.selected.add(c));
+        this.message = clones.length == 1 ? 'Copiando la nota...' : 'Copiando ' + clones.length + ' notas...';
+        this.changed();
+    }
+
     // Ctrl en Windows/Linux, Cmd en Mac, y Alt/Option (la convencion de varios DAWs)
     private copyModifier(event: MouseEvent): boolean {
         return event.ctrlKey || event.metaKey || event.altKey;
@@ -210,25 +233,14 @@ export class RollEditorComponent implements DoCheck {
                 this.selected.add(hit.note);
             }
             this.pushHistory();
-            let moving = Array.from(this.selected);
-            let anchor = hit.note;
-            let copy: Drag['copy'];
-            // Ctrl (o Cmd / Alt) + arrastrar el cuerpo de una nota: se copian las seleccionadas
-            if (this.copyModifier(event) && !hit.edge) {
-                const originals = moving;
-                const clones = originals.map(n => ({ ...n, take: 0 }));
-                t.notes.push(...clones);
-                anchor = clones[originals.indexOf(hit.note)];
-                this.selected.clear();
-                clones.forEach(n => this.selected.add(n));
-                moving = clones;
-                copy = { originals, clones };
-            }
             const origins = new Map<LoopNote, { start: number; dur: number; midi: number }>();
-            moving.forEach(n => origins.set(n, { start: n.start, dur: n.dur, midi: n.midi }));
-            this.drag = { ...base, kind: hit.edge ? 'resize' : 'move', note: anchor, origins, lastMidi: anchor.midi, copy };
+            this.selected.forEach(n => origins.set(n, { start: n.start, dur: n.dur, midi: n.midi }));
+            this.drag = { ...base, kind: hit.edge ? 'resize' : 'move', note: hit.note, origins, lastMidi: hit.note.midi };
+            // Ctrl (o Cmd / Alt) apretado desde el inicio: se arrastran copias
+            if (!hit.edge && this.copyModifier(event))
+                this.startCopy(this.drag);
             if (!hit.edge)
-                this.looper.preview(t, anchor.midi, anchor.vel);
+                this.looper.preview(t, this.drag.note.midi, this.drag.note.vel);
         } else if (this.tool == 'draw') {
             this.pushHistory();
             const midi = this.hi - Math.floor(y / ROW_H);
@@ -261,6 +273,9 @@ export class RollEditorComponent implements DoCheck {
         d.curY = y;
         const dBeats = (x - d.startX) / this.ppb;
         const L = this.L;
+        // Ctrl apretado EN PLENO arrastre: las originales vuelven a su lugar y lo que sigue moviendose son copias
+        if (d.kind == 'move' && !d.copy && this.copyModifier(event))
+            this.startCopy(d);
         if (d.kind == 'move') {
             const delta = this.grid ? Math.round(dBeats / this.grid) * this.grid : dBeats;
             const dMidi = -Math.round((y - d.startY) / ROW_H);

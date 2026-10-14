@@ -27,10 +27,18 @@
   box-sizing: border-box;
 }
 
+/* Solo <html> pinta el fondo: el arte VJ (canvas con z-index negativo) va detras del <body>,
+   asi que el body tiene que ser transparente o lo tapa */
+html {
+  background: var(--bg);
+}
+body {
+  background: transparent;
+}
+
 html, body {
   height: 100%;
   margin: 0;
-  background: var(--bg);
   color: var(--text);
   font: 13px/1.4 var(--font);
   overflow: hidden;

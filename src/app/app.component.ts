@@ -4,6 +4,7 @@ import { SynthEngine } from './services/synth.engine';
 import { MidiService } from './services/midi.service';
 import { LooperService } from './services/looper.service';
 import { UiService } from './services/ui.service';
+import { version } from '../../package.json';
 
 interface Shortcut {
   keys: Array<string>;
@@ -17,6 +18,7 @@ interface Shortcut {
 })
 export class AppComponent {
   title = 'Syntotec';
+  version: string = version;
   narrow = false;
 
   // Modo visual: el boton flotante casi desaparece y solo reaparece al mover el puntero o tocar
