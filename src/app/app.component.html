@@ -1,4 +1,8 @@
 <app-visualizer></app-visualizer>
+<div class="unlock" *ngIf="sound.audioState != 'running'" (click)="sound.unlock()">
+  Toca aqui para activar el sonido
+  <small>(si sigue mudo en iPhone: revisa el interruptor de silencio del costado y el volumen)</small>
+</div>
 <div handlekeys class="app">
   <h1>{{ title }}</h1>
   <div class="presets">

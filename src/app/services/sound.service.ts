@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { FxConfig, DEFAULT_FX } from './presets';
 import { MasterChain } from './master-chain';
+import { AudioUnlock } from './audio-unlock';
 
 @Injectable()
 export class SoundService {
@@ -11,9 +12,24 @@ export class SoundService {
     // Avisa cuando cambian los efectos (el looper los guarda con el proyecto)
     public fxChanged = new Subject<void>();
 
+    private unlocker: AudioUnlock;
+
     constructor(private audioCtx: AudioContext) {
         this.chain = new MasterChain(audioCtx);
         this.chain.setFx(this.fx);
+        this.unlocker = new AudioUnlock(audioCtx);
+        // Sin esto la pantalla no se entera de que el contexto paso a 'running' (o volvio a suspenderse)
+        audioCtx.addEventListener('statechange', () => {});
+    }
+
+    /** 'running' = suena; 'suspended' / 'interrupted' = hace falta un toque del usuario. */
+    get audioState(): string {
+        return this.audioCtx.state;
+    }
+
+    /** Debe llamarse desde un gesto (click / touchend). */
+    unlock() {
+        this.unlocker.unlock();
     }
 
     // Bus al que se conectan todas las voces

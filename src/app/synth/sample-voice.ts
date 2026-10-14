@@ -50,7 +50,8 @@ export class SampleVoice {
         src.buffer = zone.buffer;
         const baseDetune = zone.originalPitch - 100 * zone.coarseTune - zone.fineTune;
         src.playbackRate.value = Math.pow(2, (100 * midi - baseDetune) / 1200);
-        src.detune.value = bend;
+        if (src.detune)   // Safari < 14.1 no tiene detune en AudioBufferSourceNode
+            src.detune.value = bend;
         if (zone.loop && !isKit) {
             src.loop = true;
             src.loopStart = zone.loopStart;
@@ -123,7 +124,8 @@ export class SampleVoice {
             this.lfo.connect(lfoGain);
             if (l.target == 'pitch') {
                 lfoGain.gain.value = l.depth;
-                lfoGain.connect(src.detune);
+                if (src.detune)
+                    lfoGain.connect(src.detune);
             } else if (l.target == 'filter') {
                 lfoGain.gain.value = l.depth;
                 lfoGain.connect(filter.frequency);
@@ -148,7 +150,7 @@ export class SampleVoice {
 
     /** Pitch bend en cents. */
     setBend(cents: number) {
-        if (this.src)
+        if (this.src && this.src.detune)
             this.src.detune.setTargetAtTime(cents, this.ctx.currentTime, 0.01);
     }
 

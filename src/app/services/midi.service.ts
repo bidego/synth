@@ -84,7 +84,7 @@ export class MidiService {
                 ? this.devices.join(', ')
                 : 'ningun dispositivo: conecta un teclado MIDI y se detecta solo';
             case 'insecure': return 'requiere https o localhost';
-            case 'unsupported': return 'este navegador no lo soporta (usa Chrome o Edge)';
+            case 'unsupported': return 'este navegador no lo soporta (en iPhone/iPad ningun navegador lo tiene; usa Chrome o Edge en computadora o Android)';
             case 'denied': return 'permiso denegado (habilitalo en el candado de la barra)';
             default: return 'esperando permiso...';
         }
