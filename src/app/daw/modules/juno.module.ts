@@ -54,6 +54,9 @@ export const JUNO_PARAMS: ReadonlyArray<JunoParam> = [
     slider('dec', 'D', 0.4),
     slider('sus', 'S', 0.6),
     slider('rel', 'R', 0.3),
+    // Sensibilidad a la velocidad (el 106 original no la tenia: aca es un agregado, con 0 suena como el original)
+    slider('velVca', 'VCA', 0.85),
+    slider('velVcf', 'VCF', 0.3),
     // Chorus
     sw('chorus', 'Chorus', 0, 3)                // 0 off / 1 I / 2 II / 3 I+II
 ];
@@ -126,6 +129,7 @@ interface Voice {
     id: string;
     freq: number;
     connected: boolean;      // la voz esta enchufada al bus (las libres se desenchufan y no gastan procesador)
+    vel: number;             // velocidad de la nota (0..1)
     held: boolean;           // la tecla sigue apretada
     sustained: boolean;      // soltada pero retenida por el pedal
     startT: number;
@@ -177,6 +181,7 @@ export class JunoModule extends RackModule {
     private nextVoice = 0;
     private sustain = false;
     private stack: Array<number> = [];   // notas apretadas (modo Unison)
+    private stackVel = new Map<number, number>();
 
     // MIDI learn: cada control (CC) del controlador puede mover un control del panel
     public learn = false;
@@ -303,7 +308,7 @@ export class JunoModule extends RackModule {
             vca: g(), out: g(), lfoGain: g(), vibGain: g(), filtLfoGain: g(), pwmGain: g(), envGain: g(),
             kf: ctx.createConstantSource(),
             amp: this.buildEnv(), flt: this.buildEnv(),
-            midi: -1, id: '', freq: 440, connected: true, held: false, sustained: false, startT: 0, freeAt: 0
+            midi: -1, id: '', freq: 440, connected: true, vel: 1, held: false, sustained: false, startT: 0, freeAt: 0
         };
         v.saw.type = 'sawtooth';
         v.sub.type = 'square';
@@ -447,8 +452,8 @@ export class JunoModule extends RackModule {
             case 'vcfLfo':
                 each(x => this.set(x.filtLfoGain.gain, value * value * 2400, 0.03));
                 break;
-            case 'vcfKybd':
-                each(x => x.midi >= 0 && this.set(x.kf.offset, (x.midi - 60) * 100 * value, 0.02));
+            case 'vcfKybd': case 'velVcf':
+                each(x => x.midi >= 0 && this.set(x.kf.offset, this.kfCents(x), 0.02));
                 break;
             case 'vcaLevel':
                 this.set(this.master.gain, value * 1.25, 0.02);
@@ -464,6 +469,11 @@ export class JunoModule extends RackModule {
                     this.allNotesOff();
                 break;
         }
+    }
+
+    /** Desplazamiento del corte del filtro de una voz: seguimiento de teclado y velocidad (las notas suaves suenan mas oscuras). */
+    private kfCents(v: Voice): number {
+        return (v.midi - 60) * 100 * this.values.vcfKybd - (1 - v.vel) * this.values.velVcf * 4800;
     }
 
     /** Ancho del pulso: a mano (el deslizador PWM fija el ancho) o movido por el LFO (el deslizador fija la profundidad). */
@@ -533,7 +543,7 @@ export class JunoModule extends RackModule {
             return;
         const now = this.env.ctx.currentTime;
         switch (msg.type) {
-            case 'on': this.noteOn(msg.midi, msg.id || '', Math.max(now, msg.when !== undefined ? msg.when : now)); break;
+            case 'on': this.noteOn(msg.midi, msg.id || '', Math.max(now, msg.when !== undefined ? msg.when : now), msg.velocity); break;
             case 'off': this.noteOff(msg.midi, msg.id || '', Math.max(now, msg.when !== undefined ? msg.when : now)); break;
             case 'sustain': this.setSustain(msg.on); break;
             case 'bend':
@@ -599,11 +609,13 @@ export class JunoModule extends RackModule {
         return this.bend;
     }
 
-    private noteOn(midi: number, id: string, t: number) {
+    private noteOn(midi: number, id: string, t: number, velocity: number) {
+        const vel = typeof velocity == 'number' && isFinite(velocity) ? Math.max(0, Math.min(1, velocity)) : 1;
         if (this.values.voiceMode == 2) {
             this.stack = this.stack.filter(m => m != midi);
             this.stack.push(midi);
-            this.voices.forEach((v, i) => this.startVoice(v, midi, id, t, UNISON_SPREAD[i], 0.45));
+            this.stackVel.set(midi, vel);
+            this.voices.forEach((v, i) => this.startVoice(v, midi, id, t, UNISON_SPREAD[i], 0.45, vel));
             return;
         }
         // Poly 2 vuelve a usar siempre la primera voz libre; Poly 1 va rotando entre las voces
@@ -625,10 +637,10 @@ export class JunoModule extends RackModule {
             }
             this.nextVoice = (this.voices.indexOf(v) + 1) % VOICES;
         }
-        this.startVoice(v, midi, id, t, 0, 1);
+        this.startVoice(v, midi, id, t, 0, 1, vel);
     }
 
-    private startVoice(v: Voice, midi: number, id: string, when: number, detune: number, gain: number) {
+    private startVoice(v: Voice, midi: number, id: string, when: number, detune: number, gain: number, vel: number) {
         const val = this.values;
         let t = when;
         // Una voz que todavia suena con otra nota se apaga en un instante antes de arrancar la nueva (sin clicks)
@@ -661,9 +673,11 @@ export class JunoModule extends RackModule {
         this.lastFreq = f;
         v.midi = midi; v.id = id; v.freq = f; v.held = true; v.sustained = false; v.startT = t; v.freeAt = Infinity;
         // La resonancia suma volumen (el pico del filtro): se compensa un poco
-        v.out.gain.setValueAtTime(gain * (1 - 0.4 * val.vcfRes), t);
+        // La velocidad mueve el volumen entre (1 - velVca) y 1
+        v.vel = vel;
+        v.out.gain.setValueAtTime(gain * (1 - 0.4 * val.vcfRes) * (1 - val.velVca * (1 - vel)), t);
         this.applyPwm(v);
-        v.kf.offset.setValueAtTime((midi - 60) * 100 * val.vcfKybd, t);
+        v.kf.offset.setValueAtTime(this.kfCents(v), t);
 
         // LFO: entra despues del retardo
         const delay = val.lfoDelay * val.lfoDelay * 3;
@@ -701,7 +715,10 @@ export class JunoModule extends RackModule {
             if (!wasTop || this.sustain)
                 return;
             if (this.stack.length)
-                this.voices.forEach((v, i) => this.startVoice(v, this.stack[this.stack.length - 1], '', t, UNISON_SPREAD[i], 0.45));
+                {
+                    const top = this.stack[this.stack.length - 1];
+                    this.voices.forEach((v, i) => this.startVoice(v, top, '', t, UNISON_SPREAD[i], 0.45, this.stackVel.get(top) || 1));
+                }
             else
                 this.voices.forEach(v => v.held && this.releaseVoice(v, t));
             return;

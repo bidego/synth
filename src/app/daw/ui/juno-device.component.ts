@@ -151,6 +151,7 @@ export class JunoDeviceComponent implements OnInit, OnDestroy {
         { name: 'VCA', sliders: ['vcaLevel'], switches: [
             { id: 'vcaMode', label: 'VCA', opts: [{ v: 0, l: 'Env' }, { v: 1, l: 'Gate' }] }] },
         { name: 'Env', sliders: ['atk', 'dec', 'sus', 'rel'], switches: [] },
+        { name: 'Velocidad', sliders: ['velVca', 'velVcf'], switches: [] },
         { name: 'Chorus', sliders: [], switches: [
             { id: 'chorus', label: 'Chorus', opts: [{ v: 0, l: 'Off' }, { v: 1, l: 'I' }, { v: 2, l: 'II' }, { v: 3, l: 'I+II' }] }] }
     ];
