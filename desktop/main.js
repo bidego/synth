@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, Menu, net, protocol, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, net, protocol, session, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -18,6 +18,11 @@ protocol.registerSchemesAsPrivileged([{
 if (!app.requestSingleInstanceLock()) {
     app.quit();
 }
+
+// Permisos que la app puede usar. Chromium pide MIDI como 'midi' (y 'midiSysex' si la pagina lo pide)
+const PERMISSIONS = ['midi', 'midiSysex', 'fullscreen', 'clipboard-sanitized-write', 'pointerLock', 'unknown'];
+// Registro de lo que se pidio, para el diagnostico del menu Ayuda
+const permLog = [];
 
 let win = null;
 
@@ -97,7 +102,18 @@ function buildMenu() {
         { role: 'windowMenu' },
         {
             role: 'help',
-            submenu: [{ label: 'Syntotec en la web', click: () => shell.openExternal(WEB_ORIGIN) }]
+            submenu: [
+                { label: 'Syntotec en la web', click: () => shell.openExternal(WEB_ORIGIN) },
+                {
+                    label: 'Diagnostico de permisos (MIDI)',
+                    click: () => dialog.showMessageBox(win, {
+                        type: 'info',
+                        message: 'Permisos pedidos por la app',
+                        detail: 'Syntotec ' + app.getVersion() + ' \u00b7 Electron ' + process.versions.electron + '\n\n'
+                            + (permLog.length ? permLog.join('\n') : 'Todavia no se pidio ningun permiso.')
+                    })
+                }
+            ]
         }
     ];
     Menu.setApplicationMenu(Menu.buildFromTemplate(template));
@@ -105,10 +121,18 @@ function buildMenu() {
 
 app.whenReady().then(() => {
     protocol.handle(SCHEME, handleRequest);
-    // MIDI sin pedir permiso cada vez; nada mas (ni camara ni microfono ni sysex)
-    const allowed = ['midi'];
-    session.defaultSession.setPermissionRequestHandler((wc, permission, cb) => cb(allowed.indexOf(permission) >= 0));
-    session.defaultSession.setPermissionCheckHandler((wc, permission) => allowed.indexOf(permission) >= 0);
+    // La app solo carga su propio contenido: se conceden los permisos que usa (MIDI y poco mas), nunca camara, microfono ni ubicacion
+    const grant = (kind, permission, origin) => {
+        const ok = (!origin || origin.indexOf(SCHEME + '://') === 0) && PERMISSIONS.indexOf(permission) >= 0;
+        permLog.push(kind + ' ' + permission + ' ' + (origin || '-') + ' -> ' + (ok ? 'permitido' : 'DENEGADO'));
+        if (permLog.length > 60)
+            permLog.shift();
+        return ok;
+    };
+    session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) =>
+        cb(grant('pedido', permission, details && details.requestingUrl || (wc && wc.getURL()))));
+    session.defaultSession.setPermissionCheckHandler((wc, permission, origin) =>
+        grant('consulta', permission, origin || (wc && wc.getURL())));
     buildMenu();
     createWindow();
     app.on('activate', () => {
