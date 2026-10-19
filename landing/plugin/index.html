@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Juno 106 · Plugin para macOS · Syntotec</title>
+<meta name="description" content="Instalación y manual del plugin Juno 106 de Syntotec: VST3, Audio Unit y aplicación independiente para macOS (Intel y Apple Silicon).">
+<meta name="theme-color" content="#06070d">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/landing/landing.css">
+<style>
+  /* Página de documentación: usa los colores y la tipografía de la landing, sin la intro ni el arte VJ */
+  body { background: radial-gradient(900px 500px at 70% -10%, rgba(139, 92, 246, 0.16), transparent 70%), radial-gradient(700px 420px at 0% 0%, rgba(255, 79, 135, 0.12), transparent 70%); min-height: 100vh; }
+  .doc { width: min(860px, 92vw); margin: 0 auto; padding: 120px 0 40px; }
+  .doc h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.1; letter-spacing: -0.02em; margin: 6px 0 14px; }
+  .doc h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); margin: 54px 0 12px; letter-spacing: -0.01em; scroll-margin-top: 90px; }
+  .doc h3 { font-size: 1.08rem; margin: 26px 0 6px; }
+  .doc p, .doc li { color: var(--dim); }
+  .doc p strong, .doc li strong, .doc td strong { color: var(--text); }
+  .doc a:not(.btn) { color: var(--info); }
+  .doc code { font-family: var(--mono); font-size: 0.9em; background: rgba(255, 255, 255, 0.07); padding: 2px 6px; border-radius: 6px; color: var(--text); }
+  .doc pre { background: rgba(8, 9, 18, 0.8); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; overflow-x: auto; margin: 12px 0; }
+  .doc pre code { background: none; padding: 0; font-size: 0.86rem; }
+  .tw { overflow-x: auto; margin: 14px 0; }
+  .doc table { width: 100%; border-collapse: collapse; margin: 0; font-size: 0.95rem; }
+  .doc th, .doc td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--dim); }
+  .doc th { color: var(--text); font-weight: 600; white-space: nowrap; }
+  .doc td:first-child { color: var(--text); white-space: nowrap; }
+  .doc .note { border-left: 3px solid var(--warn); background: rgba(255, 200, 87, 0.08); padding: 10px 16px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+  .doc .note p { margin: 0; }
+  .dl { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0 6px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 22px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); }
+  .toc a { text-decoration: none; color: var(--dim); }
+  .toc a:hover { color: var(--text); }
+  .nav .btn-sm { margin-left: auto; }
+  @media (max-width: 640px) { .doc td:first-child, .doc th { white-space: normal; } .doc { padding-top: 96px; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4f87"/><stop offset="1" stop-color="#5cc8ff"/></linearGradient></defs>
+</svg>
+
+<header class="nav scrolled">
+  <a class="brand" href="/" aria-label="Syntotec, inicio">
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <span>Syntotec</span>
+  </a>
+  <a class="btn btn-primary btn-sm" href="/app/">Abrir Syntotec</a>
+</header>
+
+<main class="doc" id="contenido">
+  <p class="eyebrow"><span class="dot"></span> Plugin · beta 0.1.0 · macOS</p>
+  <h1>Juno 106</h1>
+  <p class="lead">El Juno-106 de Syntotec como plugin de verdad: <strong>VST3</strong>, <strong>Audio Unit</strong> (Logic y GarageBand) y <strong>aplicación independiente</strong>, para Mac con chip Apple o Intel. Es el mismo instrumento que el de la web, reescrito en C++ con <a href="https://juce.com" rel="noopener">JUCE</a>.</p>
+
+  <div class="dl">
+    <a class="btn btn-primary btn-lg" href="https://github.com/bidego/synth/releases/tag/plugin-v0.1.0" rel="noopener">Descargar 0.1.0</a>
+    <a class="btn btn-ghost btn-lg" href="https://github.com/bidego/synth/tree/syntotec-app/plugin" rel="noopener">Código fuente</a>
+  </div>
+
+  <nav class="toc" aria-label="En esta página">
+    <a href="#instalar">Instalar</a><a href="#uso">Primer uso</a><a href="#controles">Controles</a><a href="#midi">MIDI</a><a href="#sonidos">Sonidos</a><a href="#compilar">Compilar</a><a href="#pendiente">Pendiente</a>
+  </nav>
+
+  <h2 id="que-es">Qué trae</h2>
+  <ul>
+    <li><strong>6 voces</strong> con tres modos: Poly 1 (las voces rotan), Poly 2 (siempre la primera libre) y Unison (las 6 voces juntas, levemente desafinadas).</li>
+    <li><strong>DCO</strong> con sierra, pulso con PWM (a mano o movido por el LFO), sub-oscilador y ruido, con rangos de 16', 8' y 4'. Sin aliasing (PolyBLEP).</li>
+    <li><strong>Filtro pasa altos</strong> de 4 posiciones y <strong>pasa bajos de 24 dB</strong> resonante, que autooscila con la resonancia al máximo.</li>
+    <li><strong>Envolvente ADSR</strong> compartida por el filtro y el VCA (o VCA en modo gate), <strong>LFO</strong> triangular con retardo de entrada, portamento y bender.</li>
+    <li><strong>Chorus</strong> estéreo I, II e I+II.</li>
+    <li><strong>Sensibilidad a la velocidad</strong> sobre el volumen y el brillo (un agregado: en 0 suena como el original).</li>
+    <li>Liviano: menos del 1 % de un núcleo con seis voces. Todos los controles se <strong>automatizan</strong> desde la DAW.</li>
+  </ul>
+
+  <h2 id="instalar">Instalar</h2>
+  <p>Bajá los archivos de la <a href="https://github.com/bidego/synth/releases/tag/plugin-v0.1.0" rel="noopener">página de descargas</a>, descomprimilos y copiá cada uno a su carpeta. Son universales: andan en Mac con chip Apple y con Intel.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Formato</th><th>Archivo</th><th>Carpeta</th></tr></thead>
+    <tbody>
+      <tr><td>VST3</td><td><a href="https://github.com/bidego/synth/releases/download/plugin-v0.1.0/Juno106-VST3-macOS.zip" rel="noopener"><code>Juno106-VST3-macOS.zip</code></a></td><td><code>~/Library/Audio/Plug-Ins/VST3/</code></td></tr>
+      <tr><td>Audio Unit</td><td><a href="https://github.com/bidego/synth/releases/download/plugin-v0.1.0/Juno106-AU-macOS.zip" rel="noopener"><code>Juno106-AU-macOS.zip</code></a></td><td><code>~/Library/Audio/Plug-Ins/Components/</code></td></tr>
+      <tr><td>Independiente</td><td><a href="https://github.com/bidego/synth/releases/download/plugin-v0.1.0/Juno106-Standalone-macOS.zip" rel="noopener"><code>Juno106-Standalone-macOS.zip</code></a></td><td>donde quieras (es una app)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><p><strong>macOS puede bloquearlo la primera vez.</strong> Los plugins van firmados «ad hoc», sin cuenta de Apple Developer. Si dice que no se puede abrir o que está dañado, abrí la Terminal y ejecutá <code>xattr -cr "Juno 106.vst3"</code> (lo mismo para <code>.component</code> y <code>.app</code>). En la app independiente también sirve clic derecho → Abrir.</p></div>
+  <p>Después reiniciá la DAW y volvé a escanear los plugins. <strong>Logic</strong> valida los Audio Units al abrirse; para forzarlo o ver el motivo de un error: <code>auval -v aumu Jn06 Synt</code>.</p>
+
+  <h2 id="uso">Primer uso</h2>
+  <ol>
+    <li>Probá primero la <strong>aplicación independiente</strong>: abrila y, desde el botón <em>Options → Audio/MIDI Settings</em>, elegí tu salida de audio y tu controlador MIDI. Tocá.</li>
+    <li>En la DAW, creá una pista de instrumento y elegí <strong>Juno 106</strong> (<em>Syntotec</em> en la lista de fabricantes).</li>
+    <li>Elegí un sonido en el selector de programas de la DAW (<em>Brass</em>, <em>Strings</em>, <em>Funk Bass</em>…) y movés los controles.</li>
+  </ol>
+  <p>La interfaz de esta primera versión es el panel genérico del anfitrión: una lista con todos los controles. El panel con la imagen del Juno-106 es la próxima etapa.</p>
+
+  <h2 id="controles">Controles</h2>
+  <p>Los deslizadores van de 0 a 10, como en el original. Los nombres de los controles son los mismos que en la versión web.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Sección</th><th>Controles</th></tr></thead>
+    <tbody>
+      <tr><td>Portamento</td><td>Portamento (tiempo), Portamento On, Voice Mode (Poly 1 · Poly 2 · Unison), Bender DCO y Bender VCF (cuánto mueve el bender al tono y al filtro)</td></tr>
+      <tr><td>LFO</td><td>LFO Rate, LFO Delay (retardo de entrada)</td></tr>
+      <tr><td>DCO</td><td>DCO LFO (vibrato), PWM, PWM Mode (Manual · LFO), DCO Range (16' · 8' · 4'), Pulse, Saw, Sub, Noise</td></tr>
+      <tr><td>HPF</td><td>HPF 0 (refuerzo de graves), 1 (plano), 2 y 3 (pasa altos más arriba)</td></tr>
+      <tr><td>VCF</td><td>VCF Freq, VCF Res, VCF Env, VCF LFO, VCF Kybd (seguimiento de teclado), Env Polarity (Normal · Inverted)</td></tr>
+      <tr><td>VCA</td><td>VCA Level, VCA Mode (Env · Gate)</td></tr>
+      <tr><td>Envolvente</td><td>Env A, Env D, Env S, Env R</td></tr>
+      <tr><td>Velocidad</td><td>Velocity VCA (cuánto cambia el volumen), Velocity VCF (cuánto se oscurece al tocar suave)</td></tr>
+      <tr><td>Chorus</td><td>Off · I · II · I+II</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="midi">MIDI</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Mensaje</th><th>Qué hace</th></tr></thead>
+    <tbody>
+      <tr><td>Notas</td><td>Tocan el instrumento con su velocidad</td></tr>
+      <tr><td>Pitch bend</td><td>El bender: sube o baja el tono (y el filtro, según Bender VCF)</td></tr>
+      <tr><td>CC 1 (rueda de modulación)</td><td>Suma vibrato</td></tr>
+      <tr><td>CC 64 (pedal)</td><td>Sustain</td></tr>
+      <tr><td>CC 120 y 123</td><td>Apagan todas las notas</td></tr>
+    </tbody>
+  </table></div>
+  <p>Para mover los controles con las perillas de tu controlador, usá el <strong>MIDI Learn</strong> de tu DAW: todos los controles son parámetros del plugin.</p>
+
+  <h2 id="sonidos">Sonidos de partida</h2>
+  <p>Once programas: <strong>Init</strong>, <strong>Brass</strong>, <strong>Strings</strong>, <strong>Soft Pad</strong>, <strong>Funk Bass</strong>, <strong>Sub Bass</strong>, <strong>Pluck</strong>, <strong>Wobble Lead</strong>, <strong>Vibrato Lead</strong>, <strong>Bell Tine</strong> y <strong>Noise Sweep</strong>. No son los de fábrica del original: son retratos de los clásicos del Juno. El estado del plugin se guarda con el proyecto de la DAW.</p>
+
+  <h2 id="compilar">Compilar desde el código</h2>
+  <p>El motor de audio es C++ puro y se prueba solo, sin JUCE, en cualquier sistema:</p>
+  <pre><code>cd plugin
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target juno_tests
+./build/juno_tests          # pruebas y medición de rendimiento
+./build/juno_tests --wav /tmp   # un .wav por sonido para escuchar</code></pre>
+  <p>Para el plugin completo en macOS (JUCE se baja solo):</p>
+  <pre><code>cmake -S . -B build -DJUNO_BUILD_PLUGIN=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+cmake --build build --config Release</code></pre>
+  <p>Los builds de GitHub se corren desde <em>Actions → Juno 106 plugin (macOS)</em>, o subiendo una etiqueta <code>plugin-v*</code>, que además publica el release.</p>
+
+  <h2 id="pendiente">Pendiente</h2>
+  <ul>
+    <li>Panel propio con la imagen del Juno-106 (hoy: interfaz genérica del anfitrión).</li>
+    <li>Windows y Linux (el código ya compila; falta armar los instaladores).</li>
+    <li>AAX para Pro Tools: requiere el SDK y la cuenta de desarrollador de Avid. RTAS ya no existe.</li>
+    <li>Firmar y notarizar con una cuenta de Apple Developer, para que macOS no pida confirmaciones.</li>
+  </ul>
+  <p>¿Algo no anda? Contanos en las <a href="https://github.com/bidego/synth/issues" rel="noopener">incidencias de GitHub</a>.</p>
+</main>
+
+<footer class="footer">
+  <div class="footer-top">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/></svg><span>Syntotec</span></a>
+    <nav aria-label="Pie">
+      <a href="/">Inicio</a>
+      <a href="/app/">La app</a>
+      <a href="/#plugin">Plugin</a>
+      <a href="https://github.com/bidego/synth" rel="noopener">Código en GitHub</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

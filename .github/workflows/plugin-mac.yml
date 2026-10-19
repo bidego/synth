@@ -1,6 +1,9 @@
 name: Juno 106 plugin (macOS)
 
 # A mano (Actions > Juno 106 plugin (macOS) > Run workflow) o al subir una etiqueta plugin-v*
+permissions:
+  contents: write   # para publicar el release
+
 on:
   workflow_dispatch:
   push:
@@ -30,13 +33,27 @@ jobs:
       - name: Firmar (ad hoc, sin cuenta de Apple) y empaquetar
         run: |
           mkdir -p out
-          find build -name "Juno 106.vst3" -o -name "Juno 106.component" -o -name "Juno 106.app" | while read -r b; do
+          pack() {   # pack <carpeta del bundle> <nombre del zip>
+            b=$(find build -name "$1" | head -1)
             codesign --force --deep --sign - "$b"
-            ditto -c -k --keepParent "$b" "out/$(basename "$b").zip"
-          done
+            ditto -c -k --keepParent "$b" "out/$2"
+          }
+          pack "Juno 106.vst3" Juno106-VST3-macOS.zip
+          pack "Juno 106.component" Juno106-AU-macOS.zip
+          pack "Juno 106.app" Juno106-Standalone-macOS.zip
           ls -la out
 
       - uses: actions/upload-artifact@v4
         with:
           name: juno106-macos
           path: plugin/out/*.zip
+
+      # Con una etiqueta plugin-v*: los zips quedan como release publico (la landing enlaza ahi)
+      - name: Publicar el release
+        if: startsWith(github.ref, 'refs/tags/plugin-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" out/*.zip --prerelease \
+            --title "Juno 106 ${GITHUB_REF_NAME#plugin-v} (beta) para macOS" \
+            --notes "El Juno-106 de Syntotec como plugin para macOS (Intel y Apple Silicon): VST3, Audio Unit y aplicacion independiente. Instalacion y manual: https://synth.zondacloud.com/plugin/"
