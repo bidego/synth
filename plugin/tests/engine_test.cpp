@@ -1,5 +1,6 @@
 // Pruebas del motor de audio (sin JUCE): altura, niveles, liberacion, filtro, velocidad, chorus, estabilidad numerica.
 // Uso: juno_tests [--wav carpeta]   (con --wav deja un par de renders para escuchar)
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <chrono>
@@ -101,7 +102,7 @@ static void testPitch() {
 }
 
 static void testLevels() {
-    std::printf("niveles: ningun sonido recorta con acordes de 6 voces\n");
+    std::printf("niveles: ningun sonido recorta con acordes de 6 voces (%d sonidos)\n", int(presets().size()));
     const auto& list = presets();
     for (size_t i = 0; i < list.size(); i++) {
         Engine e = fresh();
@@ -117,8 +118,34 @@ static void testLevels() {
         }
         std::printf("  %-13s pico %.2f\n", list[i].name, double(pk));
         CHECK(pk < 0.99f, "%s recorta (pico %.2f)", list[i].name, double(pk));
-        CHECK(pk > 0.02f || std::strcmp(list[i].name, "Pluck") == 0, "%s casi no suena (pico %.3f)", list[i].name, double(pk));
+        CHECK(pk > 0.02f, "%s casi no suena (pico %.3f)", list[i].name, double(pk));
     }
+}
+
+static void testPresetLibrary() {
+    std::printf("biblioteca de sonidos: cada uno suena con una nota y se distinguen entre si\n");
+    const auto& list = presets();
+    std::vector<std::pair<float, float>> fingerprint;   // (nivel, brillo)
+    for (size_t i = 0; i < list.size(); i++) {
+        Engine e = fresh();
+        e.loadPreset(int(i));
+        e.noteOn(48, 0.8f);
+        Render r = render(e, 33000);
+        const float pk = peak(r.l);
+        const float br = brightness(r.l, 2000, 20000);
+        CHECK(pk > 0.01f && pk < 0.99f, "%s: pico %.3f con una nota", list[i].name, double(pk));
+        CHECK(std::isfinite(br), "%s: brillo invalido", list[i].name);
+        fingerprint.push_back({ rms(r.l, 2000, 20000), br });
+    }
+    // Ningun par de sonidos (salvo Init y sus parecidos de fabrica) deberia ser identico
+    int same = 0;
+    for (size_t i = 0; i < list.size(); i++)
+        for (size_t j = i + 1; j < list.size(); j++)
+            if (std::fabs(fingerprint[i].first - fingerprint[j].first) < 1e-6f && std::fabs(fingerprint[i].second - fingerprint[j].second) < 1e-6f) {
+                same++;
+                std::printf("  identicos: %s y %s\n", list[i].name, list[j].name);
+            }
+    CHECK(same == 0, "hay sonidos identicos");
 }
 
 static void testRelease() {
@@ -301,6 +328,41 @@ static void testDeterminism() {
     CHECK(a.l == b.l && a.r == b.r, "dos corridas iguales dieron audio distinto");
 }
 
+// Mide cuanto suena cada sonido con un acorde de tres notas y propone un VCA Level para que todos suenen parejos
+static void calibrate() {
+    const auto& list = presets();
+    std::vector<double> rmsAt;
+    std::vector<double> peaks;
+    for (size_t i = 0; i < list.size(); i++) {
+        Engine e = fresh();
+        e.loadPreset(int(i));
+        e.setParam(VcaLevel, 0.5f);
+        for (int n : { 48, 52, 55 }) e.noteOn(n, 0.8f);
+        Render r = render(e, 26500);
+        // Volumen aparente: el RMS mas alto en ventanas de 50 ms (asi un pluck corto y un pad lento se comparan parejo)
+        double best = 0;
+        for (size_t k = 0; k + 2205 <= r.l.size(); k += 441) {
+            double sum = 0;
+            for (size_t j = k; j < k + 2205; j++) sum += double(r.l[j]) * r.l[j];
+            best = std::max(best, std::sqrt(sum / 2205.0));
+        }
+        rmsAt.push_back(best);
+        peaks.push_back(peak(r.l));
+    }
+    std::vector<double> sorted = rmsAt;
+    std::sort(sorted.begin(), sorted.end());
+    const double target = sorted[sorted.size() / 2];   // la mediana: nadie sube ni baja demasiado
+    std::printf("{\n");
+    for (size_t i = 0; i < list.size(); i++) {
+        double lvl = 1.3 * 0.5 * target / std::max(rmsAt[i], 1e-6);   // 1.3: aprovecha el margen que dejan los acordes
+        // Y que el pico de un acorde no pase de 0.85
+        lvl = std::min(lvl, 0.5 * 0.85 / std::max(peaks[i], 1e-6));
+        lvl = std::max(0.15, std::min(1.0, lvl));
+        std::printf("  \"%s\": %.2f%s\n", list[i].name, lvl, i + 1 < list.size() ? "," : "");
+    }
+    std::printf("}\n");
+}
+
 static void demoWavs(const std::string& dir) {
     const auto& list = presets();
     for (size_t i = 0; i < list.size(); i++) {
@@ -336,9 +398,11 @@ static void bench() {
 }
 
 int main(int argc, char** argv) {
+    if (argc > 1 && !std::strcmp(argv[1], "--calibrate")) { calibrate(); return 0; }
     testSilence();
     testPitch();
     testLevels();
+    testPresetLibrary();
     testRelease();
     testVelocity();
     testFilter();

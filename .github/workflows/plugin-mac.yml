@@ -43,6 +43,15 @@ jobs:
           pack "Juno 106.app" Juno106-Standalone-macOS.zip
           ls -la out
 
+      - name: Captura de la interfaz
+        continue-on-error: true
+        run: |
+          mkdir -p diag
+          bin=$(find build -type f -name juno_snapshot | head -1)
+          "$bin" diag/gui-init.png 0
+          "$bin" diag/gui-strings.png 7
+          ls -la diag
+
       # Diagnostico: lo que dicen los validadores sobre el plugin (no frena el build; el resultado queda en el artefacto)
       - name: Validar el Audio Unit (auval) y el VST3 (pluginval)
         continue-on-error: true
@@ -68,7 +77,7 @@ jobs:
         if: always()
         with:
           name: juno106-diagnostico
-          path: plugin/diag/*.log
+          path: plugin/diag/*
 
       - uses: actions/upload-artifact@v4
         with:

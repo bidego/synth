@@ -1,5 +1,6 @@
 import { RackModule } from '../core/module';
 import { ModuleEnv, NoteMsg, PortDef } from '../core/types';
+import { JUNO_PRESETS } from './juno-presets';
 
 /** Un control del panel. Los deslizadores van de 0 a 1 (como la escala 0-10 del original); los interruptores, de 0 a N. */
 export interface JunoParam {
@@ -61,25 +62,7 @@ export const JUNO_PARAMS: ReadonlyArray<JunoParam> = [
     sw('chorus', 'Chorus', 0, 3)                // 0 off / 1 I / 2 II / 3 I+II
 ];
 
-export interface JunoPreset {
-    name: string;
-    values: { [id: string]: number };
-}
-
-/** Sonidos de partida (no son los de fabrica del original: son retratos de los clasicos del Juno). */
-export const JUNO_PRESETS: ReadonlyArray<JunoPreset> = [
-    { name: 'Init', values: {} },
-    { name: 'Brass', values: { range: 1, pulse: 0, saw: 1, sub: 0.2, vcfFreq: 0.35, vcfRes: 0.1, vcfEnv: 0.45, vcfKybd: 0.5, atk: 0.2, dec: 0.5, sus: 0.7, rel: 0.2, chorus: 1 } },
-    { name: 'Strings', values: { range: 1, pulse: 1, saw: 1, pwm: 0.5, pwmMode: 1, lfoRate: 0.18, sub: 0, vcfFreq: 0.62, vcfRes: 0.05, vcfEnv: 0.1, atk: 0.55, dec: 0.5, sus: 0.85, rel: 0.55, chorus: 3 } },
-    { name: 'Soft Pad', values: { range: 1, pulse: 1, saw: 0, pwm: 0.6, pwmMode: 1, lfoRate: 0.15, sub: 0.2, hpf: 1, vcfFreq: 0.45, vcfRes: 0.2, vcfEnv: 0.25, atk: 0.7, dec: 0.6, sus: 0.8, rel: 0.7, chorus: 2 } },
-    { name: 'Funk Bass', values: { range: 0, pulse: 1, saw: 0, pwm: 0, pwmMode: 0, sub: 0.7, hpf: 0, vcfFreq: 0.3, vcfRes: 0.4, vcfEnv: 0.6, vcfKybd: 0.3, atk: 0, dec: 0.5, sus: 0.1, rel: 0.2, chorus: 0 } },
-    { name: 'Sub Bass', values: { range: 0, pulse: 0, saw: 1, sub: 0.9, hpf: 0, vcfFreq: 0.28, vcfRes: 0.1, vcfEnv: 0.2, atk: 0.01, dec: 0.4, sus: 0.6, rel: 0.15, chorus: 0 } },
-    { name: 'Pluck', values: { range: 1, pulse: 1, saw: 1, pwm: 0.3, sub: 0.1, vcfFreq: 0.3, vcfRes: 0.3, vcfEnv: 0.6, atk: 0, dec: 0.52, sus: 0, rel: 0.35, chorus: 1 } },
-    { name: 'Wobble Lead', values: { range: 2, pulse: 1, saw: 1, pwm: 0.2, sub: 0, vcfFreq: 0.5, vcfRes: 0.45, vcfEnv: 0.2, vcfLfo: 0.35, lfoRate: 0.5, atk: 0.02, dec: 0.4, sus: 0.8, rel: 0.2, voiceMode: 2, portaOn: 1, portaTime: 0.25, chorus: 1 } },
-    { name: 'Vibrato Lead', values: { range: 1, pulse: 1, saw: 1, pwm: 0, sub: 0.15, dcoLfo: 0.25, lfoRate: 0.45, lfoDelay: 0.35, vcfFreq: 0.6, vcfRes: 0.2, vcfEnv: 0.3, atk: 0.02, dec: 0.5, sus: 0.8, rel: 0.2, voiceMode: 1, chorus: 2 } },
-    { name: 'Bell Tine', values: { range: 2, pulse: 1, saw: 0, pwm: 0.5, sub: 0, noise: 0.05, hpf: 2, vcfFreq: 0.7, vcfRes: 0.5, vcfEnv: 0.3, atk: 0, dec: 0.68, sus: 0, rel: 0.6, chorus: 3 } },
-    { name: 'Noise Sweep', values: { range: 1, pulse: 0, saw: 0, sub: 0, noise: 0.9, vcfFreq: 0.2, vcfRes: 0.6, vcfEnv: 0.7, atk: 0.65, dec: 0.8, sus: 0.3, rel: 0.6, chorus: 2 } }
-];
+export { JunoPreset, JUNO_PRESETS } from './juno-presets';
 
 const VOICES = 6;
 const MAX_CENTS = 9600;

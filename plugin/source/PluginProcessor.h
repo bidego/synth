@@ -54,6 +54,12 @@ public:
 
     juce::AudioProcessorValueTreeState apvts;
 
+    // Para la interfaz: teclado en pantalla, bender y rueda, y las voces sonando
+    juce::MidiKeyboardState keyboardState;
+    std::atomic<int> voices { 0 };
+    void setUiBend(float v) { uiBend_.store(v); }
+    void setUiMod(float v) { uiMod_.store(v); }
+
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createLayout();
     void syncParams();
@@ -63,6 +69,8 @@ private:
     std::array<std::atomic<float>*, juno::NumParams> params_ {};
     std::array<float, juno::NumParams> applied_ {};
     int program_ = 0;
+    std::atomic<float> uiBend_ { 0.f }, uiMod_ { 0.f };
+    float lastUiBend_ = 0.f, lastUiMod_ = 0.f;
     juce::MidiMessageCollector midiCollector_;
     std::unique_ptr<StandaloneMidi> standaloneMidi_;   // solo en la aplicacion independiente
 

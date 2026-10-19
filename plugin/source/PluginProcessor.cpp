@@ -1,4 +1,5 @@
 #include "PluginProcessor.h"
+#include "PluginEditor.h"
 #include <cmath>
 
 StandaloneMidi::StandaloneMidi(juce::MidiMessageCollector& collector) : collector_(collector)
@@ -144,6 +145,11 @@ void JunoProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuf
     syncParams();
     if (standaloneMidi_)
         midiCollector_.removeNextBlockOfMessages(midi, n);
+    // El teclado en pantalla y las ruedas de la interfaz
+    keyboardState.processNextMidiBuffer(midi, 0, n, true);
+    const float ub = uiBend_.load(), um = uiMod_.load();
+    if (ub != lastUiBend_) { lastUiBend_ = ub; engine_.setBend(ub); }
+    if (um != lastUiMod_) { lastUiMod_ = um; engine_.setModWheel(um); }
 
     float* left = buffer.getWritePointer(0);
     float* right = buffer.getWritePointer(1);
@@ -159,12 +165,12 @@ void JunoProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuf
     }
     if (n > pos)
         engine_.process(left + pos, right + pos, n - pos);
+    voices.store(engine_.activeVoices());
 }
 
 juce::AudioProcessorEditor* JunoProcessor::createEditor()
 {
-    // Primera version: el panel generico del anfitrion con todos los controles (el panel del Juno viene despues)
-    return new juce::GenericAudioProcessorEditor(*this);
+    return new JunoEditor(*this);
 }
 
 int JunoProcessor::getNumPrograms() { return int(juno::presets().size()); }

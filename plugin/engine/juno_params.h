@@ -29,7 +29,7 @@ struct ParamInfo {
 const ParamInfo& paramInfo(int id);
 
 struct PresetValue { int id; float value; };
-struct Preset { const char* name; std::vector<PresetValue> values; };
+struct Preset { const char* name; const char* category; std::vector<PresetValue> values; };
 
 /** Los sonidos de partida; los controles que no nombra un sonido vuelven a su valor por defecto. */
 const std::vector<Preset>& presets();

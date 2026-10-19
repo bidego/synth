@@ -44,7 +44,9 @@ interface Section {
         <span class="leds" title="Voces sonando"><i *ngFor="let n of leds" [class.on]="n < voices"></i></span>
         <select class="presets" (change)="module.loadPreset($event.target.value)" aria-label="Sonido">
             <option *ngIf="!module.presetName" selected>(editado)</option>
-            <option *ngFor="let p of presets; let i = index" [value]="i" [selected]="p.name == module.presetName">{{ p.name }}</option>
+            <optgroup *ngFor="let g of groups" [label]="g.name">
+                <option *ngFor="let p of g.items" [value]="p.index" [selected]="p.name == module.presetName">{{ p.name }}</option>
+            </optgroup>
         </select>
     </div>
     <p class="learnhint" *ngIf="module.learn">
@@ -130,7 +132,14 @@ interface Section {
 export class JunoDeviceComponent implements OnInit, OnDestroy {
     @Input() module: JunoModule;
 
-    public presets = JUNO_PRESETS;
+    // Los sonidos agrupados por categoria (en el orden en que aparecen)
+    public groups: Array<{ name: string; items: Array<{ name: string; index: number }> }> = JUNO_PRESETS.reduce((acc, p, index) => {
+        let g = acc.find(x => x.name == p.category);
+        if (!g)
+            acc.push(g = { name: p.category, items: [] });
+        g.items.push({ name: p.name, index });
+        return acc;
+    }, []);
     public leds = [0, 1, 2, 3, 4, 5];
     public voices = 0;
     public step = 1 / 127;
