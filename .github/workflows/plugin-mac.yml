@@ -1,0 +1,42 @@
+name: Juno 106 plugin (macOS)
+
+# A mano (Actions > Juno 106 plugin (macOS) > Run workflow) o al subir una etiqueta plugin-v*
+on:
+  workflow_dispatch:
+  push:
+    tags: ['plugin-v*']
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: plugin
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pruebas del motor de audio
+        run: |
+          cmake -S . -B build-tests -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-tests --target juno_tests -j 4
+          ./build-tests/juno_tests
+
+      - name: Compilar el plugin (VST3, AU y Standalone; Intel + Apple Silicon)
+        run: |
+          cmake -S . -B build -DJUNO_BUILD_PLUGIN=ON -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+          cmake --build build --config Release -j 4
+
+      - name: Firmar (ad hoc, sin cuenta de Apple) y empaquetar
+        run: |
+          mkdir -p out
+          find build -name "Juno 106.vst3" -o -name "Juno 106.component" -o -name "Juno 106.app" | while read -r b; do
+            codesign --force --deep --sign - "$b"
+            ditto -c -k --keepParent "$b" "out/$(basename "$b").zip"
+          done
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: juno106-macos
+          path: plugin/out/*.zip
