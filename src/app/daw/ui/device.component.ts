@@ -7,7 +7,7 @@ import { moduleMeta } from '../modules/registry';
     selector: 'app-device',
     template: `
 <div class="device" [class.selected]="rack.selectedId == module.id" (pointerdown)="rack.select(module.id)">
-    <app-panel [panelId]="'dev-' + module.id" [heading]="module.name">
+    <app-panel [panelId]="'dev-' + module.id" [heading]="module.name" [defaultOpen]="module.type == 'synth'">
         <span panel-meta>{{ meta?.label }}</span>
         <span panel-actions>
             <button class="ghost icon" (click)="rename()" title="Renombrar" aria-label="Renombrar"><app-icon name="edit" [size]="13"></app-icon></button>

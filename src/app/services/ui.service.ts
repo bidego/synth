@@ -15,14 +15,14 @@ export class UiService {
     // Modo visual: se oculta todo y queda solo el arte VJ de fondo
     public zen = false;
     // Panel lateral de sonidos
-    public sidebarOpen = true;
+    public sidebarOpen = false;
     // Vista del area principal: el rack (paneles frontales) o el cableado (grafo de cables)
     public view: 'rack' | 'patch' = 'rack';
     // Panel de ayuda con los atajos y menu de proyecto de la cabecera
     public helpOpen = false;
     public menuOpen = false;
     // Transporte: barra completa, compacta (una linea) o flotante (ventanita arrastrable)
-    public transportMode: 'full' | 'compact' | 'floating' = 'full';
+    public transportMode: 'full' | 'compact' | 'floating' = 'compact';
     // Linea de tiempo (debajo del transporte), colapsable
     public timelineOpen = true;
     public floatPos: { x: number; y: number } = { x: -1, y: -1 };   // -1: posicion por defecto (arriba a la derecha)
@@ -55,8 +55,6 @@ export class UiService {
                 window.addEventListener(name, () => this.lastInput = Date.now(), { passive: true, capture: true } as any));
             setInterval(() => this.tick(), TICK_MS);
         }
-        // En pantallas angostas el panel lateral es un cajon: arranca cerrado
-        this.sidebarOpen = !this.isNarrow();
         try {
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
             if (saved && typeof saved == 'object') {
