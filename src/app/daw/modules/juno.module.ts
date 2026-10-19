@@ -125,6 +125,7 @@ interface Voice {
     midi: number;
     id: string;
     freq: number;
+    connected: boolean;      // la voz esta enchufada al bus (las libres se desenchufan y no gastan procesador)
     held: boolean;           // la tecla sigue apretada
     sustained: boolean;      // soltada pero retenida por el pedal
     startT: number;
@@ -159,6 +160,8 @@ export class JunoModule extends RackModule {
     private bendVcfSrc: ConstantSourceNode;
     private bus: GainNode;
     private master: GainNode;
+    private glue: DynamicsCompressorNode;
+    private sweeper: any;
     private output: GainNode;
     private dryL: GainNode;
     private dryR: GainNode;
@@ -216,7 +219,15 @@ export class JunoModule extends RackModule {
         this.wetL.connect(merger, 0, 0);
         this.dryR.connect(merger, 0, 1);
         this.wetR.connect(merger, 0, 1);
-        merger.connect(this.master);
+        // Un compresor suave antes del volumen: los acordes de 6 voces y las colas de las notas no recortan
+        this.glue = ctx.createDynamicsCompressor();
+        this.glue.threshold.value = -14;
+        this.glue.knee.value = 12;
+        this.glue.ratio.value = 6;
+        this.glue.attack.value = 0.004;
+        this.glue.release.value = 0.18;
+        merger.connect(this.glue);
+        this.glue.connect(this.master);
         this.master.connect(this.output);
         this.output.connect(this.analyser);
         this.chorusLfo.start();
@@ -242,9 +253,29 @@ export class JunoModule extends RackModule {
 
         for (let i = 0; i < VOICES; i++)
             this.voices.push(this.buildVoice());
+        // En vivo, las voces libres se desenchufan: el navegador deja de calcularlas. Se vuelven a enchufar al tocar
+        if (env.live) {
+            this.voices.forEach(v => this.park(v));
+            this.sweeper = setInterval(() => this.sweep(), 400);
+        }
 
         JUNO_PARAMS.forEach(p => this.values[p.id] = p.default);
         JUNO_PARAMS.forEach(p => this.apply(p.id, p.default, true));
+    }
+
+    private park(v: Voice) {
+        if (v.connected) {
+            v.out.disconnect();
+            v.connected = false;
+        }
+    }
+
+    private sweep() {
+        const now = this.env.ctx.currentTime;
+        this.voices.forEach(v => {
+            if (v.connected && !v.held && !v.sustained && now > v.freeAt + 0.1)
+                this.park(v);
+        });
     }
 
     private buildEnv(): EnvState {
@@ -266,7 +297,7 @@ export class JunoModule extends RackModule {
             vca: g(), out: g(), lfoGain: g(), vibGain: g(), filtLfoGain: g(), pwmGain: g(), envGain: g(),
             kf: ctx.createConstantSource(),
             amp: this.buildEnv(), flt: this.buildEnv(),
-            midi: -1, id: '', freq: 440, held: false, sustained: false, startT: 0, freeAt: 0
+            midi: -1, id: '', freq: 440, connected: true, held: false, sustained: false, startT: 0, freeAt: 0
         };
         v.saw.type = 'sawtooth';
         v.sub.type = 'square';
@@ -287,7 +318,7 @@ export class JunoModule extends RackModule {
         v.sub.connect(v.subGain);
         this.noise.connect(v.noiseGain);
         const mix = g();
-        mix.gain.value = 0.3;
+        mix.gain.value = 0.14;
         [v.sawGain, v.pulseDirect, v.pulseNeg, v.subGain, v.noiseGain].forEach(n => n.connect(mix));
         mix.connect(v.shelf);
         v.shelf.connect(v.hpf);
@@ -414,7 +445,7 @@ export class JunoModule extends RackModule {
                 each(x => x.midi >= 0 && this.set(x.kf.offset, (x.midi - 60) * 100 * value, 0.02));
                 break;
             case 'vcaLevel':
-                this.set(this.master.gain, value * 0.9, 0.02);
+                this.set(this.master.gain, value * 1.25, 0.02);
                 break;
             case 'bendDco': case 'bendVcf':
                 this.applyBend();
@@ -559,6 +590,10 @@ export class JunoModule extends RackModule {
             v.amp.from = 0; v.amp.t0 = t + 0.005; v.amp.attack = 0.0001; v.amp.sustain = 0; v.amp.relT = t + 0.005; v.amp.relFrom = 0; v.amp.relTc = 0.01;
             t += 0.006;
         }
+        if (!v.connected) {
+            v.out.connect(this.bus);
+            v.connected = true;
+        }
         const f = this.noteFreq(midi);
         const prev = val.portaOn && this.lastFreq > 0 ? this.lastFreq : f;
         [[v.saw.frequency, f], [v.sub.frequency, f / 2]].forEach(pair => {
@@ -568,11 +603,14 @@ export class JunoModule extends RackModule {
             if (prev != f)
                 p.setTargetAtTime(pair[1] as number, t, Math.max(0.001, val.portaTime * val.portaTime));
         });
+        // Sin cancelar, cada nota deja eventos viejos en el parametro y la linea de tiempo crece sin limite
+        [v.saw.detune, v.sub.detune, v.out.gain, v.kf.offset].forEach(p => p.cancelScheduledValues(t));
         v.saw.detune.setValueAtTime(detune, t);
         v.sub.detune.setValueAtTime(detune, t);
         this.lastFreq = f;
         v.midi = midi; v.id = id; v.freq = f; v.held = true; v.sustained = false; v.startT = t; v.freeAt = Infinity;
-        v.out.gain.setValueAtTime(gain, t);
+        // La resonancia suma volumen (el pico del filtro): se compensa un poco
+        v.out.gain.setValueAtTime(gain * (1 - 0.4 * val.vcfRes), t);
         this.applyPwm(v);
         v.kf.offset.setValueAtTime((midi - 60) * 100 * val.vcfKybd, t);
 
@@ -700,6 +738,7 @@ export class JunoModule extends RackModule {
             [v.saw, v.sub, v.kf, v.amp.node, v.flt.node].forEach(stop);
             v.out.disconnect();
         });
+        clearInterval(this.sweeper);
         this.output.disconnect();
     }
 }
