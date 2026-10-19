@@ -52,7 +52,7 @@
 <main class="doc" id="contenido">
   <p class="eyebrow"><span class="dot"></span> Plugin · beta 0.1.0 · macOS</p>
   <h1>Juno 106</h1>
-  <p class="lead">El Juno-106 de Syntotec como plugin de verdad: <strong>VST3</strong>, <strong>Audio Unit</strong> (Logic y GarageBand) y <strong>aplicación independiente</strong>, para Mac con chip Apple o Intel. Es el mismo instrumento que el de la web, reescrito en C++ con <a href="https://juce.com" rel="noopener">JUCE</a>.</p>
+  <p class="lead">El Juno-106 de Syntotec como plugin de verdad: <strong>VST3</strong>, <strong>Audio Unit</strong> (Logic y GarageBand) y <strong>aplicación independiente</strong>, para Mac con chip Apple o Intel. <strong>Pro Tools no está soportado</strong>: solo carga plugins AAX. Es el mismo instrumento que el de la web, reescrito en C++ con <a href="https://juce.com" rel="noopener">JUCE</a>.</p>
 
   <div class="dl">
     <a class="btn btn-primary btn-lg" href="https://github.com/bidego/synth/releases/tag/plugin-v0.1.0" rel="noopener">Descargar 0.1.0</a>
@@ -145,7 +145,7 @@ cmake --build build --config Release</code></pre>
   <ul>
     <li>Panel propio con la imagen del Juno-106 (hoy: interfaz genérica del anfitrión).</li>
     <li>Windows y Linux (el código ya compila; falta armar los instaladores).</li>
-    <li>AAX para Pro Tools: requiere el SDK y la cuenta de desarrollador de Avid. RTAS ya no existe.</li>
+    <li>AAX para Pro Tools (hoy no carga: Pro Tools no abre VST3 ni Audio Unit). Requiere el SDK y el programa de desarrolladores de Avid, y firmar con las herramientas de PACE (iLok). RTAS ya no existe.</li>
     <li>Firmar y notarizar con una cuenta de Apple Developer, para que macOS no pida confirmaciones.</li>
   </ul>
   <p>¿Algo no anda? Contanos en las <a href="https://github.com/bidego/synth/issues" rel="noopener">incidencias de GitHub</a>.</p>
