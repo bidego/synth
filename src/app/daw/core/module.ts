@@ -1,4 +1,4 @@
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { ModuleEnv, NoteMsg, PortDef } from './types';
 import { setParam } from './audio';
 
@@ -25,6 +25,11 @@ export abstract class RackModule {
     public readonly noteOut = new Subject<NoteMsg>();
 
     constructor(protected env: ModuleEnv) {}
+
+    /** El flujo de notas de un puerto de salida (los modulos con varias salidas de notas lo redefinen). */
+    noteOutFor(port: string): Observable<NoteMsg> {
+        return this.noteOut;
+    }
 
     /** Cambia un parametro de audio (suave en vivo, inmediato en el render offline). */
     protected set(param: AudioParam, value: number, timeConstant = 0.02) {

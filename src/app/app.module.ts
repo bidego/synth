@@ -12,6 +12,7 @@ import { PanelComponent } from './ui/panel.component';
 import { KnobComponent } from './ui/knob.component';
 import { FaderComponent } from './ui/fader.component';
 import { JunoSliderComponent } from './ui/juno-slider.component';
+import { SequencerDeviceComponent } from './daw/ui/sequencer-device.component';
 import { JunoDeviceComponent } from './daw/ui/juno-device.component';
 import { LooperComponent } from './synth/looper.component';
 import { TransportService } from './daw/core/transport.service';
@@ -62,6 +63,7 @@ import { ListenKeys } from './directives/listen.keys';
     FaderComponent,
     JunoSliderComponent,
     JunoDeviceComponent,
+    SequencerDeviceComponent,
     RollEditorComponent,
     VisualizerComponent,
     ListenKeys

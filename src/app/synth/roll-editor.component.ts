@@ -1,6 +1,5 @@
 import { Component, ElementRef, Input, ViewChild, DoCheck, HostListener } from '@angular/core';
-import { Track, LoopNote } from '../daw/core/sequencer';
-import { SynthStudioModule } from '../daw/modules/synth-studio.module';
+import { LoopNote } from '../daw/core/sequencer';
 import { RackService } from '../daw/core/rack.service';
 import { isTyping } from '../daw/core/dom';
 import { noteName } from '../services/keyboard-map';
@@ -8,6 +7,14 @@ import { GM_DRUM_SHORT, KIT_NOTE_OFFSET } from '../services/gm';
 import { DRUM_NAMES } from './drums';
 
 type Tool = 'select' | 'draw';
+
+/** Lo que el editor necesita de una pista: sirve la del Synth Studio y la del secuenciador de notas (que no tiene patch). */
+interface Track {
+    id: number;
+    name: string;
+    notes: Array<LoopNote>;
+    patch?: { kind?: string; name?: string };
+}
 
 interface Drag {
     kind: 'move' | 'resize' | 'draw' | 'rubber' | 'velocity';
@@ -66,7 +73,7 @@ export class RollEditorComponent implements DoCheck {
     private future: Array<Array<LoopNote>> = [];
     private drag: Drag = null;
 
-    @Input() module: SynthStudioModule;
+    @Input() module: { id: string; sequencer: any };
 
     constructor(private rack: RackService) {}
 
@@ -151,9 +158,9 @@ export class RollEditorComponent implements DoCheck {
 
     rowLabel(midi: number): string {
         const t = this.track;
-        if (t && t.patch.kind == 'kit')
+        if (t && t.patch && t.patch.kind == 'kit')
             return GM_DRUM_SHORT[midi - KIT_NOTE_OFFSET] || noteName(midi);
-        if (t && t.patch.kind == 'drums')
+        if (t && t.patch && t.patch.kind == 'drums')
             return DRUM_NAMES[midi % 12];
         return noteName(midi);
     }

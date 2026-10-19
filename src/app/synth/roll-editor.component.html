@@ -1,6 +1,6 @@
 <div class="editor" *ngIf="track as t">
     <div class="bar">
-        <b>Editando {{ t.name }} <small>{{ t.patch.name }}</small></b>
+        <b>Editando {{ t.name }} <small *ngIf="t.patch">{{ t.patch.name }}</small></b>
         <span class="seg">
             <button [class.on]="tool == 'select'" (click)="setTool('select')" title="Seleccionar y mover">Seleccion</button>
             <button [class.on]="tool == 'draw'" (click)="setTool('draw')" title="Clic en un espacio vacio para crear una nota">Lapiz</button>

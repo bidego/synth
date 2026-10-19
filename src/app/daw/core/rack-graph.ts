@@ -145,7 +145,7 @@ export class RackGraph {
                 return { ok: false, error: 'El puerto no tiene audio' };
             out.connect(input);
         } else {
-            this.noteSubs.set(cable.id, from.noteOut.subscribe(msg => to.receive(msg, toPort)));
+            this.noteSubs.set(cable.id, from.noteOutFor(cable.fromPort).subscribe(msg => to.receive(msg, toPort)));
         }
         this.cables.push(cable);
         this.env.changed();

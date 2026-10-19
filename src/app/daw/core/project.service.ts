@@ -8,6 +8,7 @@ import { ModuleEnv } from './types';
 import { SampleLibrary } from '../../services/sample-library';
 import { encodeWav } from '../../services/wav';
 import { SynthStudioModule } from '../modules/synth-studio.module';
+import { SequencerModule } from '../modules/sequencer.module';
 import { SHARE_PREFIX, SHARE_SOFT_LIMIT, encodeShare, decodeShare } from './share';
 
 const SHORT_PREFIX = '#c=';
@@ -420,7 +421,8 @@ export class ProjectService {
     private keepCurrentSession() {
         const cur = this.toProject();
         const hasNotes = cur.rack && Array.isArray(cur.rack.modules) && cur.rack.modules.some((m: any) =>
-            m && m.type == 'synth' && m.state && m.state.sequencer && (m.state.sequencer.tracks || []).some((t: any) => t.notes && t.notes.length));
+            m && ((m.type == 'synth' && m.state && m.state.sequencer && (m.state.sequencer.tracks || []).some((t: any) => t.notes && t.notes.length))
+                || (m.type == 'sequencer' && m.state && (m.state.tracks || []).some((t: any) => t.notes && t.notes.length))));
         if (!hasNotes)
             return;
         const all = this.read(STORAGE_PROJECTS) || {};
@@ -463,7 +465,8 @@ export class ProjectService {
      */
     async exportWav() {
         const synths = this.rack.synths.filter(s => s.sequencer.hasNotes());
-        if (this.exporting || !synths.length) {
+        const seqs = this.rack.sequencers.filter(s => s.sequencer.hasNotes());
+        if (this.exporting || (!synths.length && !seqs.length)) {
             this.message = 'No hay nada para exportar (ningun instrumento tiene notas grabadas)';
             return;
         }
@@ -496,6 +499,7 @@ export class ProjectService {
             const graph = new RackGraph(env);
             graph.setState(this.rack.getState());
             graph.ofType<SynthStudioModule>('synth').forEach(s => s.sequencer.renderPasses(this.exportPasses));
+            graph.ofType<SequencerModule>('sequencer').forEach(s => s.sequencer.renderPasses(this.exportPasses));
             this.scheduleAutomation(offline, graph, seconds);
             const rendered = await offline.startRendering();
             graph.dispose();

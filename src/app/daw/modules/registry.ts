@@ -1,6 +1,7 @@
 import { RackModule } from '../core/module';
 import { ModuleEnv, ModuleMeta } from '../core/types';
 import { SynthStudioModule } from './synth-studio.module';
+import { SequencerModule } from './sequencer.module';
 import { JunoModule } from './juno.module';
 import { MixerModule } from './mixer.module';
 import { OutputModule } from './output.module';
@@ -14,6 +15,8 @@ export const MODULE_META: ReadonlyArray<ModuleMeta> = [
       description: 'Sintetizador, sampler y baterias con secuenciador propio' },
     { type: 'juno', label: 'Juno-106', category: 'instrument',
       description: 'Sintetizador polifonico de 6 voces: DCO, filtro de 24 dB, LFO y chorus' },
+    { type: 'sequencer', label: 'Secuenciador', category: 'instrument',
+      description: '4 pistas de notas en loop con piano roll; cada pista sale por su cable a un instrumento' },
     { type: 'keyboard', label: 'Teclado / MIDI', category: 'io',
       description: 'Convierte el teclado de la computadora y el MIDI en notas' },
     { type: 'output', label: 'Salida de audio', category: 'io', unique: true,
@@ -47,6 +50,7 @@ export function moduleMeta(type: string): ModuleMeta | undefined {
 export function createModule(type: string, env: ModuleEnv): RackModule | null {
     switch (type) {
         case 'synth': return new SynthStudioModule(env);
+        case 'sequencer': return new SequencerModule(env);
         case 'juno': return new JunoModule(env);
         case 'keyboard': return new KeyboardModule(env);
         case 'output': return new OutputModule(env);

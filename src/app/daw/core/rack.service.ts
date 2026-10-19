@@ -9,6 +9,7 @@ import { SampleLibrary } from '../../services/sample-library';
 import { SoundService } from '../../services/sound.service';
 import { MidiService } from '../../services/midi.service';
 import { SynthStudioModule } from '../modules/synth-studio.module';
+import { SequencerModule } from '../modules/sequencer.module';
 import { OutputModule } from '../modules/output.module';
 import { MixerModule, MIXER_CHANNELS, AUX_BUSES } from '../modules/mixer.module';
 import { EffectModule } from '../modules/effect.module';
@@ -56,6 +57,10 @@ export class RackService {
 
     get synths(): Array<SynthStudioModule> {
         return this.graph.ofType<SynthStudioModule>('synth');
+    }
+
+    get sequencers(): Array<SequencerModule> {
+        return this.graph.ofType<SequencerModule>('sequencer');
     }
 
     /** Los instrumentos que reciben notas por cable (Synth Studio y Juno-106). */
@@ -192,8 +197,13 @@ export class RackService {
                 // El teclado ya toca a otro instrumento: no se agrega solo para que no suenen los dos
                 this.message = '"' + m.name + '" no recibe el teclado todavia: activalo en el panel del instrumento o del Teclado / MIDI';
             this.wireAudioOut(m, 'out');
+        } else if (m.type == 'sequencer') {
+            // La primera pista toca al primer instrumento que todavia no recibe notas de nadie
+            const free = this.notePlayers.find(s => s.type != 'sequencer' && !g.cablesOf(s.id, 'notes').length);
+            if (free)
+                g.connect(m.id, 'out1', free.id, 'notes');
         } else if (m.type == 'keyboard') {
-            const free = this.notePlayers.find(s => !g.cablesOf(s.id, 'notes').length);
+            const free = this.notePlayers.find(s => s.type != 'sequencer' && !g.cablesOf(s.id, 'notes').length);
             if (free)
                 g.connect(m.id, 'notes', free.id, 'notes');
         } else if (m.type == 'mixer') {
@@ -304,7 +314,8 @@ export class RackService {
     // (si esta conectado), si no el primero conectado, y en ultimo caso el activo (se toca con su piano).
     private ensureArmed() {
         const receives = (s: SynthStudioModule) => this.noteSources(s.id).length > 0;
-        if (this.armedSynths.some(receives))
+        // Un secuenciador de notas armado ya recibe lo que se toca
+        if (this.armedSynths.some(receives) || this.sequencers.some(s => s.sequencer.armed))
             return;
         const selected = this.selected && this.selected.type == 'synth' ? this.selected as SynthStudioModule : null;
         const target = (selected && receives(selected) ? selected : null)
@@ -322,6 +333,7 @@ export class RackService {
             return false;
         const oldLoop = this.transport.loopBeats;
         this.synths.forEach(s => s.sequencer.doubleNotes(oldLoop));
+        this.sequencers.forEach(s => s.sequencer.doubleNotes(oldLoop));
         this.transport.setBars(next);
         return true;
     }
