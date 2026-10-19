@@ -36,13 +36,23 @@ interface Section {
         <span class="logo">JUNO-106</span>
         <span class="sub">POLYPHONIC SYNTHESIZER</span>
         <span class="stripe"><i></i><i></i><i></i><i></i></span>
+        <span class="learn">
+            <button [class.on]="module.learn" (click)="module.setLearn(!module.learn)" title="Asigna las perillas de tu controlador MIDI a los controles del panel">MIDI Learn</button>
+            <button *ngIf="module.learn" (click)="module.clearCcMap()" title="Borra todas las asignaciones">Borrar</button>
+            <small *ngIf="module.lastCc" title="Lo ultimo que mando el controlador">{{ module.lastCc }}</small>
+        </span>
         <span class="leds" title="Voces sonando"><i *ngFor="let n of leds" [class.on]="n < voices"></i></span>
         <select class="presets" (change)="module.loadPreset($event.target.value)" aria-label="Sonido">
             <option *ngIf="!module.presetName" selected>(editado)</option>
             <option *ngFor="let p of presets; let i = index" [value]="i" [selected]="p.name == module.presetName">{{ p.name }}</option>
         </select>
     </div>
-    <div class="panel-row">
+    <p class="learnhint" *ngIf="module.learn">
+        <b>MIDI Learn:</b> toca un control del panel (queda resaltado) y mueve la perilla o el fader de tu controlador que quieras asignarle.
+        <ng-container *ngIf="module.learnTarget">Esperando una perilla para <b>{{ label(module.learnTarget) }}</b>&hellip;</ng-container>
+        Vuelve a tocar "MIDI Learn" para terminar.
+    </p>
+    <div class="panel-row" [class.learning]="module.learn">
         <div class="bender" title="Bender (vuelve al centro al soltarlo)">
             <span class="head">Bender</span>
             <input #bender type="range" min="-1" max="1" step="0.01" value="0" aria-label="Bender"
@@ -52,14 +62,15 @@ interface Section {
         <section class="sec" *ngFor="let s of sections">
             <span class="head"><i></i>{{ s.name }}<i></i></span>
             <div class="body">
-                <div class="sl" *ngFor="let id of s.sliders">
+                <div class="sl" *ngFor="let id of s.sliders" [class.target]="module.learnTarget == id" (click)="pick(id)">
                     <app-juno-slider [length]="112" [value]="module.values[id]" [min]="0" [max]="1" [step]="step" [default]="def(id)" [format]="fmt"
                         [autoModule]="module.id" [autoParam]="'p.' + id" [ariaLabel]="label(id)" [label]="label(id)" (valueChange)="module.setParam(id, $event)"></app-juno-slider>
-                    <span class="lab">{{ label(id) }}</span>
+ <span class="lab">{{ label(id) }}</span>
+                    <span class="cc" *ngIf="module.ccFor(id) !== null" [title]="'Asignado al CC ' + module.ccFor(id)">CC{{ module.ccFor(id) }}</span>
                 </div>
                 <div class="sws" *ngIf="s.switches.length">
-                    <div class="sw" *ngFor="let w of s.switches">
-                        <span class="lab">{{ w.label }}</span>
+                    <div class="sw" *ngFor="let w of s.switches" [class.target]="module.learnTarget == w.id" (click)="pick(w.id)">
+                        <span class="lab">{{ w.label }}<span class="cc" *ngIf="module.ccFor(w.id) !== null" [title]="'Asignado al CC ' + module.ccFor(w.id)">CC{{ module.ccFor(w.id) }}</span></span>
                         <span class="opts">
                             <button *ngFor="let o of w.opts" [class.on]="module.values[w.id] == o.v" (click)="module.setParam(w.id, o.v)">{{ o.l }}</button>
                         </span>
@@ -94,7 +105,7 @@ interface Section {
 .head i { flex: 1; height: 1px; background: #8c8d92; min-width: 6px; }
 .body { display: flex; gap: 6px; align-items: flex-start; }
 .sl { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 50px; }
-.lab { font: 600 9px/1.1 var(--font); letter-spacing: 0.08em; text-transform: uppercase; color: #c9c9c4; text-align: center; }
+.lab { margin-top: 6px; font: 600 9px/1.1 var(--font); letter-spacing: 0.08em; text-transform: uppercase; color: #c9c9c4; text-align: center; }
 .sws { display: flex; flex-direction: column; gap: 9px; margin-left: 6px; padding-top: 2px; }
 .sw { display: flex; flex-direction: column; gap: 3px; }
 .opts { display: inline-flex; gap: 2px; }
@@ -102,6 +113,16 @@ interface Section {
     font: 700 10px var(--font); letter-spacing: 0.04em; }
 .opts button:hover { color: #fff; border-color: #8c8d92; }
 .opts button.on { background: #d8402a; border-color: #ff7a5e; color: #fff; box-shadow: 0 0 6px rgba(255, 74, 46, 0.5); }
+.learn { display: inline-flex; align-items: center; gap: 6px; margin-left: 14px; }
+.learn button { padding: 3px 9px; background: #1b1c1f; color: #c9c9c4; border: 1px solid #5a5b5f; border-radius: 3px; font: 700 10px var(--font); letter-spacing: 0.06em; text-transform: uppercase; }
+.learn button.on { background: #2a7de1; border-color: #7fb4ff; color: #fff; box-shadow: 0 0 6px rgba(42, 125, 225, 0.6); }
+.learn small { font: 10px var(--mono); color: #9fd0ff; }
+.learnhint { margin: 0 0 8px; padding: 6px 10px; border-left: 3px solid #2a7de1; background: rgba(42, 125, 225, 0.12); font-size: 12px; color: #d8e6f8; }
+.cc { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 3px; background: #2a7de1; color: #fff; font: 700 8px/12px var(--mono); letter-spacing: 0; }
+.learning .sl, .learning .sw { cursor: pointer; border-radius: 4px; outline: 1px dashed rgba(127, 180, 255, 0.35); outline-offset: 2px; }
+.learning .sl > *, .learning .sw > * { pointer-events: none; }
+.learning .sl:hover, .learning .sw:hover { outline-color: #7fb4ff; }
+.learning .target { outline: 2px solid #2a7de1; background: rgba(42, 125, 225, 0.22); }
 .bender { display: flex; flex-direction: column; justify-content: flex-start; gap: 10px; padding-right: 8px; }
 .bender input { width: 88px; accent-color: #ee8a1d; }
 `]
@@ -142,6 +163,12 @@ export class JunoDeviceComponent implements OnInit, OnDestroy {
     }
 
     fmt = (v: number) => (v * 10).toFixed(1);
+
+    /** En modo learn, un clic en un control lo deja esperando una perilla del controlador. */
+    pick(id: string) {
+        if (this.module.learn)
+            this.module.selectLearn(id);
+    }
 
     label(id: string): string {
         return JUNO_PARAMS.find(p => p.id == id).label;

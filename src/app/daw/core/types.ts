@@ -28,6 +28,8 @@ export type NoteMsg =
     | { type: 'off'; midi: number; when?: number; id?: string }
     | { type: 'sustain'; on: boolean }
     | { type: 'bend'; cents: number }
+    // Control change de un controlador MIDI (perillas y faders): `value` va de 0 a 127
+    | { type: 'cc'; cc: number; value: number }
     | { type: 'allOff' };
 
 /** Lo que los modulos necesitan saber del transporte (en vivo o una copia fija para el render offline). */

@@ -178,6 +178,12 @@ export class JunoModule extends RackModule {
     private sustain = false;
     private stack: Array<number> = [];   // notas apretadas (modo Unison)
 
+    // MIDI learn: cada control (CC) del controlador puede mover un control del panel
+    public learn = false;
+    public learnTarget: string = null;                  // el control del panel que espera su perilla
+    public ccMap: { [cc: number]: string } = {};        // CC -> id del control
+    public lastCc = '';                                  // el ultimo CC que llego (para ver que manda cada perilla)
+
     constructor(env: ModuleEnv) {
         super(env);
         const ctx = env.ctx;
@@ -534,8 +540,53 @@ export class JunoModule extends RackModule {
                 this.bend = Math.max(-1, Math.min(1, msg.cents / BEND_FULL));
                 this.applyBend();
                 break;
+            case 'cc': this.handleCc(msg.cc, msg.value); break;
             case 'allOff': this.allNotesOff(); break;
         }
+    }
+
+    // --- MIDI learn ---
+
+    setLearn(on: boolean) {
+        this.learn = on;
+        this.learnTarget = null;
+    }
+
+    /** En modo learn: elige el control del panel al que se le va a asignar la proxima perilla. */
+    selectLearn(id: string) {
+        this.learnTarget = this.learnTarget == id ? null : id;
+    }
+
+    /** El CC asignado a un control (o null). */
+    ccFor(id: string): number {
+        const cc = Object.keys(this.ccMap).find(k => this.ccMap[+k] == id);
+        return cc === undefined ? null : +cc;
+    }
+
+    clearCcMap() {
+        this.ccMap = {};
+        this.learnTarget = null;
+        this.env.changed();
+    }
+
+    private handleCc(cc: number, value: number) {
+        if (!isFinite(cc) || !isFinite(value))
+            return;
+        this.lastCc = 'CC ' + cc + ' = ' + Math.round(value);
+        if (this.learn && this.learnTarget) {
+            // Un CC mueve un solo control y un control tiene un solo CC
+            Object.keys(this.ccMap).forEach(k => { if (this.ccMap[+k] == this.learnTarget || +k == cc) delete this.ccMap[+k]; });
+            this.ccMap[cc] = this.learnTarget;
+            this.learnTarget = null;
+            this.env.changed();
+        }
+        const id = this.ccMap[cc];
+        const def = id && JUNO_PARAMS.find(p => p.id == id);
+        if (!def)
+            return;
+        const norm = Math.max(0, Math.min(127, value)) / 127;
+        // Los interruptores se reparten en tramos iguales del recorrido de la perilla
+        this.setParam(id, def.kind == 'slider' ? norm : Math.min(def.max, Math.floor(norm * (def.max + 1) * 0.9999)));
     }
 
     /** La palanca del panel: -1..1 (vuelve al centro al soltarla). */
@@ -715,7 +766,7 @@ export class JunoModule extends RackModule {
     }
 
     getState() {
-        return { values: this.values, preset: this.presetName };
+        return { values: this.values, preset: this.presetName, cc: this.ccMap };
     }
 
     setState(raw: any) {
@@ -728,6 +779,13 @@ export class JunoModule extends RackModule {
             this.apply(p.id, v, true);
         });
         this.presetName = typeof raw.preset == 'string' ? raw.preset : '';
+        this.ccMap = {};
+        if (raw.cc && typeof raw.cc == 'object')
+            Object.keys(raw.cc).forEach(k => {
+                const cc = +k;
+                if (cc >= 0 && cc <= 127 && cc == Math.round(cc) && JUNO_PARAMS.some(p => p.id == raw.cc[k]))
+                    this.ccMap[cc] = raw.cc[k];
+            });
     }
 
     dispose() {

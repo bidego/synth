@@ -66,6 +66,8 @@ export class MidiService {
                 this.messages.next({ type: 'sustain', on: d2 >= 64 });
             else if (d1 == 120 || d1 == 123)
                 this.messages.next({ type: 'allOff' });
+            else
+                this.messages.next({ type: 'cc', cc: d1, value: d2 });
         } else if (status == 0xE0) {
             // Pitch bend: 14 bits, 8192 = centro
             const value = ((d2 << 7) | d1) - 8192;
