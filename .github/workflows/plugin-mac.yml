@@ -7,7 +7,7 @@ permissions:
 on:
   workflow_dispatch:
   push:
-    tags: ['plugin-v*']
+    tags: ['plugin-v*', 'plugin-test*']
 
 jobs:
   mac:
@@ -42,6 +42,33 @@ jobs:
           pack "Juno 106.component" Juno106-AU-macOS.zip
           pack "Juno 106.app" Juno106-Standalone-macOS.zip
           ls -la out
+
+      # Diagnostico: lo que dicen los validadores sobre el plugin (no frena el build; el resultado queda en el artefacto)
+      - name: Validar el Audio Unit (auval) y el VST3 (pluginval)
+        continue-on-error: true
+        run: |
+          mkdir -p diag
+          AU=$(find build -name "Juno 106.component" | head -1)
+          VST=$(find build -name "Juno 106.vst3" | head -1)
+          { echo "== firma =="; codesign -dvv "$AU" 2>&1; codesign --verify --deep --strict --verbose=2 "$AU" 2>&1; echo; } > diag/firma.log || true
+          mkdir -p ~/Library/Audio/Plug-Ins/Components ~/Library/Audio/Plug-Ins/VST3
+          cp -R "$AU" ~/Library/Audio/Plug-Ins/Components/
+          cp -R "$VST" ~/Library/Audio/Plug-Ins/VST3/
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          sleep 3
+          { echo "== auval -a =="; auval -a 2>&1 | grep -iE "syntotec|juno|Jn06" || echo "(el Audio Unit no aparece en la lista)"; } > diag/auval.log 2>&1 || true
+          { echo "== auval -v aumu Jn06 Synt =="; auval -v aumu Jn06 Synt 2>&1; } >> diag/auval.log || true
+          curl -sL -o pluginval.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
+          unzip -q -o pluginval.zip
+          { echo "== pluginval (VST3, nivel 5) =="; ./pluginval.app/Contents/MacOS/pluginval --strictness-level 5 --validate-in-process --skip-gui-tests "$VST" 2>&1; } > diag/pluginval.log || true
+          tail -n 60 diag/auval.log
+          tail -n 40 diag/pluginval.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: juno106-diagnostico
+          path: plugin/diag/*.log
 
       - uses: actions/upload-artifact@v4
         with:
