@@ -48,3 +48,8 @@ Thumbs.db
 # Backend: secretos y datos locales
 .env
 server/data/
+
+# app de escritorio
+/desktop/node_modules
+/desktop/app
+/desktop/dist

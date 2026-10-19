@@ -11,6 +11,12 @@ import { SynthStudioModule } from '../modules/synth-studio.module';
 import { SequencerModule } from '../modules/sequencer.module';
 import { SHARE_PREFIX, SHARE_SOFT_LIMIT, encodeShare, decodeShare } from './share';
 
+/** El origen de la web para los enlaces: en la app de escritorio la pagina no es publica (syntotec://), asi que los enlaces apuntan a la web. */
+function webOrigin(): string {
+    const desktop = (window as any).syntotecDesktop;
+    return desktop && desktop.webOrigin ? desktop.webOrigin : location.origin;
+}
+
 const SHORT_PREFIX = '#c=';
 const PUBLIC_PREFIX = '#p=';
 const DEMO_PREFIX = '#demo=';
@@ -295,7 +301,7 @@ export class ProjectService {
      * sin servidor, o si falla, lleva toda la sesion adentro (#s=...) y funciona sin ningun servidor.
      */
     async buildShareLink(): Promise<string> {
-        const base = location.origin + location.pathname + location.search;
+        const base = webOrigin() + location.pathname + location.search;
         const project = this.toProject();
         const code = await this.sync.createShare((this.projectName || 'Sesion compartida').slice(0, 40), project);
         if (code) {
@@ -383,7 +389,7 @@ export class ProjectService {
 
     /** Enlace publico directo a la app con el proyecto abierto. */
     publicLink(pid: string): string {
-        return location.origin + location.pathname + PUBLIC_PREFIX + pid;
+        return webOrigin() + location.pathname + PUBLIC_PREFIX + pid;
     }
 
     /** Publica un proyecto guardado (o actualiza su autor y descripcion). Devuelve el mensaje de error, o '' si salio bien. */

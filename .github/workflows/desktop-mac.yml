@@ -1,0 +1,54 @@
+name: Syntotec para macOS
+
+# Se corre a mano (Actions > Syntotec para macOS > Run workflow) o al subir una etiqueta desktop-v*
+on:
+  workflow_dispatch:
+  push:
+    tags: ['desktop-v*']
+
+jobs:
+  web:
+    # La web (Angular 8) se compila con Node 12, igual que en el Dockerfile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 12
+      - run: npm ci
+      - name: Compilar la web
+        run: |
+          printf "export const BUILD_COMMIT = '%s';\nexport const BUILD_DATE = '%s';\n" "$(git rev-parse --short HEAD)-escritorio" "$(date -u '+%Y-%m-%d %H:%M UTC')" > src/app/build-info.ts
+          npx ng build --prod --aot=false --build-optimizer=false --base-href /app/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: dist/syntotec-app
+
+  mac:
+    needs: web
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          name: web
+          path: web-dist
+      - name: Empaquetar
+        working-directory: desktop
+        env:
+          WEB_DIST: ${{ github.workspace }}/web-dist
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'   # sin firma: hace falta una cuenta de Apple Developer para firmar
+        run: |
+          npm install --no-audit --no-fund
+          npm test
+          npm run dist:mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: syntotec-macos
+          path: |
+            desktop/dist/*.dmg
+            desktop/dist/*.zip
