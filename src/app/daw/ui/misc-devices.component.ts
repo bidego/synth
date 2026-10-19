@@ -63,7 +63,7 @@ export class KeyboardDeviceComponent {
     constructor(public rack: RackService, public midi: MidiService) {}
 
     get synths() {
-        return this.rack.synths;
+        return this.rack.notePlayers;
     }
 }
 

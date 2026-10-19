@@ -58,6 +58,11 @@ export class RackService {
         return this.graph.ofType<SynthStudioModule>('synth');
     }
 
+    /** Los instrumentos que reciben notas por cable (Synth Studio y Juno-106). */
+    get notePlayers(): Array<RackModule> {
+        return this.graph.modules.filter(m => m.ports.some(p => p.id == 'notes' && p.dir == 'in'));
+    }
+
     get selected(): RackModule | undefined {
         return this.graph.find(this.selectedId);
     }
@@ -129,7 +134,7 @@ export class RackService {
         list.splice(list.indexOf(copy), 1);
         list.splice(list.indexOf(src) + 1, 0, copy);
         this.message = '';
-        if (copy.type == 'synth')
+        if (copy.type == 'synth' || copy.type == 'juno')
             this.wireAudioOut(copy, 'out');
         this.selectedId = copy.id;
         this.changed.next();
@@ -179,7 +184,7 @@ export class RackService {
     // Los dispositivos nuevos se enchufan solos a donde es razonable; despues se re-cablea a gusto
     private autoWire(m: RackModule) {
         const g = this.graph;
-        if (m.type == 'synth') {
+        if (m.type == 'synth' || m.type == 'juno') {
             const kb = g.ofType('keyboard')[0];
             if (kb && !g.cablesOf(kb.id, 'notes').length)
                 g.connect(kb.id, 'notes', m.id, 'notes');
@@ -188,7 +193,7 @@ export class RackService {
                 this.message = '"' + m.name + '" no recibe el teclado todavia: activalo en el panel del instrumento o del Teclado / MIDI';
             this.wireAudioOut(m, 'out');
         } else if (m.type == 'keyboard') {
-            const free = this.synths.find(s => !g.cablesOf(s.id, 'notes').length);
+            const free = this.notePlayers.find(s => !g.cablesOf(s.id, 'notes').length);
             if (free)
                 g.connect(m.id, 'notes', free.id, 'notes');
         } else if (m.type == 'mixer') {
