@@ -7,7 +7,7 @@ import { moduleMeta } from '../modules/registry';
     selector: 'app-device',
     template: `
 <div class="device" [class.selected]="rack.selectedId == module.id" (pointerdown)="rack.select(module.id)">
-    <app-panel [panelId]="'dev-' + module.id" [heading]="module.name">
+    <app-panel [panelId]="'dev-' + module.id" [heading]="module.name" [defaultOpen]="module.type == 'synth' || module.type == 'juno'">
         <span panel-meta>{{ meta?.label }}</span>
         <span panel-actions>
             <button class="ghost icon" (click)="rename()" title="Renombrar" aria-label="Renombrar"><app-icon name="edit" [size]="13"></app-icon></button>
@@ -18,6 +18,7 @@ import { moduleMeta } from '../modules/registry';
         </span>
         <ng-container [ngSwitch]="module.type">
             <app-synth-device *ngSwitchCase="'synth'" [module]="module"></app-synth-device>
+            <app-juno-device *ngSwitchCase="'juno'" [module]="module"></app-juno-device>
             <app-mixer-device *ngSwitchCase="'mixer'" [module]="module"></app-mixer-device>
             <app-keyboard-device *ngSwitchCase="'keyboard'" [module]="module"></app-keyboard-device>
             <app-output-device *ngSwitchCase="'output'" [module]="module"></app-output-device>
