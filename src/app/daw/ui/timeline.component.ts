@@ -56,7 +56,9 @@ export class TimelineComponent implements OnInit, OnDestroy, AfterViewChecked {
         if (!this.ui.timelineOpen)
             return;
         const synths = this.rack.synths;
-        const sig = synths.map(s => s.id + ':' + s.name + ':' + s.sequencer.notesVersion + ':'
+        const seqs = this.rack.sequencers;
+        const sig = seqs.map(s => s.id + ':' + s.name + ':' + s.sequencer.notesVersion + ':' + this.rack.cables.filter(c => c.fromModule == s.id).map(c => c.fromPort + '>' + c.toModule).join(',') + ':'
+            + s.sequencer.tracks.map(t => t.id + t.name + (t.muted ? 'm' : '') + t.notes.length).join(',')).join('|') + '@' + synths.map(s => s.id + ':' + s.name + ':' + s.sequencer.notesVersion + ':'
             + s.sequencer.tracks.map(t => t.id + (t.muted ? 'm' : '') + t.notes.length).join(',')).join('|') + '#' + this.transport.loopBeats
             + '#' + this.automation.lanes.map(l => l.module + l.param + l.points.length + (l.enabled ? 'e' : 'd')).join(',');
         if (sig === this.sig)
@@ -70,12 +72,31 @@ export class TimelineComponent implements OnInit, OnDestroy, AfterViewChecked {
             muted: t.muted,
             notes: t.notes.map(n => ({ start: n.start, dur: n.dur, midi: n.midi }))
         })));
+        // Las pistas del secuenciador de notas: "Secuenciador 1 · Pista 1 → Juno-106 1"
+        seqs.forEach((s, si) => s.sequencer.tracks.forEach(t => {
+            if (!t.notes.length && t.id > 1)
+                return;
+            const dest = this.destNames(s, t.id);
+            lanes.push({
+                key: s.id + ':' + t.id,
+                label: (seqs.length > 1 ? s.name + ' · ' : '') + t.name + (dest ? ' \u2192 ' + dest : ''),
+                muted: t.muted,
+                notes: t.notes.map(n => ({ start: n.start, dur: n.dur, midi: n.midi }))
+            });
+        }));
         this.automation.lanes.forEach(l => {
             const r = this.automation.range(l);
             lanes.push({ key: 'a:' + l.module + l.param, label: this.automation.shortLabel(l), tip: this.automation.label(l), muted: !l.enabled, notes: [], auto: l, min: r.min, max: r.max });
         });
         this.lanes = lanes;
         this.dirty = true;
+    }
+
+    /** A que instrumentos sale una pista del secuenciador de notas. */
+    private destNames(seq: { id: string }, trackId: number): string {
+        const g = this.rack.graph;
+        return g.cables.filter(c => c.fromModule == seq.id && c.fromPort == 'out' + trackId)
+            .map(c => { const m = g.find(c.toModule); return m ? m.name : '?'; }).join(', ');
     }
 
     get shownLanes(): Array<Lane> {

@@ -28,7 +28,7 @@ export class NoteSequencer implements TransportClient {
     // Sube con cada cambio de notas: el editor se redibuja al notarlo
     public notesVersion = 0;
     // Graba cuando el transporte graba
-    public armed = false;
+    public armed = true;
     // Lo que se toca llega tambien a la salida de la pista armada, para escuchar el instrumento mientras se graba
     public thru = true;
 
@@ -231,14 +231,18 @@ export class NoteSequencer implements TransportClient {
         this.tracks.forEach(track => {
             if (track.muted)
                 return;
+            const due: Array<{ abs: number, n: LoopNote }> = [];
             for (let cycle = Math.floor(lo / L); cycle <= Math.floor(b1 / L); cycle++) {
                 track.notes.forEach(n => {
                     // Si se achico el loop, las notas que quedaron fuera se pliegan (y vuelven al agrandarlo)
                     const abs = cycle * L + (n.start % L);
                     if (abs >= lo && abs < b1)
-                        this.emitNote(track, n, startTime + abs * beatDur, startTime + (abs + n.dur) * beatDur);
+                        due.push({ abs, n });
                 });
             }
+            // En orden de tiempo (las notas se guardan en el orden en que se grabaron): los instrumentos con estado, como el modo Unison, lo necesitan
+            due.sort((x, y) => x.abs - y.abs);
+            due.forEach(d => this.emitNote(track, d.n, startTime + d.abs * beatDur, startTime + (d.abs + d.n.dur) * beatDur));
         });
     }
 
@@ -256,8 +260,9 @@ export class NoteSequencer implements TransportClient {
         this.tracks.forEach(track => {
             if (track.muted)
                 return;
+            const sorted = track.notes.slice().sort((x, y) => (x.start % L) - (y.start % L));
             for (let pass = 0; pass < passes; pass++)
-                track.notes.forEach(n => {
+                sorted.forEach(n => {
                     const when = (pass * L + (n.start % L)) * beatDur;
                     this.emitNote(track, n, when, when + n.dur * beatDur);
                 });
@@ -282,7 +287,7 @@ export class NoteSequencer implements TransportClient {
     /** Valida todo: viene de un archivo o del navegador. */
     setState(raw: any) {
         raw = raw && typeof raw == 'object' ? raw : {};
-        this.armed = raw.armed === true;
+        this.armed = raw.armed !== false;
         this.thru = raw.thru !== false;
         this.armedId = typeof raw.armedId == 'number' && raw.armedId >= 1 && raw.armedId <= SEQ_TRACKS ? Math.round(raw.armedId) : 1;
         this.editingId = null;

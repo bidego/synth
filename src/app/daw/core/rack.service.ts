@@ -314,9 +314,17 @@ export class RackService {
     // (si esta conectado), si no el primero conectado, y en ultimo caso el activo (se toca con su piano).
     private ensureArmed() {
         const receives = (s: SynthStudioModule) => this.noteSources(s.id).length > 0;
-        // Un secuenciador de notas armado ya recibe lo que se toca
-        if (this.armedSynths.some(receives) || this.sequencers.some(s => s.sequencer.armed))
+        // Un secuenciador de notas armado y conectado a un teclado ya recibe lo que se toca
+        const seqReceives = (s: SequencerModule) => this.noteSources(s.id).length > 0;
+        if (this.armedSynths.some(receives) || this.sequencers.some(s => s.sequencer.armed && seqReceives(s)))
             return;
+        // Si el secuenciador seleccionado esta conectado, graba en el (aunque haya quedado desarmado)
+        const selSeq = this.selected && this.selected.type == 'sequencer' ? this.selected as SequencerModule : null;
+        const target0 = selSeq && seqReceives(selSeq) ? selSeq : this.sequencers.find(seqReceives);
+        if (target0) {
+            target0.sequencer.armed = true;
+            return;
+        }
         const selected = this.selected && this.selected.type == 'synth' ? this.selected as SynthStudioModule : null;
         const target = (selected && receives(selected) ? selected : null)
             || this.synths.find(receives)

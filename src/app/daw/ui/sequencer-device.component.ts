@@ -35,10 +35,14 @@ import { RackService } from '../core/rack.service';
         <button class="rec" [class.on]="seq.armedId == t.id" (click)="seq.arm(t)" title="Grabar en esta pista" aria-label="Elegir para grabar">R</button>
         <div class="name">
             <input class="nm" [value]="t.name" maxlength="30" (change)="seq.rename(t, $event.target.value)" [attr.aria-label]="'Nombre de ' + t.name">
-            <small class="dest">
-                <ng-container *ngIf="targets(t).length; else nodest">&rarr; <span *ngFor="let n of targets(t); let last = last">{{ n }}<ng-container *ngIf="!last">, </ng-container></span></ng-container>
-                <ng-template #nodest>sin cable de salida</ng-template>
-            </small>
+            <label class="dest" [class.none]="!targets(t).length" title="El instrumento que toca esta pista (tambien se puede cablear en la vista Cableado)">
+                <span>&rarr;</span>
+                <select (change)="route(t, $event.target.value)" [attr.aria-label]="'Instrumento de ' + t.name">
+                    <option value="" [selected]="!targets(t).length">sin instrumento</option>
+                    <option *ngFor="let m of players" [value]="m.id" [selected]="targets(t).length == 1 && isRoutedTo(t, m.id)">{{ m.name }}</option>
+                    <option *ngIf="targets(t).length > 1" value="*" selected disabled>varios</option>
+                </select>
+            </label>
         </div>
         <div class="roll" [style.backgroundSize]="gridSize">
             <i class="note" *ngFor="let n of t.notes" [style.left.%]="n.start / seq.loopBeats * 100" [style.width.%]="noteWidth(n)" [style.bottom.%]="noteBottom(n)"></i>
@@ -55,6 +59,7 @@ import { RackService } from '../core/rack.service';
         </div>
     </div>
 
+    <p class="warn" *ngFor="let w of warnings">{{ w }}</p>
     <p class="hint">Apreta <kbd>Rec</kbd> con el secuenciador armado y toca: se graba en loop y se suma en cada vuelta.
        Cada pista sale por su propio cable (vista Cableado), asi una toca el Juno-106 y otra el Synth Studio.</p>
 
@@ -82,7 +87,10 @@ import { RackService } from '../core/rack.service';
 .name { min-width: 0; line-height: 1.25; }
 .nm { width: 100%; background: transparent; border: 1px solid transparent; color: var(--text); font-weight: 600; padding: 1px 4px; margin: -1px -4px; }
 .nm:hover, .nm:focus { border-color: var(--border-strong); background: rgba(0, 0, 0, 0.3); }
-.dest { display: block; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dest { display: flex; align-items: center; gap: 4px; color: var(--dim); font-size: 11px; }
+.dest select { flex: 1; min-width: 0; font-size: 11px; padding: 2px 4px; }
+.dest.none select { color: var(--warn); }
+.warn { margin: 0; color: var(--warn); font-size: 12px; }
 .roll { position: relative; height: 40px; min-width: 0; background-color: rgba(255, 255, 255, 0.04);
     background-image: linear-gradient(to right, rgba(255, 255, 255, 0.13) 1px, transparent 1px); border-radius: 3px; overflow: hidden; }
 .note { position: absolute; height: 4px; min-width: 2px; background: var(--info); border-radius: 1px; }
@@ -110,6 +118,45 @@ export class SequencerDeviceComponent implements OnInit, OnDestroy {
 
     get keyboards() {
         return this.rack.graph.ofType('keyboard');
+    }
+
+    /** Instrumentos a los que se les puede mandar una pista. */
+    get players() {
+        return this.rack.notePlayers.filter(m => m.type != 'sequencer');
+    }
+
+    isRoutedTo(t: SeqTrack, moduleId: string): boolean {
+        return this.rack.graph.cablesOf(this.module.id, 'out' + t.id).some(c => c.fromModule == this.module.id && c.toModule == moduleId);
+    }
+
+    /** Manda la pista a un instrumento (un clic, sin ir a la vista de cableado); "" la deja sin salida. */
+    route(t: SeqTrack, moduleId: string) {
+        this.rack.graph.cablesOf(this.module.id, 'out' + t.id)
+            .filter(c => c.fromModule == this.module.id)
+            .forEach(c => this.rack.disconnect(c.id));
+        if (moduleId && moduleId != '*')
+            this.rack.connect(this.module.id, 'out' + t.id, moduleId, 'notes');
+    }
+
+    /** Lo que impide que grabe o suene, dicho en claro. */
+    get warnings(): Array<string> {
+        const w: Array<string> = [];
+        const armedTrack = this.seq.armedTrack;
+        if (!this.seq.armed)
+            w.push('El secuenciador no esta armado: no graba. Apreta "Armar".');
+        if (!this.rack.noteSources(this.module.id).length)
+            w.push('No recibe notas: conecta un teclado arriba (o en Cableado) para poder grabar.');
+        if (armedTrack && !this.targets(armedTrack).length)
+            w.push(armedTrack.name + ' no tiene instrumento: elige uno a la derecha de su nombre, si no no se oye.');
+        // Un teclado que toca al instrumento directo y tambien al secuenciador hace sonar todo doble
+        this.rack.noteSources(this.module.id).forEach(c => {
+            const direct = this.rack.noteTargets(c.fromModule).filter(x => x.toModule != this.module.id
+                && this.seq.tracks.some(t => this.isRoutedTo(t, x.toModule)));
+            if (direct.length && this.seq.thru)
+                w.push('"' + this.rack.graph.find(c.fromModule).name + '" toca a "' + this.rack.graph.find(direct[0].toModule).name
+                    + '" directo y por el secuenciador: se oye doble. Desconecta uno o apaga "Oir lo que toco".');
+        });
+        return w;
     }
 
     /** A que instrumentos llega la salida de una pista. */
