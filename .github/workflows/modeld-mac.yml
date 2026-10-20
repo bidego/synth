@@ -1,0 +1,95 @@
+name: Model D plugin (macOS)
+
+# A mano (Actions > Model D plugin (macOS) > Run workflow) o al subir una etiqueta modeld-v* (publica el release) o modeld-test* (solo compila y valida)
+permissions:
+  contents: write   # para publicar el release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['modeld-v*', 'modeld-test*']
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: modeld
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pruebas del motor de audio
+        run: |
+          cmake -S . -B build-tests -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-tests --target md_tests -j 4
+          ./build-tests/md_tests
+
+      - name: Compilar el plugin (VST3, AU y Standalone; Intel + Apple Silicon)
+        run: |
+          cmake -S . -B build -DMODELD_BUILD_PLUGIN=ON -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+          cmake --build build --config Release -j 4
+
+      - name: Firmar (ad hoc, sin cuenta de Apple) y empaquetar
+        run: |
+          mkdir -p out
+          pack() {   # pack <carpeta del bundle> <nombre del zip>
+            b=$(find build -name "$1" | head -1)
+            codesign --force --deep --sign - "$b"
+            ditto -c -k --keepParent "$b" "out/$2"
+          }
+          pack "Model D.vst3" ModelD-VST3-macOS.zip
+          pack "Model D.component" ModelD-AU-macOS.zip
+          pack "Model D.app" ModelD-Standalone-macOS.zip
+          ls -la out
+
+      - name: Captura de la interfaz
+        continue-on-error: true
+        run: |
+          mkdir -p diag
+          bin=$(find build -type f -name ModelDSnapshot | head -1)
+          "$bin" diag/gui-init.png 0
+          "$bin" diag/gui-lead.png 7
+          ls -la diag
+
+      # Diagnostico: lo que dicen los validadores sobre el plugin (no frena el build; el resultado queda en el artefacto)
+      - name: Validar el Audio Unit (auval) y el VST3 (pluginval)
+        continue-on-error: true
+        run: |
+          mkdir -p diag
+          AU=$(find build -name "Model D.component" | head -1)
+          VST=$(find build -name "Model D.vst3" | head -1)
+          { echo "== firma =="; codesign -dvv "$AU" 2>&1; codesign --verify --deep --strict --verbose=2 "$AU" 2>&1; echo; } > diag/firma.log || true
+          mkdir -p ~/Library/Audio/Plug-Ins/Components ~/Library/Audio/Plug-Ins/VST3
+          cp -R "$AU" ~/Library/Audio/Plug-Ins/Components/
+          cp -R "$VST" ~/Library/Audio/Plug-Ins/VST3/
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          sleep 3
+          { echo "== auval -a =="; auval -a 2>&1 | grep -iE "syntotec|model d|Md01" || echo "(el Audio Unit no aparece en la lista)"; } > diag/auval.log 2>&1 || true
+          { echo "== auval -v aumu Md01 Synt =="; auval -v aumu Md01 Synt 2>&1; } >> diag/auval.log || true
+          curl -sL -o pluginval.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
+          unzip -q -o pluginval.zip
+          { echo "== pluginval (VST3, nivel 5) =="; ./pluginval.app/Contents/MacOS/pluginval --strictness-level 5 --validate-in-process --skip-gui-tests "$VST" 2>&1; } > diag/pluginval.log || true
+          tail -n 40 diag/auval.log
+          tail -n 30 diag/pluginval.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: modeld-diagnostico
+          path: modeld/diag/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: modeld-macos
+          path: modeld/out/*.zip
+
+      # Con una etiqueta modeld-v*: los zips quedan como release publico
+      - name: Publicar el release
+        if: startsWith(github.ref, 'refs/tags/modeld-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" out/*.zip --prerelease \
+            --title "Model D ${GITHUB_REF_NAME#modeld-v} (beta) para macOS" \
+            --notes "Model D, un sintetizador monofonico de tres osciladores y filtro de escalera, para macOS (Intel y Apple Silicon): VST3, Audio Unit y aplicacion independiente. Instalacion y manual: https://synth.zondacloud.com/modeld/"
