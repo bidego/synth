@@ -7,7 +7,7 @@ import { moduleMeta } from '../modules/registry';
     selector: 'app-device',
     template: `
 <div class="device" [class.selected]="rack.selectedId == module.id" (pointerdown)="rack.select(module.id)">
-    <app-panel [panelId]="'dev-' + module.id" [heading]="module.name" [defaultOpen]="module.type == 'synth' || module.type == 'juno' || module.type == 'modeld' || module.type == 'sequencer'">
+    <app-panel [panelId]="'dev-' + module.id" [heading]="module.name" [defaultOpen]="module.type == 'synth' || module.type == 'juno' || module.type == 'modeld' || module.type == 'acid' || module.type == 'sequencer'">
         <span panel-meta>{{ meta?.label }}</span>
         <span panel-actions>
             <button class="ghost icon" (click)="rename()" title="Renombrar" aria-label="Renombrar"><app-icon name="edit" [size]="13"></app-icon></button>
@@ -20,6 +20,7 @@ import { moduleMeta } from '../modules/registry';
             <app-synth-device *ngSwitchCase="'synth'" [module]="module"></app-synth-device>
             <app-juno-device *ngSwitchCase="'juno'" [module]="module"></app-juno-device>
             <app-modeld-device *ngSwitchCase="'modeld'" [module]="module"></app-modeld-device>
+            <app-acid-device *ngSwitchCase="'acid'" [module]="module"></app-acid-device>
             <app-sequencer-device *ngSwitchCase="'sequencer'" [module]="module"></app-sequencer-device>
             <app-mixer-device *ngSwitchCase="'mixer'" [module]="module"></app-mixer-device>
             <app-keyboard-device *ngSwitchCase="'keyboard'" [module]="module"></app-keyboard-device>

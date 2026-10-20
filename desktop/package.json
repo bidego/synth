@@ -1,7 +1,7 @@
 {
   "name": "syntotec-desktop",
   "productName": "Syntotec",
-  "version": "0.7.24",
+  "version": "0.7.25",
   "description": "Syntotec Synth Studio para escritorio (macOS)",
   "main": "main.js",
   "private": true,

@@ -42,16 +42,16 @@ const WAVE_PATHS = [
 :host { display: inline-block; width: 104px; height: 120px; }
 .mk { position: relative; width: 104px; height: 120px; touch-action: none; user-select: none; -webkit-user-select: none; cursor: ns-resize; }
 .dial { display: block; overflow: visible; }
-line { stroke: rgba(244, 242, 234, 0.9); stroke-width: 1.1; }
+line { stroke: var(--mk-ink, rgba(244, 242, 234, 0.9)); stroke-width: 1.1; }
 line.major { stroke-width: 1.6; }
-text { fill: #f4f2ea; font: 700 9.5px 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-.icon { fill: none; stroke: #f4f2ea; stroke-width: 1.4; }
+text { fill: var(--mk-ink, #f4f2ea); font: 700 9.5px 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+.icon { fill: none; stroke: var(--mk-ink, #f4f2ea); stroke-width: 1.4; }
 .shadow { fill: rgba(0, 0, 0, 0.6); }
-.ptr { stroke: #f4f2ea; stroke-width: 2.6; stroke-linecap: round; }
+.ptr { stroke: var(--mk-ptr, #f4f2ea); stroke-width: 2.6; stroke-linecap: round; }
 .ptr-shadow { stroke: rgba(0, 0, 0, 0.55); stroke-width: 3.2; stroke-linecap: round; }
 .mk:hover .ptr, .mk.drag .ptr { stroke: #ffd9b0; }
 .mk.focus .dial { filter: drop-shadow(0 0 3px #5cc8ff); }
-.lbl { position: absolute; left: 6px; right: 6px; top: 88px; text-align: center; color: #f4f2ea; font: 700 9.5px/1.15 'Helvetica Neue', Helvetica, Arial, sans-serif; letter-spacing: 0.02em; text-transform: uppercase; }
+.lbl { position: absolute; left: 6px; right: 6px; top: 88px; text-align: center; color: var(--mk-ink, #f4f2ea); font: 700 9.5px/1.15 'Helvetica Neue', Helvetica, Arial, sans-serif; letter-spacing: 0.02em; text-transform: uppercase; }
 .native { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; margin: 0; }
 `]
 })

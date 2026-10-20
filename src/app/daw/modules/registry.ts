@@ -3,6 +3,7 @@ import { ModuleEnv, ModuleMeta } from '../core/types';
 import { SynthStudioModule } from './synth-studio.module';
 import { SequencerModule } from './sequencer.module';
 import { ModelDModule } from './modeld.module';
+import { AcidLineModule } from './acid.module';
 import { JunoModule } from './juno.module';
 import { MixerModule } from './mixer.module';
 import { OutputModule } from './output.module';
@@ -14,6 +15,8 @@ import { DelayModule, ReverbModule, ChorusModule, DistortionModule, EqModule, Co
 export const MODULE_META: ReadonlyArray<ModuleMeta> = [
     { type: 'synth', label: 'Syntotec Synth Studio', category: 'instrument',
       description: 'Sintetizador, sampler y baterias con secuenciador propio' },
+    { type: 'acid', label: 'Acid Line', category: 'instrument',
+      description: 'Bajo acido monofonico: filtro de 18 dB con resonancia, acento y slide' },
     { type: 'modeld', label: 'Model D', category: 'instrument',
       description: 'Sintetizador monofonico de 3 osciladores y filtro de escalera, inspirado en el Minimoog' },
     { type: 'juno', label: 'Juno-106', category: 'instrument',
@@ -54,6 +57,7 @@ export function createModule(type: string, env: ModuleEnv): RackModule | null {
     switch (type) {
         case 'synth': return new SynthStudioModule(env);
         case 'sequencer': return new SequencerModule(env);
+        case 'acid': return new AcidLineModule(env);
         case 'modeld': return new ModelDModule(env);
         case 'juno': return new JunoModule(env);
         case 'keyboard': return new KeyboardModule(env);
