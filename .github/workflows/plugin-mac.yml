@@ -47,7 +47,7 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p diag
-          bin=$(find build -type f -name juno_snapshot | head -1)
+          bin=$(find build -type f -name JunoSnapshot | head -1)
           "$bin" diag/gui-init.png 0
           "$bin" diag/gui-strings.png 7
           ls -la diag
