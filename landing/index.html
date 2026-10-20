@@ -73,8 +73,7 @@ if (/^#(s|c|p|demo)=/.test(location.hash)) location.replace('/app/' + location.s
   <nav class="nav-links" aria-label="Principal">
     <a href="#funciones">Funciones</a>
     <a href="#como">Cómo funciona</a>
-    <a href="#plugin">Plugin</a>
-    <a href="#modeld">Model D</a>
+    <a href="#plugin">Plugins</a>
     <a href="#proyectos">Proyectos</a>
     <a href="#galeria">Galería</a>
   </nav>
@@ -204,51 +203,32 @@ if (/^#(s|c|p|demo)=/.test(location.hash)) location.replace('/app/' + location.s
     </div>
   </section>
 
-  <!-- ============ PLUGIN ============ -->
+  <!-- ============ PLUGINS ============ -->
   <section class="section" id="plugin">
     <header class="section-head reveal">
       <p class="eyebrow"><span class="dot"></span> Nuevo · beta para macOS</p>
-      <h2>El Juno-106, ahora como plugin</h2>
-      <p class="lead">El mismo sintetizador de Syntotec, reescrito en C++ para tocarlo dentro de tu DAW: seis voces, filtro de 24 dB, chorus y sensibilidad a la velocidad.</p>
+      <h2>Los sintetizadores de Syntotec, como plugins</h2>
+      <p class="lead">Tres instrumentos con el mismo motor en la web y en tu DAW: VST3 y Audio Unit para Logic, GarageBand y cualquier anfitrión VST3, y una aplicación independiente para probarlos sin DAW. También son dispositivos del rack. Todos los controles se automatizan. Pro Tools todavía no: solo carga plugins AAX.</p>
     </header>
     <div class="grid features">
-      <article class="card reveal">
-        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg></span>
-        <h3>VST3 y Audio Unit</h3>
-        <p>Audio Unit para Logic y GarageBand, y VST3 para el resto de las DAW. Pro Tools todavía no: solo carga plugins AAX. Todos los controles se automatizan y los 37 sonidos de partida son los programas del plugin. Es una beta: contanos cómo te va.</p>
+      <article class="card reveal" style="display:flex;flex-direction:column">
+        <img src="/img/juno106.webp" width="1140" height="640" alt="Panel del Juno-106 con sus deslizadores, botones, selector de sonidos y teclado" loading="lazy" style="width:100%;height:auto;border-radius:10px;border:1px solid var(--border);margin-bottom:14px">
+        <h3>Juno-106</h3>
+        <p>Polifónico de 6 voces: DCO con PWM y sub, filtro de 24 dB, LFO con retardo y chorus I y II. 37 sonidos.</p>
+        <p style="margin-top:auto;padding-top:16px;display:flex;flex-wrap:wrap;gap:8px"><a class="btn btn-primary btn-sm" href="https://github.com/bidego/synth/releases/tag/plugin-v0.2.0" rel="noopener">Descargar</a><a class="btn btn-ghost btn-sm" href="/plugin/">Manual</a></p>
       </article>
-      <article class="card reveal">
-        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
-        <h3>Aplicación independiente</h3>
-        <p>¿Sin DAW? Abrí la app, elegí tu controlador MIDI y tocá. Útil también para probar el sonido antes de instalar el plugin.</p>
+      <article class="card reveal" style="display:flex;flex-direction:column">
+        <img src="/img/modeld.webp" width="1640" height="800" alt="Panel del Model D con madera, tres osciladores, mezclador, filtro, contornos y teclado" loading="lazy" style="width:100%;height:auto;border-radius:10px;border:1px solid var(--border);margin-bottom:14px">
+        <h3>Model D</h3>
+        <p>Monofónico de tres osciladores, mezclador que satura y filtro de escalera de 24 dB, inspirado en el Minimoog. 26 sonidos.</p>
+        <p style="margin-top:auto;padding-top:16px;display:flex;flex-wrap:wrap;gap:8px"><a class="btn btn-primary btn-sm" href="https://github.com/bidego/synth/releases/tag/modeld-v0.1.0" rel="noopener">Descargar</a><a class="btn btn-ghost btn-sm" href="/modeld/">Manual</a></p>
       </article>
-      <article class="card reveal">
-        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span>
-        <h3>Liviano e idéntico al de la web</h3>
-        <p>Usa menos del 1 % de un núcleo con seis voces. Los controles y los sonidos tienen los mismos nombres que en Syntotec, para pasar de uno al otro sin reaprender nada.</p>
+      <article class="card reveal" style="display:flex;flex-direction:column">
+        <img src="/img/acidline.webp" width="1340" height="560" alt="Panel de Acid Line con tapa plateada, perillas negras y teclado" loading="lazy" style="width:100%;height:auto;border-radius:10px;border:1px solid var(--border);margin-bottom:14px">
+        <h3>Acid Line</h3>
+        <p>Bajo ácido monofónico: filtro resonante de 18 dB, barrido de decaimiento, acento y slide. 14 sonidos.</p>
+        <p style="margin-top:auto;padding-top:16px;display:flex;flex-wrap:wrap;gap:8px"><a class="btn btn-primary btn-sm" href="https://github.com/bidego/synth/releases/tag/acidline-v0.1.0" rel="noopener">Descargar</a><a class="btn btn-ghost btn-sm" href="/acidline/">Manual</a></p>
       </article>
-    </div>
-    <div class="center">
-      <a class="btn btn-primary btn-lg" href="https://github.com/bidego/synth/releases/tag/plugin-v0.2.0" rel="noopener">Descargar para macOS
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-      <a class="btn btn-ghost btn-lg" href="/plugin/">Instalación y manual</a>
-    </div>
-  </section>
-
-  <!-- ============ MODEL D ============ -->
-  <section class="section" id="modeld">
-    <header class="section-head reveal">
-      <p class="eyebrow"><span class="dot"></span> Nuevo · beta para macOS</p>
-      <h2>Model D, el monofónico de los bajos gordos</h2>
-      <p class="lead">Tres osciladores libres, un mezclador que satura y un filtro de escalera de 24 dB sobremuestreado, inspirado en el Minimoog. También en el rack de Syntotec.</p>
-    </header>
-    <div class="reveal">
-      <img src="/img/modeld.webp" width="1640" height="800" alt="Panel del Model D con madera, tres osciladores, mezclador, filtro, contornos y teclado" loading="lazy" style="width:100%;height:auto;border-radius:16px;border:1px solid var(--border)">
-    </div>
-    <div class="center">
-      <a class="btn btn-primary btn-lg" href="https://github.com/bidego/synth/releases/tag/modeld-v0.1.0" rel="noopener">Descargar Model D
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-      <a class="btn btn-ghost btn-lg" href="/modeld/">Instalación y manual</a>
     </div>
   </section>
 
@@ -295,7 +275,7 @@ if (/^#(s|c|p|demo)=/.test(location.hash)) location.replace('/app/' + location.s
     <nav aria-label="Pie">
       <a href="/app/">La app</a>
       <a href="#funciones">Funciones</a>
-      <a href="#plugin">Plugin</a>
+      <a href="#plugin">Plugins</a>
       <a href="#galeria">Galería</a>
       <a href="https://github.com/bidego/synth" rel="noopener">Código en GitHub</a>
     </nav>
