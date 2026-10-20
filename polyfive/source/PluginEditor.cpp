@@ -302,7 +302,7 @@ public:
         ledArea_ = { 1436, 28, 96, 18 };
         pitch_.setBounds(104, 574, 44, 190);
         mod_.setBounds(158, 574, 44, 190);
-        keyboard_.setBounds(240, 574, 1656, 190);
+        keyboard_.setBounds(230, 574, 1656, 190);
         background_ = renderBackground(getWidth(), getHeight());
     }
 

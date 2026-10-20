@@ -179,6 +179,7 @@ h2 { font-size: clamp(1.9rem, 4.2vw, 3rem); line-height: 1.12; letter-spacing: -
 /* ---------- Tarjetas ---------- */
 .grid { display: grid; gap: 18px; }
 .features { grid-template-columns: repeat(3, 1fr); }
+.plugins { grid-template-columns: repeat(2, 1fr); }
 .card {
   position: relative; padding: 26px 24px 28px; border-radius: var(--radius); background: var(--panel);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid var(--border);
@@ -332,7 +333,7 @@ html.js:not(.no-intro) .intro { display: grid; }
   .nav .btn-sm { margin-left: auto; }
 }
 @media (max-width: 640px) {
-  .features { grid-template-columns: 1fr; }
+  .features, .plugins { grid-template-columns: 1fr; }
   .nav { gap: 10px; }
   .how-tab.on { transform: none; }
 }

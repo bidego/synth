@@ -73,7 +73,7 @@ const YA = ROW_A_KNOB_TOP + 52, YB = ROW_B_KNOB_TOP + 52;
         <div class="tiny" style="left:100px;top:764px;width:52px;text-align:center">PITCH</div>
         <div class="tiny" style="left:154px;top:764px;width:52px;text-align:center">MOD</div>
 
-        <div class="keys abs" style="left:240px;top:574px" (pointerup)="allKeysUp()" (pointerleave)="allKeysUp()">
+        <div class="keys abs" style="left:230px;top:574px" (pointerup)="allKeysUp()" (pointerleave)="allKeysUp()">
             <div *ngFor="let k of whiteKeys" class="key w" [class.down]="down == k.note" [style.left.px]="k.left" (pointerdown)="keyDown(k.note, $event)"><b *ngIf="k.note % 12 == 0">C{{ k.note / 12 - 2 }}</b></div>
             <div *ngFor="let k of blackKeys" class="key b" [class.down]="down == k.note" [style.left.px]="k.left" (pointerdown)="keyDown(k.note, $event)"></div>
         </div>
