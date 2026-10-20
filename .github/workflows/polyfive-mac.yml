@@ -1,0 +1,98 @@
+name: Poly Five plugin (macOS)
+
+# A mano (Actions > Poly Five plugin (macOS) > Run workflow) o al subir una etiqueta polyfive-v* (publica el release) o polyfive-test* (solo compila y valida)
+permissions:
+  contents: write   # para publicar el release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['polyfive-v*', 'polyfive-test*']
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: polyfive
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pruebas del motor de audio
+        run: |
+          cmake -S . -B build-tests -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-tests --target pf_tests -j 4
+          ./build-tests/pf_tests
+
+      - name: El motor web (AudioWorklet) coincide con el del plugin
+        run: node tests/compare_js.js ./build-tests/pf_tests
+
+      - name: Compilar el plugin (VST3, AU y Standalone; Intel + Apple Silicon)
+        run: |
+          cmake -S . -B build -DPOLYFIVE_BUILD_PLUGIN=ON -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+          cmake --build build --config Release -j 4
+
+      - name: Firmar (ad hoc, sin cuenta de Apple) y empaquetar
+        run: |
+          mkdir -p out
+          pack() {   # pack <carpeta del bundle> <nombre del zip>
+            b=$(find build -name "$1" | head -1)
+            codesign --force --deep --sign - "$b"
+            ditto -c -k --keepParent "$b" "out/$2"
+          }
+          pack "Poly Five.vst3" PolyFive-VST3-macOS.zip
+          pack "Poly Five.component" PolyFive-AU-macOS.zip
+          pack "Poly Five.app" PolyFive-Standalone-macOS.zip
+          ls -la out
+
+      - name: Captura de la interfaz
+        continue-on-error: true
+        run: |
+          mkdir -p diag
+          bin=$(find build -type f -name PolyFiveSnapshot | head -1)
+          "$bin" diag/gui-init.png 0
+          "$bin" diag/gui-strings.png 1
+          ls -la diag
+
+      # Diagnostico: lo que dicen los validadores sobre el plugin (no frena el build; el resultado queda en el artefacto)
+      - name: Validar el Audio Unit (auval) y el VST3 (pluginval)
+        continue-on-error: true
+        run: |
+          mkdir -p diag
+          AU=$(find build -name "Poly Five.component" | head -1)
+          VST=$(find build -name "Poly Five.vst3" | head -1)
+          { echo "== firma =="; codesign -dvv "$AU" 2>&1; codesign --verify --deep --strict --verbose=2 "$AU" 2>&1; echo; } > diag/firma.log || true
+          mkdir -p ~/Library/Audio/Plug-Ins/Components ~/Library/Audio/Plug-Ins/VST3
+          cp -R "$AU" ~/Library/Audio/Plug-Ins/Components/
+          cp -R "$VST" ~/Library/Audio/Plug-Ins/VST3/
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          sleep 3
+          { echo "== auval -a =="; auval -a 2>&1 | grep -iE "syntotec|poly five|Pf01" || echo "(el Audio Unit no aparece en la lista)"; } > diag/auval.log 2>&1 || true
+          { echo "== auval -v aumu Pf01 Synt =="; auval -v aumu Pf01 Synt 2>&1; } >> diag/auval.log || true
+          curl -sL -o pluginval.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
+          unzip -q -o pluginval.zip
+          { echo "== pluginval (VST3, nivel 5) =="; ./pluginval.app/Contents/MacOS/pluginval --strictness-level 5 --validate-in-process --skip-gui-tests "$VST" 2>&1; } > diag/pluginval.log || true
+          tail -n 40 diag/auval.log
+          tail -n 30 diag/pluginval.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: polyfive-diagnostico
+          path: polyfive/diag/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: polyfive-macos
+          path: polyfive/out/*.zip
+
+      # Con una etiqueta polyfive-v*: los zips quedan como release publico
+      - name: Publicar el release
+        if: startsWith(github.ref, 'refs/tags/polyfive-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" out/*.zip --prerelease \
+            --title "Poly Five ${GITHUB_REF_NAME#polyfive-v} (beta) para macOS" \
+            --notes "Poly Five, un sintetizador polifonico de 5 voces con dos osciladores, sync y poly-mod, para macOS (Intel y Apple Silicon): VST3, Audio Unit y aplicacion independiente. Instalacion y manual: https://synth.zondacloud.com/polyfive/"

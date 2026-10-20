@@ -14,6 +14,7 @@ import { FaderComponent } from './ui/fader.component';
 import { MoogKnobComponent } from './ui/moog-knob.component';
 import { ModelDDeviceComponent } from './daw/ui/modeld-device.component';
 import { AcidDeviceComponent } from './daw/ui/acid-device.component';
+import { PolyFiveDeviceComponent } from './daw/ui/polyfive-device.component';
 import { JunoSliderComponent } from './ui/juno-slider.component';
 import { SequencerDeviceComponent } from './daw/ui/sequencer-device.component';
 import { JunoDeviceComponent } from './daw/ui/juno-device.component';
@@ -68,6 +69,7 @@ import { ListenKeys } from './directives/listen.keys';
     MoogKnobComponent,
     ModelDDeviceComponent,
     AcidDeviceComponent,
+    PolyFiveDeviceComponent,
     JunoDeviceComponent,
     SequencerDeviceComponent,
     RollEditorComponent,

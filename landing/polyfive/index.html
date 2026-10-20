@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poly Five · Plugin para macOS · Syntotec</title>
+<meta name="description" content="Instalación y manual del plugin Poly Five de Syntotec, un sintetizador polifónico de 5 voces con dos osciladores, sync y poly-mod: VST3, Audio Unit y aplicación independiente para macOS (Intel y Apple Silicon).">
+<meta name="theme-color" content="#06070d">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/landing/landing.css">
+<style>
+  /* Página de documentación: usa los colores y la tipografía de la landing, sin la intro ni el arte VJ */
+  body { background: radial-gradient(900px 500px at 70% -10%, rgba(139, 92, 246, 0.16), transparent 70%), radial-gradient(700px 420px at 0% 0%, rgba(255, 79, 135, 0.12), transparent 70%); min-height: 100vh; }
+  .doc { width: min(860px, 92vw); margin: 0 auto; padding: 120px 0 40px; }
+  .doc h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.1; letter-spacing: -0.02em; margin: 6px 0 14px; }
+  .doc h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); margin: 54px 0 12px; letter-spacing: -0.01em; scroll-margin-top: 90px; }
+  .doc h3 { font-size: 1.08rem; margin: 26px 0 6px; }
+  .doc p, .doc li { color: var(--dim); }
+  .doc p strong, .doc li strong, .doc td strong { color: var(--text); }
+  .doc a:not(.btn) { color: var(--info); }
+  .doc code { font-family: var(--mono); font-size: 0.9em; background: rgba(255, 255, 255, 0.07); padding: 2px 6px; border-radius: 6px; color: var(--text); }
+  .doc pre { background: rgba(8, 9, 18, 0.8); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; overflow-x: auto; margin: 12px 0; }
+  .doc pre code { background: none; padding: 0; font-size: 0.86rem; }
+  .tw { overflow-x: auto; margin: 14px 0; }
+  .doc table { width: 100%; border-collapse: collapse; margin: 0; font-size: 0.95rem; }
+  .doc th, .doc td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--dim); }
+  .doc th { color: var(--text); font-weight: 600; white-space: nowrap; }
+  .doc td:first-child { color: var(--text); white-space: nowrap; }
+  .doc .note { border-left: 3px solid var(--warn); background: rgba(255, 200, 87, 0.08); padding: 10px 16px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+  .doc .note p { margin: 0; }
+  .dl { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0 6px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 22px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); }
+  .toc a { text-decoration: none; color: var(--dim); }
+  .toc a:hover { color: var(--text); }
+  .nav .btn-sm { margin-left: auto; }
+  @media (max-width: 640px) { .doc td:first-child, .doc th { white-space: normal; } .doc { padding-top: 96px; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4f87"/><stop offset="1" stop-color="#5cc8ff"/></linearGradient></defs>
+</svg>
+
+<header class="nav scrolled">
+  <a class="brand" href="/" aria-label="Syntotec, inicio">
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <span>Syntotec</span>
+  </a>
+  <a class="btn btn-primary btn-sm" href="/app/">Abrir Syntotec</a>
+</header>
+
+<main class="doc" id="contenido">
+  <p class="eyebrow"><span class="dot"></span> Plugin · beta 0.1.0 · macOS</p>
+  <h1>Poly Five</h1>
+  <p class="lead">Un sintetizador <strong>polifónico de 5 voces</strong>: dos osciladores por voz con sync, poly-mod, filtro de escalera de 24 dB y dos envolventes, inspirado en los clásicos polifónicos de los 70. Como plugin de verdad: <strong>VST3</strong>, <strong>Audio Unit</strong> (Logic y GarageBand) y <strong>aplicación independiente</strong>, para Mac con chip Apple o Intel. <strong>Pro Tools no está soportado</strong>: solo carga plugins AAX.</p>
+
+  <div class="dl">
+    <a class="btn btn-primary btn-lg" href="https://github.com/bidego/synth/releases/tag/polyfive-v0.1.0" rel="noopener">Descargar 0.1.0</a>
+    <a class="btn btn-ghost btn-lg" href="https://github.com/bidego/synth/tree/syntotec-app/polyfive" rel="noopener">Código fuente</a>
+  </div>
+
+  <img src="/img/polyfive.webp" width="1960" height="800" alt="El panel de Poly Five: madera, panel negro con osciladores A y B, poly-mod, mezclador, filtro, envolventes, LFO y un teclado de 61 teclas" style="width:100%;height:auto;border-radius:14px;border:1px solid var(--border);margin:26px 0 8px">
+
+  <nav class="toc" aria-label="En esta página">
+    <a href="#sonido">Sonido</a><a href="#web">En Syntotec</a><a href="#instalar">Instalar</a><a href="#uso">Primer uso</a><a href="#controles">Controles</a><a href="#midi">MIDI</a><a href="#sonidos">Sonidos</a><a href="#compilar">Compilar</a>
+  </nav>
+
+  <h2 id="sonido">Qué trae</h2>
+  <ul>
+    <li><strong>Oscilador A</strong>: sierra y/o pulso con ancho variable. <strong>Oscilador B</strong>: sierra, triángulo y/o pulso; con el interruptor <em>Low freq</em> se convierte en LFO, y <em>Keyboard</em> lo suelta del teclado.</li>
+    <li><strong>Sync</strong>: A se reinicia con cada ciclo de B. Barriendo la frecuencia de A sale el clásico lead sincronizado.</li>
+    <li><strong>Poly-mod</strong>: la envolvente del filtro y el oscilador B modulan, a elección, la frecuencia de A (FM y barridos), su ancho de pulso o el filtro. De ahí salen las campanas metálicas, los barridos de sync y los timbres que se mueven.</li>
+    <li><strong>Mezclador</strong> de A, B y ruido, y <strong>filtro de escalera de 24 dB</strong> con resonancia que autooscila, seguimiento de teclado (apagado, 1/2 o completo) y su propia envolvente ADSR. Otra ADSR para el volumen.</li>
+    <li><strong>LFO</strong> triangular, de sierra o cuadrado, y <strong>ruido</strong> como fuente de la rueda de modulación, con destinos a elegir: frecuencia A y B, ancho de pulso A y B, y filtro. <em>Initial amount</em> deja una cantidad fija aunque la rueda esté abajo.</li>
+    <li><strong>Unison</strong> (las 5 voces juntas, levemente desafinadas) y <strong>glide</strong>. Cada voz tiene su propia deriva de afinación, como los analógicos.</li>
+    <li>Calidad: sobremuestreo ×2, aliasing a −55 dB, unos 5 % de un núcleo con 5 voces. Sensibilidad a la velocidad como agregado (perilla Velocity; en 0 suena como el original).</li>
+  </ul>
+
+  <h2 id="web">También en Syntotec</h2>
+  <p>Poly Five es además un dispositivo del rack de Syntotec: abrí la app, en <em>Dispositivos</em> elegí <strong>Poly Five</strong> y cablealo a un teclado o a las pistas del secuenciador. Es el mismo motor del plugin traducido a un AudioWorklet (la comparación muestra a muestra da una diferencia menor al 0,06 %, incluso con sync, unison y voces robadas), con el mismo panel y los mismos 23 sonidos.</p>
+
+  <h2 id="instalar">Instalar</h2>
+  <p>Bajá los archivos de la <a href="https://github.com/bidego/synth/releases/tag/polyfive-v0.1.0" rel="noopener">página de descargas</a>, descomprimilos y copiá cada uno a su carpeta. Son universales: andan en Mac con chip Apple y con Intel.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Formato</th><th>Archivo</th><th>Carpeta</th></tr></thead>
+    <tbody>
+      <tr><td>VST3</td><td><a href="https://github.com/bidego/synth/releases/download/polyfive-v0.1.0/PolyFive-VST3-macOS.zip" rel="noopener"><code>PolyFive-VST3-macOS.zip</code></a></td><td><code>~/Library/Audio/Plug-Ins/VST3/</code></td></tr>
+      <tr><td>Audio Unit</td><td><a href="https://github.com/bidego/synth/releases/download/polyfive-v0.1.0/PolyFive-AU-macOS.zip" rel="noopener"><code>PolyFive-AU-macOS.zip</code></a></td><td><code>~/Library/Audio/Plug-Ins/Components/</code></td></tr>
+      <tr><td>Independiente</td><td><a href="https://github.com/bidego/synth/releases/download/polyfive-v0.1.0/PolyFive-Standalone-macOS.zip" rel="noopener"><code>PolyFive-Standalone-macOS.zip</code></a></td><td>donde quieras (es una app)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><p><strong>macOS puede bloquearlo la primera vez.</strong> Los plugins van firmados «ad hoc», sin cuenta de Apple Developer. Si dice que no se puede abrir o que está dañado, abrí la Terminal y ejecutá <code>xattr -cr "Poly Five.vst3"</code> (lo mismo para <code>.component</code> y <code>.app</code>). En la app independiente también sirve clic derecho → Abrir.</p></div>
+  <p>Después reiniciá la DAW y volvé a escanear los plugins. <strong>Logic</strong> valida los Audio Units al abrirse; para forzarlo o ver el motivo de un error: <code>auval -v aumu Pf01 Synt</code>.</p>
+
+  <h2 id="uso">Primer uso</h2>
+  <ol>
+    <li>Probá primero la <strong>aplicación independiente</strong>: abrila y, desde <em>Options → Audio/MIDI Settings</em>, elegí tu salida de audio. Los controladores MIDI se abren solos. Tocá, o usá el teclado en pantalla.</li>
+    <li>En la DAW, creá una pista de instrumento y elegí <strong>Poly Five</strong> (<em>Syntotec</em> en la lista de fabricantes).</li>
+    <li>Elegí un sonido (con anterior y siguiente) y tocá acordes: suenan hasta 5 notas a la vez; la sexta roba la voz más vieja. Con <em>Unison</em> las 5 voces tocan la misma nota.</li>
+  </ol>
+  <p>Un par de ideas: para un lead sincronizado, activá <em>Sync</em>, subí <em>Poly-Mod → Filter env</em> con el destino <em>Freq A</em> y barré con la envolvente del filtro. Para una campana, <em>Poly-Mod → Osc B</em> con <em>Freq A</em> activo y B en triángulo, afinado a una relación no entera.</p>
+
+  <h2 id="controles">Controles</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Sección</th><th>Controles</th></tr></thead>
+    <tbody>
+      <tr><td>Oscillator A</td><td>Octave (32' a 2'), Tune, Pulse width; interruptores Saw, Pulse y Sync</td></tr>
+      <tr><td>Oscillator B</td><td>Octave, Frequency (±12 semitonos), Fine, Pulse width; interruptores Saw, Triangle, Pulse, Low freq y Keyboard</td></tr>
+      <tr><td>Poly-Mod</td><td>Filter env y Osc B (cuánto), con los destinos Freq A, PW A y Filter</td></tr>
+      <tr><td>Mixer</td><td>Nivel de Osc A, Osc B y Noise</td></tr>
+      <tr><td>Performance</td><td>Glide (y su interruptor), Unison, Master tune, Volume y Velocity</td></tr>
+      <tr><td>Filter</td><td>Cutoff, Resonance, Envelope amount y Keyboard (seguimiento: apagado, 1/2, completo)</td></tr>
+      <tr><td>Envelopes</td><td>Attack, Decay, Sustain y Release del filtro y del amplificador</td></tr>
+      <tr><td>LFO and Wheel-Mod</td><td>Frequency, Shape (triángulo, sierra, cuadrada), Initial amount y LFO / noise (la mezcla de la fuente); destinos de la rueda: Freq A, Freq B, PW A, PW B y Filter</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="midi">MIDI</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Mensaje</th><th>Qué hace</th></tr></thead>
+    <tbody>
+      <tr><td>Notas</td><td>Hasta 5 voces; la velocidad actúa según la perilla Velocity</td></tr>
+      <tr><td>Pitch bend</td><td>±2 semitonos</td></tr>
+      <tr><td>CC 1 (rueda de modulación)</td><td>La cantidad de LFO o ruido que llega a los destinos de la rueda</td></tr>
+      <tr><td>CC 123 y 120</td><td>Apagan todas las notas</td></tr>
+    </tbody>
+  </table></div>
+  <p>Todos los controles son parámetros del plugin: se automatizan desde la DAW y el <strong>MIDI Learn</strong> de la DAW sirve para asignarles las perillas de tu controlador.</p>
+
+  <h2 id="sonidos">Sonidos de partida</h2>
+  <p>23 programas en cinco categorías, con el volumen calibrado para que suenen parejos: <strong>Pads</strong> (Poly Strings, PWM Pad, Warm Pad, Choir, Detuned Saws, Wobble Pad), <strong>Leads</strong> (Classic Brass, Sync Lead, Sync Sweep, Unison Lead, Vibrato Lead), <strong>Bajos</strong> (Poly Bass, Fat Bass), <strong>Teclas</strong> (Pluck, Clav, E.Piano, Organ, FM Bell, Metal Tine) y <strong>Efectos</strong> (Sweep, Wind, Random Filter). El estado del plugin se guarda con el proyecto de la DAW.</p>
+
+  <h2 id="compilar">Compilar desde el código</h2>
+  <p>El motor de audio es C++ puro y se prueba solo, sin JUCE, en cualquier sistema:</p>
+  <pre><code>cd polyfive
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target pf_tests
+./build/pf_tests              # pruebas y medición de rendimiento
+./build/pf_tests --wav /tmp   # una progresión de acordes por cada sonido</code></pre>
+  <p>Para el plugin completo en macOS (JUCE se baja solo):</p>
+  <pre><code>cmake -S . -B build -DPOLYFIVE_BUILD_PLUGIN=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+cmake --build build --config Release</code></pre>
+  <p>Los builds de GitHub se corren desde <em>Actions → Poly Five plugin (macOS)</em>, o subiendo una etiqueta <code>polyfive-v*</code>, que además publica el release. Pendiente: Windows y Linux, AAX para Pro Tools (hoy no carga) y firma con cuenta de Apple Developer.</p>
+  <p>Poly Five es un proyecto independiente, inspirado en los sintetizadores polifónicos de los 70 y sin relación con ninguna marca. ¿Algo no anda? Contanos en las <a href="https://github.com/bidego/synth/issues" rel="noopener">incidencias de GitHub</a>.</p>
+</main>
+
+<footer class="footer">
+  <div class="footer-top">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/></svg><span>Syntotec</span></a>
+    <nav aria-label="Pie">
+      <a href="/">Inicio</a>
+      <a href="/app/">La app</a>
+      <a href="/#plugin">Plugin</a>
+      <a href="https://github.com/bidego/synth" rel="noopener">Código en GitHub</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>

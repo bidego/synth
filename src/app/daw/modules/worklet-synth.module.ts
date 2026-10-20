@@ -64,6 +64,11 @@ export abstract class WorkletSynthModule extends RackModule {
     public presetName = 'Init';
     public error = '';
     public gate = false;
+    /** Cuantas notas estan apretadas ahora (para los LEDs del panel). */
+    get heldCount(): number {
+        return this.held.size;
+    }
+
     /** Se resuelve cuando el motor ya esta cargado y recibio todo (el render offline lo espera). */
     public readonly ready: Promise<void>;
 
