@@ -3,7 +3,7 @@
 namespace {
 
 // Disposicion del panel (coordenadas del diseno, 1500 x 800)
-constexpr int kPanelX = 70, kPanelY = 10, kPanelW = 1360, kPanelH = 516;
+constexpr int kPanelX = 70, kPanelY = 10, kPanelW = 1500, kPanelH = 516;
 constexpr int kRowATitle = 84, kRowAKnobTop = 100, kRowARocker = 214;
 constexpr int kRowBTitle = 300, kRowBKnobTop = 318, kRowBRocker = 438;
 
@@ -80,12 +80,12 @@ MoogKnob::MoogKnob(ModelDProcessor& p, int paramId, KnobScale scale, const juce:
 
 void MoogKnob::resized()
 {
-    slider_.setBounds(20, 22, 60, 60);
+    slider_.setBounds(22, 22, 60, 60);
 }
 
 void MoogKnob::paint(juce::Graphics& g)
 {
-    const juce::Point<float> c(float(kW) * 0.5f, 52.f);
+    const juce::Point<float> c(float(kW) * 0.5f, 52.f);   // centro de la perilla
     auto at = [&](float prop, float radius) {
         const float a = MdLookAndFeel::kStart + prop * (MdLookAndFeel::kEnd - MdLookAndFeel::kStart);
         return juce::Point<float>(c.x + std::sin(a) * radius, c.y - std::cos(a) * radius);
@@ -97,27 +97,27 @@ void MoogKnob::paint(juce::Graphics& g)
             const auto p0 = at(float(i) / 10.f, major ? 33.f : 34.f), p1 = at(float(i) / 10.f, major ? 41.f : 38.f);
             g.drawLine(p0.x, p0.y, p1.x, p1.y, major ? 1.6f : 1.1f);
         }
-        g.setFont(MdLookAndFeel::bold(9.f));
-        for (int i = 0; i <= 10; i += 2) {
+        g.setFont(MdLookAndFeel::bold(10.f));
+        for (int i = 0; i <= 10; i += 5) {   // 0, 5 y 10 (o -5, 0 y +5)
             const juce::String t = scale_ == KnobScale::Ten ? juce::String(i) : (i - 5 > 0 ? "+" : "") + juce::String(i - 5);
-            const auto p = at(float(i) / 10.f, 49.f);
-            g.drawText(t, juce::Rectangle<float>(18.f, 11.f).withCentre(p), juce::Justification::centred);
+            const auto p = at(float(i) / 10.f, i == 5 ? 47.f : 45.f);
+            g.drawText(t, juce::Rectangle<float>(22.f, 12.f).withCentre(p), juce::Justification::centred);
         }
     } else if (scale_ == KnobScale::Steps) {
         const int n = steps_.size();
-        g.setFont(MdLookAndFeel::bold(9.5f));
+        g.setFont(MdLookAndFeel::bold(9.f));
         for (int i = 0; i < n; ++i) {
             const float prop = float(i) / float(n - 1);
-            const auto p0 = at(prop, 33.f), p1 = at(prop, 39.f), p = at(prop, 48.f);
+            const auto p0 = at(prop, 33.f), p1 = at(prop, 38.f), p = at(prop, 44.f);
             g.drawLine(p0.x, p0.y, p1.x, p1.y, 1.5f);
-            g.drawText(steps_[i], juce::Rectangle<float>(26.f, 12.f).withCentre(p), juce::Justification::centred);
+            g.drawText(steps_[i], juce::Rectangle<float>(22.f, 12.f).withCentre(p), juce::Justification::centred);
         }
     } else {
         for (int i = 0; i < 6; ++i) {
             const float prop = float(i) / 5.f;
-            const auto p0 = at(prop, 33.f), p1 = at(prop, 38.f), p = at(prop, 48.f);
+            const auto p0 = at(prop, 33.f), p1 = at(prop, 38.f), p = at(prop, 45.f);
             g.drawLine(p0.x, p0.y, p1.x, p1.y, 1.5f);
-            MdLookAndFeel::drawWaveIcon(g, i, juce::Rectangle<float>(16.f, 11.f).withCentre(p), ink());
+            MdLookAndFeel::drawWaveIcon(g, i, juce::Rectangle<float>(14.f, 10.f).withCentre(p), ink());
         }
     }
     g.setColour(ink());
@@ -200,15 +200,15 @@ public:
         struct K { int id; int cx; int cy; KnobScale scale; const char* label; };
         const int ya = kRowAKnobTop + 52, yb = kRowBKnobTop + 52;
         const std::vector<K> knobs = {
-            { Tune, 135, ya, KnobScale::Bipolar, "TUNE" }, { Glide, 223, ya, KnobScale::Ten, "GLIDE" }, { ModMix, 311, ya, KnobScale::Ten, "MODULATION MIX" },
-            { Osc1Range, 412, ya, KnobScale::Steps, "RANGE" }, { Osc1Wave, 500, ya, KnobScale::Waves, "WAVEFORM" },
-            { Osc2Range, 604, ya, KnobScale::Steps, "RANGE" }, { Osc2Tune, 692, ya, KnobScale::Bipolar, "FREQUENCY" }, { Osc2Wave, 780, ya, KnobScale::Waves, "WAVEFORM" },
-            { Osc3Range, 884, ya, KnobScale::Steps, "RANGE" }, { Osc3Tune, 972, ya, KnobScale::Bipolar, "FREQUENCY" }, { Osc3Wave, 1060, ya, KnobScale::Waves, "WAVEFORM" },
-            { Volume, 1180, ya, KnobScale::Ten, "VOLUME" }, { Velocity, 1268, ya, KnobScale::Ten, "VELOCITY" },
-            { Vol1, 135, yb, KnobScale::Ten, "OSC 1" }, { Vol2, 223, yb, KnobScale::Ten, "OSC 2" }, { Vol3, 311, yb, KnobScale::Ten, "OSC 3" }, { VolNoise, 399, yb, KnobScale::Ten, "NOISE" },
-            { Cutoff, 585, yb, KnobScale::Bipolar, "CUTOFF FREQUENCY" }, { Emphasis, 673, yb, KnobScale::Ten, "EMPHASIS" }, { ContourAmt, 761, yb, KnobScale::Ten, "AMOUNT OF CONTOUR" },
-            { FAtk, 885, yb, KnobScale::Ten, "ATTACK" }, { FDec, 973, yb, KnobScale::Ten, "DECAY" }, { FSus, 1061, yb, KnobScale::Ten, "SUSTAIN" },
-            { LAtk, 1165, yb, KnobScale::Ten, "ATTACK" }, { LDec, 1253, yb, KnobScale::Ten, "DECAY" }, { LSus, 1341, yb, KnobScale::Ten, "SUSTAIN" },
+            { Tune, 138, ya, KnobScale::Bipolar, "TUNE" }, { Glide, 234, ya, KnobScale::Ten, "GLIDE" }, { ModMix, 330, ya, KnobScale::Ten, "MODULATION MIX" },
+            { Osc1Range, 446, ya, KnobScale::Steps, "RANGE" }, { Osc1Wave, 550, ya, KnobScale::Waves, "WAVEFORM" },
+            { Osc2Range, 676, ya, KnobScale::Steps, "RANGE" }, { Osc2Tune, 780, ya, KnobScale::Bipolar, "FREQUENCY" }, { Osc2Wave, 884, ya, KnobScale::Waves, "WAVEFORM" },
+            { Osc3Range, 1010, ya, KnobScale::Steps, "RANGE" }, { Osc3Tune, 1114, ya, KnobScale::Bipolar, "FREQUENCY" }, { Osc3Wave, 1218, ya, KnobScale::Waves, "WAVEFORM" },
+            { Volume, 1352, ya, KnobScale::Ten, "VOLUME" }, { Velocity, 1442, ya, KnobScale::Ten, "VELOCITY" },
+            { Vol1, 138, yb, KnobScale::Ten, "OSC 1" }, { Vol2, 234, yb, KnobScale::Ten, "OSC 2" }, { Vol3, 330, yb, KnobScale::Ten, "OSC 3" }, { VolNoise, 426, yb, KnobScale::Ten, "NOISE" },
+            { Cutoff, 650, yb, KnobScale::Bipolar, "CUTOFF FREQUENCY" }, { Emphasis, 746, yb, KnobScale::Ten, "EMPHASIS" }, { ContourAmt, 842, yb, KnobScale::Ten, "AMOUNT OF CONTOUR" },
+            { FAtk, 974, yb, KnobScale::Ten, "ATTACK" }, { FDec, 1070, yb, KnobScale::Ten, "DECAY" }, { FSus, 1166, yb, KnobScale::Ten, "SUSTAIN" },
+            { LAtk, 1286, yb, KnobScale::Ten, "ATTACK" }, { LDec, 1382, yb, KnobScale::Ten, "DECAY" }, { LSus, 1478, yb, KnobScale::Ten, "SUSTAIN" },
         };
         for (const auto& k : knobs) {
             knobs_.push_back(std::make_unique<MoogKnob>(p, k.id, k.scale, k.label, laf));
@@ -218,11 +218,11 @@ public:
         // Interruptores de palanca: id, centro x, arriba y, nombre
         struct R { int id; int cx; int top; const char* label; };
         const std::vector<R> rockers = {
-            { GlideOn, 223, kRowARocker, "GLIDE" }, { OscMod, 283, kRowARocker, "OSCILLATOR MOD" }, { FiltMod, 341, kRowARocker, "FILTER MOD" },
-            { Osc3Kbd, 972, kRowARocker, "OSC 3 KEYBOARD" }, { A440, 1356, kRowAKnobTop + 20, "A-440" },
-            { Osc1On, 135, kRowBRocker, "OSC 1" }, { Osc2On, 223, kRowBRocker, "OSC 2" }, { Osc3On, 311, kRowBRocker, "OSC 3" }, { NoiseOn, 399, kRowBRocker, "NOISE" },
-            { NoiseType, 487, kRowBKnobTop + 34, "PINK NOISE" },
-            { Kbd1, 650, kRowBRocker, "KEYBOARD 1" }, { Kbd2, 710, kRowBRocker, "KEYBOARD 2" }, { DecayOn, 1253, kRowBRocker, "DECAY" },
+            { GlideOn, 234, kRowARocker, "GLIDE" }, { OscMod, 300, kRowARocker, "OSCILLATOR MOD" }, { FiltMod, 366, kRowARocker, "FILTER MOD" },
+            { Osc3Kbd, 1114, kRowARocker, "OSC 3 KEYBOARD" }, { A440, 1526, kRowAKnobTop + 20, "A-440" },
+            { Osc1On, 138, kRowBRocker, "OSC 1" }, { Osc2On, 234, kRowBRocker, "OSC 2" }, { Osc3On, 330, kRowBRocker, "OSC 3" }, { NoiseOn, 426, kRowBRocker, "NOISE" },
+            { NoiseType, 522, kRowBKnobTop + 34, "PINK NOISE" },
+            { Kbd1, 706, kRowBRocker, "KEYBOARD 1" }, { Kbd2, 786, kRowBRocker, "KEYBOARD 2" }, { DecayOn, 1382, kRowBRocker, "DECAY" },
         };
         for (const auto& r : rockers) {
             rockers_.push_back(std::make_unique<Rocker>(p, r.id, r.label, laf));
@@ -261,7 +261,7 @@ public:
         keyboard_.setLookAndFeel(&laf);
         keyboard_.setAvailableRange(41, 84);
         keyboard_.setLowestVisibleKey(41);
-        keyboard_.setKeyWidth(45.f);
+        keyboard_.setKeyWidth(50.f);
         keyboard_.setBlackNoteLengthProportion(0.62f);
         keyboard_.setBlackNoteWidthProportion(0.58f);
         keyboard_.setScrollButtonsVisible(false);
@@ -293,13 +293,13 @@ public:
 
     void resized() override
     {
-        presets_.setBounds(1060, 24, 250, 28);
-        prev_.setBounds(1022, 24, 34, 28);
-        next_.setBounds(1314, 24, 34, 28);
-        gateArea_ = { 944, 30, 16, 16 };
-        pitch_.setBounds(100, 574, 44, 190);
-        mod_.setBounds(152, 574, 44, 190);
-        keyboard_.setBounds(215, 574, 1170, 190);
+        presets_.setBounds(1260, 24, 250, 28);
+        prev_.setBounds(1222, 24, 34, 28);
+        next_.setBounds(1514, 24, 34, 28);
+        gateArea_ = { 1140, 30, 16, 16 };
+        pitch_.setBounds(104, 574, 44, 190);
+        mod_.setBounds(158, 574, 44, 190);
+        keyboard_.setBounds(250, 574, 1300, 190);
         background_ = renderBackground(getWidth(), getHeight());
     }
 
@@ -362,21 +362,21 @@ private:
         g.setFont(MdLookAndFeel::bold(10.5f));
         g.drawText("MONOPHONIC SYNTHESIZER", kPanelX + 190, 40, 260, 16, juce::Justification::centredLeft);
         g.setFont(MdLookAndFeel::bold(9.f));
-        g.drawText("GATE", 910, 33, 34, 12, juce::Justification::centredRight);
-        g.drawText("PRESET", 1022, 12, 80, 12, juce::Justification::centredLeft);
+        g.drawText("GATE", 1100, 33, 34, 12, juce::Justification::centredRight);
+        g.drawText("PRESET", 1222, 12, 80, 12, juce::Justification::centredLeft);
 
         // Secciones
-        drawSection(g, "CONTROLLERS", 92, 358, kRowATitle);
-        drawSection(g, "OSCILLATOR BANK", 372, 1112, kRowATitle);
-        drawSection(g, "OUTPUT", 1126, 1410, kRowATitle);
-        drawSection(g, "MIXER", 92, 520, kRowBTitle);
-        drawSection(g, "FILTER", 540, 820, kRowBTitle);
-        drawSection(g, "FILTER CONTOUR", 840, 1100, kRowBTitle);
-        drawSection(g, "LOUDNESS CONTOUR", 1120, 1410, kRowBTitle);
+        drawSection(g, "CONTROLLERS", 92, 394, kRowATitle);
+        drawSection(g, "OSCILLATOR BANK", 408, 1288, kRowATitle);
+        drawSection(g, "OUTPUT", 1304, 1550, kRowATitle);
+        drawSection(g, "MIXER", 92, 574, kRowBTitle);
+        drawSection(g, "FILTER", 594, 898, kRowBTitle);
+        drawSection(g, "FILTER CONTOUR", 918, 1222, kRowBTitle);
+        drawSection(g, "LOUDNESS CONTOUR", 1242, 1550, kRowBTitle);
         g.setFont(MdLookAndFeel::bold(9.f));
         g.setColour(MdLookAndFeel::dim());
-        for (const auto& s : { std::make_pair("OSCILLATOR 1", 456), std::make_pair("OSCILLATOR 2", 692), std::make_pair("OSCILLATOR 3", 972) })
-            g.drawText(s.first, s.second - 70, kRowAKnobTop - 8, 140, 12, juce::Justification::centred);
+        for (const auto& s2 : { std::make_pair("OSCILLATOR 1", 498), std::make_pair("OSCILLATOR 2", 780), std::make_pair("OSCILLATOR 3", 1114) })
+            g.drawText(s2.first, s2.second - 70, kRowAKnobTop - 8, 140, 12, juce::Justification::centred);
 
         // Banco: debajo del panel, donde viven las ruedas y el teclado
         const auto bench = juce::Rectangle<float>(float(kPanelX), float(kPanelY + kPanelH + 14), float(kPanelW), float(h) - float(kPanelY + kPanelH + 14));
@@ -386,8 +386,8 @@ private:
         g.fillRect(bench.withHeight(6.f));
         g.setColour(MdLookAndFeel::dim());
         g.setFont(MdLookAndFeel::bold(9.f));
-        g.drawText("PITCH", 96, 764 + 0, 52, 12, juce::Justification::centred);
-        g.drawText("MOD", 148, 764, 52, 12, juce::Justification::centred);
+        g.drawText("PITCH", 100, 764, 52, 12, juce::Justification::centred);
+        g.drawText("MOD", 154, 764, 52, 12, juce::Justification::centred);
         return img;
     }
 

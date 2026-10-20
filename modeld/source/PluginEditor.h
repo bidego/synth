@@ -56,7 +56,7 @@ public:
     void paint(juce::Graphics&) override;
     void resized() override;
 
-    static constexpr int kW = 100, kH = 128;
+    static constexpr int kW = 104, kH = 120;
 
 private:
     juce::Slider slider_;
@@ -104,7 +104,7 @@ public:
     void resized() override;
 
     // El panel se dibuja siempre a este tamano y se escala al de la ventana
-    static constexpr int kWidth = 1500, kHeight = 800;
+    static constexpr int kWidth = 1640, kHeight = 800;
 
 private:
     class Content;
