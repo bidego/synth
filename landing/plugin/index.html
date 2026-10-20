@@ -93,7 +93,7 @@
     <li>En la DAW, creá una pista de instrumento y elegí <strong>Juno 106</strong> (<em>Syntotec</em> en la lista de fabricantes).</li>
     <li>Elegí un sonido en el selector de programas de la DAW (<em>Brass</em>, <em>Strings</em>, <em>Funk Bass</em>…) y movés los controles.</li>
   </ol>
-  <p>La interfaz de esta primera versión es el panel genérico del anfitrión: una lista con todos los controles. El panel con la imagen del Juno-106 es la próxima etapa.</p>
+  <p>La interfaz es un panel como el del Juno-106: deslizadores con escala de 0 a 10, botones, LEDs que muestran las voces sonando, el selector de sonidos arriba (con anterior y siguiente) y, abajo, el bender, la rueda de modulación y un teclado en pantalla para tocar sin controlador. Se puede agrandar o achicar la ventana.</p>
 
   <h2 id="controles">Controles</h2>
   <p>Los deslizadores van de 0 a 10, como en el original. Los nombres de los controles son los mismos que en la versión web.</p>
@@ -126,7 +126,7 @@
   <p>Para mover los controles con las perillas de tu controlador, usá el <strong>MIDI Learn</strong> de tu DAW: todos los controles son parámetros del plugin.</p>
 
   <h2 id="sonidos">Sonidos de partida</h2>
-  <p>Once programas: <strong>Init</strong>, <strong>Brass</strong>, <strong>Strings</strong>, <strong>Soft Pad</strong>, <strong>Funk Bass</strong>, <strong>Sub Bass</strong>, <strong>Pluck</strong>, <strong>Wobble Lead</strong>, <strong>Vibrato Lead</strong>, <strong>Bell Tine</strong> y <strong>Noise Sweep</strong>. No son los de fábrica del original: son retratos de los clásicos del Juno. El estado del plugin se guarda con el proyecto de la DAW.</p>
+  <p>37 programas en siete categorías, con el volumen calibrado para que suenen parejos: <strong>Bajos</strong> (Funk, Sub, Acid, Pulse, Rubber, Wobble), <strong>Cuerdas y pads</strong> (Strings, Soft, Warm, Choir, Sweep, Glass, Dark), <strong>Metales</strong> (Brass, Swell, Poly, Stab), <strong>Leads</strong>, <strong>Teclas</strong> (Organ, Clav, E.Piano, Harpsichord, Bell), <strong>Plucks</strong> (Pluck, Marimba, Kalimba, Arp) y <strong>Efectos</strong> (Wind, Laser, Riser, Sci-Fi…). Son los mismos que trae Syntotec en la web. No son los de fábrica del original: son retratos de los clásicos del Juno. El estado del plugin se guarda con el proyecto de la DAW.</p>
 
   <h2 id="compilar">Compilar desde el código</h2>
   <p>El motor de audio es C++ puro y se prueba solo, sin JUCE, en cualquier sistema:</p>
@@ -143,7 +143,6 @@ cmake --build build --config Release</code></pre>
 
   <h2 id="pendiente">Pendiente</h2>
   <ul>
-    <li>Panel propio con la imagen del Juno-106 (hoy: interfaz genérica del anfitrión).</li>
     <li>Windows y Linux (el código ya compila; falta armar los instaladores).</li>
     <li>AAX para Pro Tools (hoy no carga: Pro Tools no abre VST3 ni Audio Unit). Requiere el SDK y el programa de desarrolladores de Avid, y firmar con las herramientas de PACE (iLok). RTAS ya no existe.</li>
     <li>Firmar y notarizar con una cuenta de Apple Developer, para que macOS no pida confirmaciones.</li>

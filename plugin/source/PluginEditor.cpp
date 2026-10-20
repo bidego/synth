@@ -32,7 +32,7 @@ PanelSlider::PanelSlider(JunoProcessor& p, int paramId, juce::LookAndFeel& laf)
 
 void PanelSlider::resized()
 {
-    slider_.setBounds(18, 0, 34, 116);
+    slider_.setBounds(18, 0, 34, 150);
 }
 
 void PanelSlider::paint(juce::Graphics& g)
@@ -47,7 +47,7 @@ void PanelSlider::paint(juce::Graphics& g)
     }
     g.setColour(JunoLookAndFeel::dim());
     g.setFont(bold(9.5f));
-    g.drawText(label_, 0, 122, getWidth(), 14, juce::Justification::centred);
+    g.drawText(label_, 0, 156, getWidth(), 14, juce::Justification::centred);
 }
 
 // ---------------------------------------------------------------- PanelSwitch
@@ -135,7 +135,7 @@ public:
             for (int id : d.sliders) {
                 sliders_.push_back(std::make_unique<PanelSlider>(p, id, laf));
                 addAndMakeVisible(*sliders_.back());
-                sliders_.back()->setBounds(sx, y + 34, 52, 140);
+                sliders_.back()->setBounds(sx, y + 32, 52, 174);
                 sx += 52;
             }
             int sy = y + 38;

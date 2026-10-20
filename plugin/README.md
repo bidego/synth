@@ -19,8 +19,8 @@ Global: LFO triangular con retardo, chorus I / II / I+II estereo, portamento, be
 Poly 1 / Poly 2 / Unison y sensibilidad a la velocidad (un agregado: en 0 suena como el original).
 Los osciladores usan PolyBLEP contra el aliasing.
 
-Todo es parametro del plugin: se automatiza desde la DAW y el MIDI Learn lo hace la propia DAW. Los 11 sonidos de partida son los
-"programas" del plugin. La interfaz es, por ahora, la generica del anfitrion (una lista de controles); el panel del Juno es la proxima etapa.
+Todo es parametro del plugin: se automatiza desde la DAW y el MIDI Learn lo hace la propia DAW. Los 37 sonidos de partida son los
+"programas" del plugin. La interfaz es un panel propio al estilo del Juno-106 (deslizadores 0-10, LEDs de voces, selector de sonidos, bender, rueda y teclado en pantalla); `JunoSnapshot` genera capturas de ella en el CI.
 
 ## Probar el motor (cualquier sistema, sin JUCE)
 
@@ -58,7 +58,6 @@ a mano: `auval -v aumu Jn06 Synt`.
 
 ## Pendiente
 
-- Panel propio con la imagen del Juno-106 (hoy: interfaz generica).
 - Windows y Linux en el CI (el codigo ya compila ahi; falta el workflow).
 - AAX (Pro Tools): requiere el SDK y la cuenta de desarrollador de Avid. RTAS ya no existe.
 - Firmar y notarizar con una cuenta de Apple Developer.
