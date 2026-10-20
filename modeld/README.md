@@ -24,6 +24,13 @@ tools/    ModelDSnapshot: genera una captura PNG de la interfaz (para revisarla 
 - **Calidad**: todo el camino de audio va sobremuestreado 4 veces y se decima con dos filtros FIR de fase lineal; PolyBLEP en los saltos.
 - Extras que el original no tiene: sensibilidad a la velocidad (perilla VELOCITY; en 0 suena como el original).
 
+## En Syntotec (web)
+
+El mismo motor, traducido a JavaScript, corre como dispositivo del rack de Syntotec (`src/assets/worklets/modeld-worklet.js`, un
+AudioWorklet; el modulo es `src/app/daw/modules/modeld.module.ts` y el panel `modeld-device.component.ts`). Los parametros y los sonidos
+salen de los mismos datos: `python3 scripts/gen_web.py` regenera el bloque de parametros del worklet y `modeld-data.ts`.
+`node tests/compare_js.js ./build/md_tests` compara el motor web con el del plugin muestra a muestra (error relativo < 0.03 %).
+
 ## Probar el motor (cualquier sistema, sin JUCE)
 
 ```

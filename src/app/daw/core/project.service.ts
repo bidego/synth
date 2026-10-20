@@ -506,6 +506,12 @@ export class ProjectService {
             graph.setState(this.rack.getState());
             graph.ofType<SynthStudioModule>('synth').forEach(s => s.sequencer.renderPasses(this.exportPasses));
             graph.ofType<SequencerModule>('sequencer').forEach(s => s.sequencer.renderPasses(this.exportPasses));
+            // Los dispositivos con AudioWorklet (Model D) tienen que terminar de cargar y recibir sus notas antes de renderizar
+            const worklets = graph.modules.map(m => (m as any).ready).filter(Boolean);
+            if (worklets.length) {
+                await Promise.all(worklets);
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
             this.scheduleAutomation(offline, graph, seconds);
             const rendered = await offline.startRendering();
             graph.dispose();

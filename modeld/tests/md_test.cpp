@@ -483,9 +483,34 @@ static void demoWavs(const std::string& dir)
     std::printf("renders en %s\n", dir.c_str());
 }
 
+// Para comparar con la version web (modeld/tests/compare_js.js): un guion fijo de notas y el audio crudo (float32 mono)
+static void dumpScript(const char* path, int preset, int note, int frames)
+{
+    Engine e = fresh();
+    e.loadPreset(preset);
+    std::vector<float> all;
+    all.reserve(size_t(frames));
+    std::vector<float> l(128), r(128);
+    int pos = 0;
+    while (pos < frames) {
+        if (pos == 0) e.noteOn(note, 0.9f);
+        if (pos == (frames * 2 / 5) / 128 * 128) e.noteOn(note + 7, 0.7f);
+        if (pos == (frames * 13 / 20) / 128 * 128) e.noteOff(note + 7);
+        if (pos == (frames * 4 / 5) / 128 * 128) e.noteOff(note);
+        e.process(l.data(), r.data(), 128);
+        all.insert(all.end(), l.begin(), l.end());
+        pos += 128;
+    }
+    FILE* f = std::fopen(path, "wb");
+    if (!f) return;
+    std::fwrite(all.data(), sizeof(float), all.size(), f);
+    std::fclose(f);
+}
+
 int main(int argc, char** argv)
 {
     if (argc > 1 && !std::strcmp(argv[1], "--calibrate")) { calibrate(); return 0; }
+    if (argc > 5 && !std::strcmp(argv[1], "--dump")) { dumpScript(argv[2], std::atoi(argv[3]), std::atoi(argv[4]), std::atoi(argv[5])); return 0; }
     testSilence();
     testPitch();
     testAliasing();

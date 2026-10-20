@@ -24,6 +24,9 @@ jobs:
           cmake --build build-tests --target md_tests -j 4
           ./build-tests/md_tests
 
+      - name: El motor web (AudioWorklet) coincide con el del plugin
+        run: node tests/compare_js.js ./build-tests/md_tests
+
       - name: Compilar el plugin (VST3, AU y Standalone; Intel + Apple Silicon)
         run: |
           cmake -S . -B build -DMODELD_BUILD_PLUGIN=ON -DCMAKE_BUILD_TYPE=Release \

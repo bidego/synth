@@ -139,7 +139,7 @@ export class RackService {
         list.splice(list.indexOf(copy), 1);
         list.splice(list.indexOf(src) + 1, 0, copy);
         this.message = '';
-        if (copy.type == 'synth' || copy.type == 'juno')
+        if (copy.type == 'synth' || copy.type == 'juno' || copy.type == 'modeld')
             this.wireAudioOut(copy, 'out');
         this.selectedId = copy.id;
         this.changed.next();
@@ -189,7 +189,7 @@ export class RackService {
     // Los dispositivos nuevos se enchufan solos a donde es razonable; despues se re-cablea a gusto
     private autoWire(m: RackModule) {
         const g = this.graph;
-        if (m.type == 'synth' || m.type == 'juno') {
+        if (m.type == 'synth' || m.type == 'juno' || m.type == 'modeld') {
             const kb = g.ofType('keyboard')[0];
             if (kb && !g.cablesOf(kb.id, 'notes').length)
                 g.connect(kb.id, 'notes', m.id, 'notes');
