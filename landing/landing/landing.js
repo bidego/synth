@@ -4,6 +4,42 @@
    Todo texto que viene del servidor se inserta con textContent: nunca como HTML. */
 (function () {
   'use strict';
+
+  // El selector ES / DE recuerda la eleccion: la raiz deja de mandar a los navegadores en aleman al aleman
+  Array.prototype.forEach.call(document.querySelectorAll('.lang-switch'), function (a) {
+    a.addEventListener('click', function () { try { localStorage.setItem('syntotec.lang', a.getAttribute('data-lang')); } catch (e) {} });
+  });
+
+  // Idioma de la pagina (<html lang>): los textos que arma el JS salen de aca
+  var T = document.documentElement.lang === 'de' ? {
+    pause: 'Musik pausieren', listen: 'Intro-Musik anhören',
+    playing: 'Es läuft ', playingSkip: ' · tippe oder drücke eine Taste, um einzutreten', playingNote: ', ein in Syntotec gemachtes Projekt',
+    notes: ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Si', 'Do'], noteName: 'Ton ', sharp: 'Schwarze Taste ',
+    locale: 'de', unnamed: 'Ohne Namen', by: 'von ', anon: 'Anonym',
+    bar: ' Takt', bars: ' Takte', track: ' Spur', tracks: ' Spuren', notesN: ' Noten',
+    thumb: 'Notenminiatur von ', open: 'In Syntotec öffnen', play: '▶ Anhören', stop: '■ Stopp',
+    ctaTitle: 'Dein Projekt kann hier stehen',
+    ctaText: 'Bau einen Song, speichere ihn und veröffentliche ihn im Menü Projekt über die Weltkugel-Taste. Er erscheint in der Galerie, damit ihn jeder öffnen und anhören kann.',
+    ctaBtn: 'Syntotec öffnen', featured: 'Empfohlen', loadErr: 'Die Beispielprojekte konnten nicht geladen werden.',
+    none: 'Es gibt noch keine öffentlichen Projekte. ', noneText: 'Speichere eines in der App und veröffentliche es mit der Weltkugel-Taste: Es erscheint hier.',
+    showing: function (n, t) { return 'Die ' + n + ' neuesten von ' + t + ' öffentlichen Projekten.'; },
+    galErr: 'Die Galerie ist gerade nicht verfügbar. Öffne die App und versuche es später noch einmal.',
+    demos: { 'funkito-d': 'Ein Funk-Groove über 16 Takte bei 104 BPM: Power-Kit- und 808-Schlagzeug, Kontrabass und Klavier, mit automatisierter Verzerrung und automatisiertem Delay.' }
+  } : {
+    pause: 'Pausar la música', listen: 'Escuchar la música de la intro',
+    playing: 'Suena ', playingSkip: ' · tocá o apretá una tecla para entrar', playingNote: ', un proyecto hecho en Syntotec',
+    notes: ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Si', 'Do'], noteName: 'Nota ', sharp: 'Nota sostenida ',
+    locale: 'es', unnamed: 'Sin nombre', by: 'por ', anon: 'Anónimo',
+    bar: ' compás', bars: ' compases', track: ' pista', tracks: ' pistas', notesN: ' notas',
+    thumb: 'Miniatura de las notas de ', open: 'Abrir en Syntotec', play: '▶ Escuchar', stop: '■ Detener',
+    ctaTitle: 'Tu proyecto puede estar acá',
+    ctaText: 'Armá un tema, guardalo y publicalo desde el menú Proyecto con el botón del globo. Aparece en la galería para que cualquiera lo abra y lo escuche.',
+    ctaBtn: 'Abrir Syntotec', featured: 'Destacado', loadErr: 'No se pudieron cargar los proyectos de ejemplo.',
+    none: 'Todavía no hay proyectos públicos. ', noneText: 'Guardá uno desde la app y publicalo con el botón del globo: va a aparecer acá.',
+    showing: function (n, t) { return 'Mostrando los ' + n + ' más recientes de ' + t + ' proyectos públicos.'; },
+    galErr: 'La galería no está disponible en este momento. Abrí la app y probá de nuevo más tarde.',
+    demos: {}
+  };
   // Avisa al <head> que el JS arranco (si no llega a hacerlo, la intro se quita sola)
   window.__syntotecLanding = true;
 
@@ -287,7 +323,7 @@
     if (!musicBtn) return;
     musicBtn.classList.toggle('on', on);
     musicBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    musicBtn.setAttribute('aria-label', on ? 'Pausar la música' : 'Escuchar la música de la intro');
+    musicBtn.setAttribute('aria-label', on ? T.pause : T.listen);
   }
   function audible() {
     return !!(player.ctx && player.ctx.state === 'running' && player.playing);
@@ -361,8 +397,8 @@
         setMusicButton(true);
         var ts = (performance.now() - audibleSince) / 1000;
         hint('playing' + (ts >= INTRO_MIN_S ? '-skip' : ''), ts >= INTRO_MIN_S
-          ? nodes('Suena ', el('b', '', 'Funkito D'), ' · tocá o apretá una tecla para entrar')
-          : nodes('Suena ', el('b', '', 'Funkito D'), ', un proyecto hecho en Syntotec'));
+          ? nodes(T.playing, el('b', '', 'Funkito D'), T.playingSkip)
+          : nodes(T.playing, el('b', '', 'Funkito D'), T.playingNote));
       }
       // Sin sonido no tiene sentido alargarla: unos segundos y entra sola
       if (!audible() && t >= INTRO_SILENT_S) { closeIntro(0.8); return; }
@@ -529,12 +565,12 @@
     WHITE.forEach(function (midi, i) {
       var b = el('button', 'key');
       b.type = 'button';
-      b.setAttribute('aria-label', 'Nota ' + ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Si', 'Do'][i]);
+      b.setAttribute('aria-label', T.noteName + T.notes[i]);
       buttons[midi] = b; host.appendChild(b);
     });
     BLACK.forEach(function (k) {
       var b = el('button', 'black');
-      b.type = 'button'; b.setAttribute('aria-label', 'Nota sostenida ' + k.midi);
+      b.type = 'button'; b.setAttribute('aria-label', T.sharp + k.midi);
       b.style.left = (k.at / WHITE.length * 100) + '%';
       buttons[k.midi] = b; host.appendChild(b);
     });
@@ -601,47 +637,48 @@
     return s >= 60 ? Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2) + ' min' : s + ' s';
   }
   function fmtDate(ms) {
-    try { return new Date(ms).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return ''; }
+    try { return new Date(ms).toLocaleDateString(T.locale, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return ''; }
   }
 
   function projectCard(item, opts) {
-    item.name = item.name || item.title || 'Sin nombre';
+    item.name = item.name || item.title || T.unnamed;
+    if (T.demos[item.slug]) item.description = T.demos[item.slug];
     var card = el('article', 'project reveal in');
     var thumb = el('div', 'thumb');
     var canvas = el('canvas');
     canvas.setAttribute('role', 'img');
-    canvas.setAttribute('aria-label', 'Miniatura de las notas de ' + item.name);
+    canvas.setAttribute('aria-label', T.thumb + item.name);
     thumb.appendChild(canvas);
     if (opts.badge) thumb.appendChild(el('span', 'badge', opts.badge));
     card.appendChild(thumb);
 
     var body = el('div', 'body');
     body.appendChild(el('h3', '', item.name));
-    var by = (item.author ? 'por ' + item.author : 'Anónimo') + (opts.date ? ' · ' + fmtDate(opts.date) : '');
+    var by = (item.author ? T.by + item.author : T.anon) + (opts.date ? ' · ' + fmtDate(opts.date) : '');
     body.appendChild(el('div', 'by', by));
     if (item.description) body.appendChild(el('p', 'desc', item.description));
     var s = item.stats || {};
     var chips = el('ul', 'chips');
-    [s.bpm && Math.round(s.bpm) + ' BPM', s.bars && s.bars + (s.bars === 1 ? ' compás' : ' compases'), s.seconds && fmtDuration(s.seconds),
-      s.tracks && s.tracks + (s.tracks === 1 ? ' pista' : ' pistas'), s.notes && s.notes + ' notas']
+    [s.bpm && Math.round(s.bpm) + ' BPM', s.bars && s.bars + (s.bars === 1 ? T.bar : T.bars), s.seconds && fmtDuration(s.seconds),
+      s.tracks && s.tracks + (s.tracks === 1 ? T.track : T.tracks), s.notes && s.notes + T.notesN]
       .concat((s.instruments || []).slice(0, 3))
       .filter(Boolean).forEach(function (t) { chips.appendChild(el('li', '', String(t))); });
     body.appendChild(chips);
     card.appendChild(body);
 
     var actions = el('div', 'actions');
-    var open = el('a', 'btn btn-primary btn-sm', 'Abrir en Syntotec');
+    var open = el('a', 'btn btn-primary btn-sm', T.open);
     open.href = opts.href;
     actions.appendChild(open);
     if (opts.audio) {
       var play = el('button', 'play');
       play.type = 'button';
-      play.textContent = '▶ Escuchar';
+      play.textContent = T.play;
       play.addEventListener('click', function () {
-        if (player.playing) { player.fadeOut(0.4); play.classList.remove('on'); play.textContent = '▶ Escuchar'; return; }
-        play.textContent = '■ Detener'; play.classList.add('on');
-        player.onEnd = function () { play.classList.remove('on'); play.textContent = '▶ Escuchar'; setMusicButton(false); };
-        player.play(false).then(function () { vj.level = 0.8; setMusicButton(true); }).catch(function () { play.textContent = '▶ Escuchar'; play.classList.remove('on'); });
+        if (player.playing) { player.fadeOut(0.4); play.classList.remove('on'); play.textContent = T.play; return; }
+        play.textContent = T.stop; play.classList.add('on');
+        player.onEnd = function () { play.classList.remove('on'); play.textContent = T.play; setMusicButton(false); };
+        player.play(false).then(function () { vj.level = 0.8; setMusicButton(true); }).catch(function () { play.textContent = T.play; play.classList.remove('on'); });
       });
       actions.appendChild(play);
     }
@@ -676,19 +713,19 @@
   fetchJSON('/demos/index.json').then(function (data) {
     featured.textContent = '';
     (data.items || []).forEach(function (d) {
-      featured.appendChild(projectCard(d, { badge: 'Destacado', href: '/app/#demo=' + encodeURIComponent(d.slug), audio: !!d.audio }));
+      featured.appendChild(projectCard(d, { badge: T.featured, href: '/app/#demo=' + encodeURIComponent(d.slug), audio: !!d.audio }));
     });
     // Invitacion a sumar el propio proyecto
     var cta = el('div', 'cta-card reveal in');
-    cta.appendChild(el('h3', '', 'Tu proyecto puede estar acá'));
-    cta.appendChild(el('p', '', 'Armá un tema, guardalo y publicalo desde el menú Proyecto con el botón del globo. Aparece en la galería para que cualquiera lo abra y lo escuche.'));
-    var go = el('a', 'btn btn-primary', 'Abrir Syntotec');
+    cta.appendChild(el('h3', '', T.ctaTitle));
+    cta.appendChild(el('p', '', T.ctaText));
+    var go = el('a', 'btn btn-primary', T.ctaBtn);
     go.href = '/app/';
     cta.appendChild(go);
     featured.appendChild(cta);
   }).catch(function () {
     featured.textContent = '';
-    featured.appendChild(el('div', 'empty', 'No se pudieron cargar los proyectos de ejemplo.'));
+    featured.appendChild(el('div', 'empty', T.loadErr));
   });
 
   // --- Ultimos proyectos publicos (backend; si no esta, la seccion lo cuenta sin romper nada) ---
@@ -701,21 +738,21 @@
     if (data.backend === false) throw new Error('sin backend');
     if (!items.length) {
       var empty = el('div', 'empty');
-      empty.appendChild(el('b', '', 'Todavía no hay proyectos públicos. '));
-      empty.appendChild(document.createTextNode('Guardá uno desde la app y publicalo con el botón del globo: va a aparecer acá.'));
+      empty.appendChild(el('b', '', T.none));
+      empty.appendChild(document.createTextNode(T.noneText));
       gallery.appendChild(empty);
       return;
     }
     items.forEach(function (it) {
-      gallery.appendChild(projectCard(it, { href: '/app/#p=' + encodeURIComponent(it.pid), date: it.publishedAt, badge: it.featured ? 'Destacado' : '' }));
+      gallery.appendChild(projectCard(it, { href: '/app/#p=' + encodeURIComponent(it.pid), date: it.publishedAt, badge: it.featured ? T.featured : '' }));
     });
     if (data.total > items.length) {
       note.hidden = false;
-      note.textContent = 'Mostrando los ' + items.length + ' más recientes de ' + data.total + ' proyectos públicos.';
+      note.textContent = T.showing(items.length, data.total);
     }
   }).catch(function () {
     gallery.textContent = '';
     gallery.setAttribute('aria-busy', 'false');
-    gallery.appendChild(el('div', 'empty', 'La galería no está disponible en este momento. Abrí la app y probá de nuevo más tarde.'));
+    gallery.appendChild(el('div', 'empty', T.galErr));
   });
 })();

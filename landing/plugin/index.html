@@ -6,6 +6,8 @@
 <title>Juno 106 · Plugin para macOS · Syntotec</title>
 <meta name="description" content="Instalación y manual del plugin Juno 106 de Syntotec: VST3, Audio Unit y aplicación independiente para macOS (Intel y Apple Silicon).">
 <meta name="theme-color" content="#06070d">
+<link rel="alternate" hreflang="es" href="/plugin/">
+<link rel="alternate" hreflang="de" href="/de/plugin/">
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" href="/landing/landing.css">
 <style>
@@ -33,6 +35,8 @@
   .toc a { text-decoration: none; color: var(--dim); }
   .toc a:hover { color: var(--text); }
   .nav .btn-sm { margin-left: auto; }
+  .nav .lang-switch { margin-left: auto; }
+  .nav .lang-switch + .btn-sm { margin-left: 0; }
   @media (max-width: 640px) { .doc td:first-child, .doc th { white-space: normal; } .doc { padding-top: 96px; } }
 </style>
 </head>
@@ -46,6 +50,7 @@
     <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/></svg>
     <span>Syntotec</span>
   </a>
+  <a class="lang-switch" href="/de/plugin/" hreflang="de" lang="de" data-lang="de" title="Deutsch" aria-label="Deutsch">DE</a>
   <a class="btn btn-primary btn-sm" href="/app/">Abrir Syntotec</a>
 </header>
 
@@ -161,5 +166,12 @@ cmake --build build --config Release</code></pre>
     </nav>
   </div>
 </footer>
+<script>
+document.addEventListener('click', function (e) {
+  var a = e.target.closest && e.target.closest('.lang-switch');
+  if (!a) return;
+  try { localStorage.setItem('syntotec.lang', a.getAttribute('data-lang')); } catch (err) {}
+});
+</script>
 </body>
 </html>

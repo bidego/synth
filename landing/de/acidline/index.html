@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acid Line · Plugin für macOS · Syntotec</title>
+<meta name="description" content="Installation und Handbuch des Syntotec-Plugins Acid Line, eines monophonen Acid-Basses mit resonantem 18-dB-Filter, Accent und Slide: VST3, Audio Unit und Standalone-App für macOS (Intel und Apple Silicon).">
+<meta name="theme-color" content="#06070d">
+<link rel="alternate" hreflang="es" href="/acidline/">
+<link rel="alternate" hreflang="de" href="/de/acidline/">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/landing/landing.css">
+<style>
+  /* Página de documentación: usa los colores y la tipografía de la landing, sin la intro ni el arte VJ */
+  body { background: radial-gradient(900px 500px at 70% -10%, rgba(139, 92, 246, 0.16), transparent 70%), radial-gradient(700px 420px at 0% 0%, rgba(255, 79, 135, 0.12), transparent 70%); min-height: 100vh; }
+  .doc { width: min(860px, 92vw); margin: 0 auto; padding: 120px 0 40px; }
+  .doc h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.1; letter-spacing: -0.02em; margin: 6px 0 14px; }
+  .doc h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); margin: 54px 0 12px; letter-spacing: -0.01em; scroll-margin-top: 90px; }
+  .doc h3 { font-size: 1.08rem; margin: 26px 0 6px; }
+  .doc p, .doc li { color: var(--dim); }
+  .doc p strong, .doc li strong, .doc td strong { color: var(--text); }
+  .doc a:not(.btn) { color: var(--info); }
+  .doc code { font-family: var(--mono); font-size: 0.9em; background: rgba(255, 255, 255, 0.07); padding: 2px 6px; border-radius: 6px; color: var(--text); }
+  .doc pre { background: rgba(8, 9, 18, 0.8); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; overflow-x: auto; margin: 12px 0; }
+  .doc pre code { background: none; padding: 0; font-size: 0.86rem; }
+  .tw { overflow-x: auto; margin: 14px 0; }
+  .doc table { width: 100%; border-collapse: collapse; margin: 0; font-size: 0.95rem; }
+  .doc th, .doc td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--dim); }
+  .doc th { color: var(--text); font-weight: 600; white-space: nowrap; }
+  .doc td:first-child { color: var(--text); white-space: nowrap; }
+  .doc .note { border-left: 3px solid var(--warn); background: rgba(255, 200, 87, 0.08); padding: 10px 16px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+  .doc .note p { margin: 0; }
+  .dl { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0 6px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 22px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); }
+  .toc a { text-decoration: none; color: var(--dim); }
+  .toc a:hover { color: var(--text); }
+  .nav .btn-sm { margin-left: auto; }
+  .nav .lang-switch { margin-left: auto; }
+  .nav .lang-switch + .btn-sm { margin-left: 0; }
+  @media (max-width: 640px) { .doc td:first-child, .doc th { white-space: normal; } .doc { padding-top: 96px; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4f87"/><stop offset="1" stop-color="#5cc8ff"/></linearGradient></defs>
+</svg>
+
+<header class="nav scrolled">
+  <a class="brand" href="/de/" aria-label="Syntotec, Startseite">
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <span>Syntotec</span>
+  </a>
+  <a class="lang-switch" href="/acidline/" hreflang="es" lang="es" data-lang="es" title="Español" aria-label="Español">ES</a>
+  <a class="btn btn-primary btn-sm" href="/app/">Syntotec öffnen</a>
+</header>
+
+<main class="doc" id="contenido">
+  <p class="eyebrow"><span class="dot"></span> Plugin · Beta 0.1.0 · macOS</p>
+  <h1>Acid Line</h1>
+  <p class="lead">Ein <strong>monophoner Acid-Bass</strong>: ein Oszillator, ein resonantes 18-dB-Filter, Decay-Sweep, Accent und Slide, inspiriert von den sequenzierten Bässen der 80er. Als echtes Plugin: <strong>VST3</strong>, <strong>Audio Unit</strong> (Logic und GarageBand) und <strong>Standalone-App</strong>, für Macs mit Apple-Chip oder Intel. <strong>Pro Tools wird nicht unterstützt</strong>: Es lädt nur AAX-Plugins.</p>
+
+  <div class="dl">
+    <a class="btn btn-primary btn-lg" href="https://github.com/bidego/synth/releases/tag/acidline-v0.1.0" rel="noopener">0.1.0 herunterladen</a>
+    <a class="btn btn-ghost btn-lg" href="https://github.com/bidego/synth/tree/syntotec-app/acidline" rel="noopener">Quellcode</a>
+  </div>
+
+  <img src="/img/acidline.webp" width="1340" height="560" alt="Das Bedienfeld von Acid Line: gebürstete Silberblende mit schwarzen Reglern, Wellenform, Filter, Accent, Slide, Drive und eine Klaviatur" style="width:100%;height:auto;border-radius:14px;border:1px solid var(--border);margin:26px 0 8px">
+
+  <nav class="toc" aria-label="Auf dieser Seite">
+    <a href="#sonido">Klang</a><a href="#web">In Syntotec</a><a href="#instalar">Installation</a><a href="#uso">Erste Schritte</a><a href="#controles">Bedienelemente</a><a href="#midi">MIDI</a><a href="#sonidos">Sounds</a><a href="#compilar">Kompilieren</a>
+  </nav>
+
+  <h2 id="sonido">Was drin ist</h2>
+  <ul>
+    <li><strong>Ein Oszillator</strong> mit Sägezahn oder Rechteck, ohne hörbares Aliasing und mit sehr langsamer Stimmungsdrift.</li>
+    <li><strong>Resonantes Filter mit 18 dB</strong> pro Oktave, mit Sättigung in jeder Stufe. Wenn du die Resonanz erhöhst, verliert der Klang Bässe, wie beim Original, und erreicht fast die Selbstoszillation.</li>
+    <li><strong>Decay-Sweep</strong>: Jede Note öffnet das Filter und schließt es allmählich wieder (Env Mod bestimmt, wie weit, und Decay, wie lange es dauert, von 0,2 bis 2,5 s).</li>
+    <li><strong>Accent</strong>: Eine Note mit einer Velocity über dem Schwellwert (Regler Velocity Threshold) klingt lauter, vertieft den Sweep, verkürzt den Decay und treibt die Resonanz an. Eine LED auf dem Bedienfeld zeigt jede akzentuierte Note an.</li>
+    <li><strong>Slide</strong>: Beginnt eine Note, während die vorherige noch gehalten wird (Legato), gleitet der Ton in kurzer Zeit zur neuen Tonhöhe und der <strong>Sweep wird nicht neu gestartet</strong>. Eine neue Note nach dem Loslassen springt direkt an.</li>
+    <li><strong>Overdrive</strong> am Ausgang, für die klassischen Verzerrungen.</li>
+    <li>Qualität: Das gesamte Audio läuft 4-fach oversampled, mit Aliasing bei −56 dB. Es braucht etwa 3 % eines Prozessorkerns.</li>
+  </ul>
+
+  <h2 id="web">Auch in Syntotec</h2>
+  <p>Acid Line ist außerdem ein Gerät im Rack von Syntotec: Öffne die App, wähle unter <em>Geräte</em> <strong>Acid Line</strong> und verbinde es mit einer Klaviatur oder den Spuren des Sequenzers. Es ist dieselbe Engine wie im Plugin, übersetzt in ein AudioWorklet (der Sample-für-Sample-Vergleich ergibt eine Abweichung von unter 0,01 %), mit demselben Bedienfeld und denselben 14 Sounds. Im Sequenzer bestimmt die Velocity jeder Note den Accent; Noten, die sich überlappen, erzeugen den Slide.</p>
+
+  <h2 id="instalar">Installation</h2>
+  <p>Lade die Dateien von der <a href="https://github.com/bidego/synth/releases/tag/acidline-v0.1.0" rel="noopener">Download-Seite</a> herunter, entpacke sie und kopiere jede in ihren Ordner. Sie sind universal: Sie laufen auf Macs mit Apple-Chip und mit Intel.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Format</th><th>Datei</th><th>Ordner</th></tr></thead>
+    <tbody>
+      <tr><td>VST3</td><td><a href="https://github.com/bidego/synth/releases/download/acidline-v0.1.0/AcidLine-VST3-macOS.zip" rel="noopener"><code>AcidLine-VST3-macOS.zip</code></a></td><td><code>~/Library/Audio/Plug-Ins/VST3/</code></td></tr>
+      <tr><td>Audio Unit</td><td><a href="https://github.com/bidego/synth/releases/download/acidline-v0.1.0/AcidLine-AU-macOS.zip" rel="noopener"><code>AcidLine-AU-macOS.zip</code></a></td><td><code>~/Library/Audio/Plug-Ins/Components/</code></td></tr>
+      <tr><td>Standalone</td><td><a href="https://github.com/bidego/synth/releases/download/acidline-v0.1.0/AcidLine-Standalone-macOS.zip" rel="noopener"><code>AcidLine-Standalone-macOS.zip</code></a></td><td>beliebig (es ist eine App)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><p><strong>macOS blockiert es beim ersten Mal möglicherweise.</strong> Die Plugins sind „ad hoc“ signiert, ohne Apple-Developer-Konto. Wenn die Meldung erscheint, dass es nicht geöffnet werden kann oder beschädigt ist, öffne das Terminal und führe <code>xattr -cr "Acid Line.vst3"</code> aus (dasselbe für <code>.component</code> und <code>.app</code>). Bei der Standalone-App funktioniert auch Rechtsklick → Öffnen.</p></div>
+  <p>Starte danach die DAW neu und scanne die Plugins erneut. <strong>Logic</strong> validiert die Audio Units beim Öffnen; um das zu erzwingen oder den Grund eines Fehlers zu sehen: <code>auval -v aumu Ac01 Synt</code>.</p>
+
+  <h2 id="uso">Erste Schritte</h2>
+  <ol>
+    <li>Probiere zuerst die <strong>Standalone-App</strong> aus: Öffne sie und wähle unter <em>Options → Audio/MIDI Settings</em> deinen Audioausgang. MIDI-Controller werden automatisch geöffnet. Spiele oder nutze die Bildschirmklaviatur (weiter unten auf der Taste = lauter, und über dem Schwellwert gibt es Accent).</li>
+    <li>Lege in der DAW eine Instrumentenspur an und wähle <strong>Acid Line</strong> (<em>Syntotec</em> in der Herstellerliste).</li>
+    <li>Schreibe ein Pattern aus Achteln oder Sechzehnteln mit ein paar tiefen Noten; erhöhe die Velocity der Noten, die einen Accent bekommen sollen, und lass die Noten überlappen, die gleiten sollen. Danach drehst du <strong>Cutoff</strong> und <strong>Resonance</strong>, während es spielt.</li>
+  </ol>
+  <p>Ein klassischer Trick: hohe Resonance, hoher Env Mod und niedriger Cutoff, mit mittlerem Decay und ab und zu Accents.</p>
+
+  <h2 id="controles">Bedienelemente</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Bedienelement</th><th>Funktion</th></tr></thead>
+    <tbody>
+      <tr><td>Waveform</td><td>Sägezahn oder Rechteck (der Schalter links)</td></tr>
+      <tr><td>Tuning</td><td>Feinstimmung (±1 Halbton)</td></tr>
+      <tr><td>Cutoff Frequency</td><td>Die Grenzfrequenz des Filters (von 40 Hz bis 10 kHz)</td></tr>
+      <tr><td>Resonance</td><td>Die Resonanz; je höher, desto weniger Bässe</td></tr>
+      <tr><td>Env Mod</td><td>Wie weit der Sweep jeder Note das Filter öffnet</td></tr>
+      <tr><td>Decay</td><td>Wie lange der Sweep zum Schließen braucht (0,2 bis 2,5 s)</td></tr>
+      <tr><td>Accent</td><td>Die Stärke des Accents: Lautstärke, Sweep-Tiefe und zusätzliche Resonanz</td></tr>
+      <tr><td>Velocity Threshold</td><td>Die Velocity, ab der eine Note einen Accent bekommt</td></tr>
+      <tr><td>Slide Time</td><td>Wie lange das Gleiten zwischen gebundenen Noten dauert</td></tr>
+      <tr><td>Drive</td><td>Overdrive am Ausgang</td></tr>
+      <tr><td>Volume</td><td>Die Gesamtlautstärke</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="midi">MIDI</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Nachricht</th><th>Funktion</th></tr></thead>
+    <tbody>
+      <tr><td>Noten</td><td>Monophon: Die letzte Note hat Vorrang. Eine Note mit Velocity ≥ Schwellwert bekommt einen Accent; eine Note, die sich mit der vorherigen überlappt, erzeugt einen Slide</td></tr>
+      <tr><td>Pitch Bend</td><td>±2 Halbtöne</td></tr>
+      <tr><td>CC 123 und 120</td><td>Schalten die Note ab</td></tr>
+    </tbody>
+  </table></div>
+  <p>Alle Bedienelemente sind Plugin-Parameter: Sie lassen sich aus der DAW automatisieren, und mit dem <strong>MIDI Learn</strong> der DAW kannst du ihnen die Regler deines Controllers zuweisen.</p>
+
+  <h2 id="sonidos">Ausgangs-Sounds</h2>
+  <p>14 Programme in zwei Kategorien, mit abgeglichener Lautstärke, damit sie gleich laut klingen: <strong>Acids</strong> (Classic Acid, Squelch, Rubber Slide, Screamer, Chirp, Long Sweep, Dirty Acid) und <strong>Bässe</strong> (Square Bass, Hollow, Dub Pulse, Soft Acid, Wide Open, Growl). Der Zustand des Plugins wird mit dem DAW-Projekt gespeichert.</p>
+
+  <h2 id="compilar">Aus dem Quellcode kompilieren</h2>
+  <p>Die Audio-Engine ist reines C++ und lässt sich allein, ohne JUCE, auf jedem System testen:</p>
+  <pre><code>cd acidline
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target ac_tests
+./build/ac_tests              # Tests und Leistungsmessung
+./build/ac_tests --wav /tmp   # ein 16-Schritt-Pattern pro Sound</code></pre>
+  <p>Für das komplette Plugin unter macOS (JUCE wird automatisch geladen):</p>
+  <pre><code>cmake -S . -B build -DACIDLINE_BUILD_PLUGIN=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+cmake --build build --config Release</code></pre>
+  <p>Die GitHub-Builds startest du über <em>Actions → Acid Line plugin (macOS)</em> oder indem du ein Tag <code>acidline-v*</code> pushst, das zusätzlich den Release veröffentlicht. Offen: Windows und Linux, AAX für Pro Tools (lädt derzeit nicht) und Signierung mit einem Apple-Developer-Konto.</p>
+  <p>Acid Line ist ein unabhängiges Projekt, inspiriert von den sequenzierten Bässen der 80er und ohne Verbindung zu irgendeiner Marke. Etwas funktioniert nicht? Sag es uns in den <a href="https://github.com/bidego/synth/issues" rel="noopener">GitHub-Issues</a>.</p>
+</main>
+
+<footer class="footer">
+  <div class="footer-top">
+    <a class="brand" href="/de/"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/></svg><span>Syntotec</span></a>
+    <nav aria-label="Fußzeile">
+      <a href="/de/">Startseite</a>
+      <a href="/app/">Die App</a>
+      <a href="/de/#plugin">Plugin</a>
+      <a href="https://github.com/bidego/synth" rel="noopener">Code auf GitHub</a>
+    </nav>
+  </div>
+</footer>
+<script>
+document.addEventListener('click', function (e) {
+  var a = e.target.closest && e.target.closest('.lang-switch');
+  if (!a) return;
+  try { localStorage.setItem('syntotec.lang', a.getAttribute('data-lang')); } catch (_) {}
+});
+</script>
+</body>
+</html>

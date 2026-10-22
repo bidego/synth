@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Syntotec · Dein modulares Musikstudio im Browser</title>
+<meta name="description" content="Synthesizer, Sampler, Schlagzeuge, Mixer, Effekte und Verkabelung wie in einem echten Rack. Nimm im Loop auf, automatisiere Regler und exportiere als WAV. Ohne Installation.">
+<meta name="theme-color" content="#06070d">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Syntotec · Dein modulares Musikstudio im Browser">
+<meta property="og:locale" content="de_DE">
+<meta property="og:description" content="Ein modulares Rack aus Synthesizern, Effekten und Mixer mit Kabeln, Sequencer und Automation. Läuft im Browser, ohne Installation.">
+<meta property="og:image" content="/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico">
+<link rel="alternate" hreflang="es" href="/">
+<link rel="alternate" hreflang="de" href="/de/">
+<link rel="alternate" hreflang="x-default" href="/">
+<link rel="stylesheet" href="/landing/landing.css?v=__V__">
+<script>
+// Los enlaces compartidos viejos (/#s=...) y los nuevos (#c=, #p=, #demo=) abren la app
+if (/^#(s|c|p|demo)=/.test(location.hash)) location.replace('/app/' + location.search + location.hash);
+// La intro se decide ACA, antes de que el navegador dibuje nada: asi la web nunca se ve ni un instante antes de la animacion.
+// Sin intro: ?intro=0, un ancla en la URL o una intro ya vista en esta sesion.
+(function () {
+  var h = document.documentElement;
+  h.classList.add('js');
+  var seen = false;
+  try { seen = sessionStorage.getItem('syntotec.intro') === '1'; } catch (e) {}
+  if (/[?&]intro=0\b/.test(location.search) || location.hash.length > 1 || seen) h.classList.add('no-intro');
+  // Red de seguridad: si el JS de la pagina no arranca (no carga, falla, o es una version vieja guardada en cache), la intro
+  // se quita sola y la web queda visible y usable. Nunca debe quedar una animacion tapando o mezclada con la pagina.
+  setTimeout(function () { if (!window.__syntotecLanding) h.classList.add('no-intro'); }, 6000);
+})();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Syntotec","applicationCategory":"MultimediaApplication","operatingSystem":"Web","inLanguage":"de","description":"Modulares Musikstudio im Browser: Synthesizer, Sampler, Schlagzeuge, Mixer, Effekte, Sequencer und Automation.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+</script>
+</head>
+<body>
+<a class="skip" href="#contenido">Zum Inhalt springen</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4f87"/><stop offset="1" stop-color="#5cc8ff"/></linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+</svg>
+
+<!-- Arte VJ: detrás de todo; en la intro reacciona a la música del proyecto -->
+<canvas id="vj" aria-hidden="true"></canvas>
+<div class="veil" aria-hidden="true"></div>
+
+<!-- ============ INTRO ============ -->
+<section id="intro" class="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+  <div class="intro-inner">
+    <div class="logo-stage" aria-hidden="true">
+      <span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
+      <svg class="logo-big" viewBox="0 0 32 32" width="220" height="220">
+        <rect class="logo-tile" width="32" height="32" rx="8" fill="url(#lg)"/>
+        <path id="logo-wave" class="logo-wave" d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round" filter="url(#glow)"/>
+      </svg>
+    </div>
+    <h1 id="intro-title" class="intro-title"><span>Syn</span><span>to</span><span>tec</span></h1>
+    <p class="intro-sub">Dein modulares Musikstudio, im Browser</p>
+    <p id="intro-now" class="intro-now" aria-live="polite"></p>
+    <div class="intro-progress" aria-hidden="true"><i id="intro-bar"></i></div>
+  </div>
+</section>
+
+<!-- ============ NAVEGACIÓN ============ -->
+<header class="nav" id="nav">
+  <a class="brand" href="#top" aria-label="Syntotec, Start">
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <span>Syntotec</span>
+  </a>
+  <nav class="nav-links" aria-label="Hauptmenü">
+    <a href="#funciones">Funktionen</a>
+    <a href="#como">So funktioniert's</a>
+    <a href="#plugin">Plugins</a>
+    <a href="#proyectos">Projekte</a>
+    <a href="#galeria">Galerie</a>
+  </nav>
+  <button id="music-toggle" class="icon-btn" type="button" aria-label="Intro-Musik anhören" title="Funkito D anhören">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 18V6l10-2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="16.5" cy="16" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+  </button>
+  <a class="lang-switch" href="/" hreflang="es" lang="es" data-lang="es" title="Español" aria-label="Español">ES</a>
+  <a class="btn btn-primary btn-sm" href="/app/">Syntotec öffnen</a>
+</header>
+
+<main id="contenido">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="top">
+    <div class="hero-copy reveal">
+      <p class="eyebrow"><span class="dot"></span> Modulares Studio · 100 % im Browser</p>
+      <h2 class="hero-title">Baue deinen Sound <em>Kabel für Kabel</em>.</h2>
+      <p class="lead">Synthesizer, Sampler, Schlagzeuge, Mixer und Effekte als Module eines echten Racks. Verbinde sie mit Kabeln, nimm im Loop auf, automatisiere jeden Regler und exportiere als WAV. Ohne Installation.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary btn-lg" href="/app/">Syntotec öffnen
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="btn btn-ghost btn-lg" href="#proyectos">Projekte ansehen</a>
+      </div>
+      <ul class="hero-points" aria-label="Das Wichtigste">
+        <li>128 GM-Instrumente</li><li>Rack mit Verkabelung</li><li>Automation</li><li>MIDI Plug &amp; Play</li>
+      </ul>
+    </div>
+
+    <div class="hero-visual reveal" id="tilt">
+      <div class="glow" aria-hidden="true"></div>
+      <figure class="shot shot-main">
+        <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+        <img src="/img/rack.webp" width="1600" height="1000" alt="Syntotec mit dem Projekt Funkito D: Rack mit zwei Synthesizern, Mixer und Effekten sowie die Zeitleiste mit den Spuren" fetchpriority="high">
+      </figure>
+      <div class="piano-card" id="piano-card">
+        <div class="piano-head"><b>Probier es jetzt aus</b><span>Spiel die Tasten oder nutze <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd></span></div>
+        <div class="piano" id="piano" role="group" aria-label="Test-Klavier"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CIFRAS ============ -->
+  <section class="stats" aria-label="In Zahlen">
+    <div class="stat reveal"><b data-count="128">128</b><span>General-MIDI-Instrumente</span></div>
+    <div class="stat reveal"><b data-count="10" data-suffix="+">10+</b><span>Modultypen</span></div>
+    <div class="stat reveal"><b data-count="8">8</b><span>Kanäle und 2 Aux-Sends</span></div>
+    <div class="stat reveal"><b>WAV</b><span>16 Bit, mit Effekten und Mix</span></div>
+  </section>
+
+  <!-- ============ FUNCIONES ============ -->
+  <section class="section" id="funciones">
+    <header class="section-head reveal">
+      <p class="eyebrow">Alles, was du brauchst</p>
+      <h2>Ein komplettes Studio in einem Tab</h2>
+      <p class="lead">Gedacht wie ein echtes Rack: Alles ist ein Modul, und du entscheidest, wie sie verbunden werden.</p>
+    </header>
+    <div class="grid features">
+      <article class="card reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="7" r="2.2"/><circle cx="19" cy="17" r="2.2"/><path d="M7 7c6 0 4 10 10 10"/></svg></span>
+        <h3>Modulares Rack und Verkabelung</h3>
+        <p>Synthesizer, Effekte und Mixer als Module. Verbinde sie mit Audio- und Notenkabeln; Syntotec erkennt Schleifen pro Anschluss und warnt dich.</p>
+      </article>
+      <article class="card reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12c2-7 4-7 6 0s4 7 6 0 3-4 6 0"/></svg></span>
+        <h3>Synthesizer, Sampler und Schlagzeuge</h3>
+        <p>Geschichtete Oszillatoren mit Filter und LFO, 128 General-MIDI-Instrumente aus echten Samples und Drum-Kits, alles auf der Seite selbst gehostet.</p>
+      </article>
+      <article class="card reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h4M7 13h7M13 9h4"/></svg></span>
+        <h3>Sequencer pro Instrument</h3>
+        <p>Nimm im Loop mit Overdub auf, bearbeite im Piano Roll, kopiere mit <kbd>Strg</kbd>, quantisiere und wähle, ob jede Spur allein klingt oder ihre Noten an ein anderes Instrument schickt.</p>
+      </article>
+      <article class="card reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4v16M12 4v16M18 4v16"/><circle cx="6" cy="14" r="2"/><circle cx="12" cy="8" r="2"/><circle cx="18" cy="12" r="2"/></svg></span>
+        <h3>Mixer mit Aux-Sends</h3>
+        <p>Acht Kanäle mit Fader, Panorama, Mute und Solo, Pegelanzeigen und zwei Send-Busse mit Return, um Hall und Delay zwischen Instrumenten zu teilen.</p>
+      </article>
+      <article class="card reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h3l2-6 4 12 3-9 2 3h4"/></svg></span>
+        <h3>Effekte und Dynamik</h3>
+        <p>Tempo-synchrones Delay, Hall, Chorus, Verzerrung, Dreiband-Equalizer, Kompressor und Limiter. Mit Bypass und Pegelanzeigen.</p>
+      </article>
+      <article class="card reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 18c4 0 3-12 8-12s3 12 10 12"/><circle cx="11" cy="6" r="1.6"/></svg></span>
+        <h3>Automation</h3>
+        <p>Zeichne die Bewegung jedes Reglers oder Faders auf, während du spielst. Sie wiederholt sich in jedem Loop-Durchlauf und ist auch im exportierten WAV zu hören.</p>
+      </article>
+      <article class="card reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M7 7v6M11 7v6M15 7v6M19 7v6M9 18v-3M13 18v-3M17 18v-3" /></svg></span>
+        <h3>MIDI Plug &amp; Play</h3>
+        <p>Schließ deinen Controller an und spiel: Sustain, Pitch Bend und Anschlagdynamik. Funktioniert mit jedem USB- oder Bluetooth-Keyboard, das dein Browser erkennt.</p>
+      </article>
+      <article class="card reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h16M4 6h10M4 18h7"/><polygon points="16,15 21,18 16,21" /></svg></span>
+        <h3>Zeitleiste und Transport</h3>
+        <p>Sieh dir den ganzen Loop an, spul vor und zurück und starte, wo du willst. Der Transport kann vollständig, kompakt oder schwebend sein.</p>
+      </article>
+      <article class="card reveal">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg></span>
+        <h3>Teilen und veröffentlichen</h3>
+        <p>Kurze Links zum Teilen einer Session, öffentliche Projekte in der Galerie und ein Git-Repository als Datenbank: Deine Arbeit wird versioniert.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============ CÓMO FUNCIONA ============ -->
+  <section class="section how" id="como">
+    <header class="section-head reveal">
+      <p class="eyebrow">So funktioniert's</p>
+      <h2>Von der Idee zum WAV in drei Schritten</h2>
+    </header>
+    <div class="how-grid">
+      <div class="how-tabs reveal" role="tablist" aria-label="Schritte">
+        <button role="tab" class="how-tab on" id="tab-1" aria-selected="true" aria-controls="panel-1" data-img="/img/rack.webp" data-alt="Rack mit den Modulen des Projekts">
+          <span class="num">1</span><span><b>Bau dein Rack</b><small>Füge Synthesizer, Effekte und einen Mixer hinzu. Jedes ist ein Modul mit eigenen Reglern.</small></span>
+        </button>
+        <button role="tab" class="how-tab" id="tab-2" aria-selected="false" aria-controls="panel-1" data-img="/img/patch.webp" data-alt="Verkabelungsansicht mit Modulen, die durch Audio- und Notenkabel verbunden sind">
+          <span class="num">2</span><span><b>Verbinde mit Kabeln</b><small>Zieh von einem Anschluss zum anderen. Ein Notenkabel spielt ein anderes Instrument; ein Audiokabel schickt es zum Mixer oder zu einem Effekt.</small></span>
+        </button>
+        <button role="tab" class="how-tab" id="tab-3" aria-selected="false" aria-controls="panel-1" data-img="/img/timeline.webp" data-alt="Zeitleiste mit Spuren, Noten und Automation">
+          <span class="num">3</span><span><b>Aufnehmen, automatisieren, exportieren</b><small>Spiel im Loop, dreh beim Aufnehmen an einem Regler und exportiere das ganze Rack als 16-Bit-WAV.</small></span>
+        </button>
+      </div>
+      <figure class="shot how-shot reveal" id="panel-1" role="tabpanel" aria-labelledby="tab-1">
+        <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+        <img id="how-img" src="/img/rack.webp" width="1600" height="1000" alt="Rack mit den Modulen des Projekts" loading="lazy">
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ PLUGINS ============ -->
+  <section class="section" id="plugin">
+    <header class="section-head reveal">
+      <p class="eyebrow"><span class="dot"></span> Neu · Beta für macOS</p>
+      <h2>Die Synthesizer von Syntotec, als Plugins</h2>
+      <p class="lead">Vier Instrumente mit derselben Engine im Web und in deiner DAW: VST3 und Audio Unit für Logic, GarageBand und jeden VST3-Host sowie eine eigenständige Anwendung zum Ausprobieren ohne DAW. Sie sind auch Geräte im Rack. Alle Regler sind automatisierbar. Pro Tools noch nicht: Es lädt nur AAX-Plugins.</p>
+    </header>
+    <div class="grid plugins">
+      <article class="card reveal" style="display:flex;flex-direction:column">
+        <img src="/img/juno106.webp" width="1140" height="640" alt="Bedienfeld des Juno-106 mit Schiebereglern, Tasten, Klangwähler und Tastatur" loading="lazy" style="width:100%;height:auto;border-radius:10px;border:1px solid var(--border);margin-bottom:14px">
+        <h3>Juno-106</h3>
+        <p>6-stimmig polyphon: DCO mit PWM und Sub, 24-dB-Filter, LFO mit Verzögerung und Chorus I und II. 37 Klänge.</p>
+        <p style="margin-top:auto;padding-top:16px;display:flex;flex-wrap:wrap;gap:8px"><a class="btn btn-primary btn-sm" href="https://github.com/bidego/synth/releases/tag/plugin-v0.2.0" rel="noopener">Herunterladen</a><a class="btn btn-ghost btn-sm" href="/de/plugin/">Handbuch</a></p>
+      </article>
+      <article class="card reveal" style="display:flex;flex-direction:column">
+        <img src="/img/modeld.webp" width="1640" height="800" alt="Bedienfeld des Model D mit Holz, drei Oszillatoren, Mixer, Filter, Hüllkurven und Tastatur" loading="lazy" style="width:100%;height:auto;border-radius:10px;border:1px solid var(--border);margin-bottom:14px">
+        <h3>Model D</h3>
+        <p>Monophon mit drei Oszillatoren, sättigendem Mixer und 24-dB-Leiterfilter, inspiriert vom Minimoog. 26 Klänge.</p>
+        <p style="margin-top:auto;padding-top:16px;display:flex;flex-wrap:wrap;gap:8px"><a class="btn btn-primary btn-sm" href="https://github.com/bidego/synth/releases/tag/modeld-v0.1.0" rel="noopener">Herunterladen</a><a class="btn btn-ghost btn-sm" href="/de/modeld/">Handbuch</a></p>
+      </article>
+      <article class="card reveal" style="display:flex;flex-direction:column">
+        <img src="/img/acidline.webp" width="1340" height="560" alt="Bedienfeld der Acid Line mit silberner Abdeckung, schwarzen Reglern und Tastatur" loading="lazy" style="width:100%;height:auto;border-radius:10px;border:1px solid var(--border);margin-bottom:14px">
+        <h3>Acid Line</h3>
+        <p>Monophoner Acid-Bass: resonanter 18-dB-Filter, Decay-Sweep, Akzent und Slide. 14 Klänge.</p>
+        <p style="margin-top:auto;padding-top:16px;display:flex;flex-wrap:wrap;gap:8px"><a class="btn btn-primary btn-sm" href="https://github.com/bidego/synth/releases/tag/acidline-v0.1.0" rel="noopener">Herunterladen</a><a class="btn btn-ghost btn-sm" href="/de/acidline/">Handbuch</a></p>
+      </article>
+      <article class="card reveal" style="display:flex;flex-direction:column">
+        <img src="/img/polyfive.webp" width="1960" height="800" alt="Bedienfeld des Poly Five mit Holz, Oszillatoren A und B, Poly-Mod, Filter, Hüllkurven, LFO und 61-Tasten-Tastatur" loading="lazy" style="width:100%;height:auto;border-radius:10px;border:1px solid var(--border);margin-bottom:14px">
+        <h3>Poly Five</h3>
+        <p>5-stimmig polyphon: zwei Oszillatoren mit Sync, Poly-Mod, 24-dB-Leiterfilter, zwei ADSR, LFO mit Rad, Unison und Glide. 23 Klänge.</p>
+        <p style="margin-top:auto;padding-top:16px;display:flex;flex-wrap:wrap;gap:8px"><a class="btn btn-primary btn-sm" href="https://github.com/bidego/synth/releases/tag/polyfive-v0.1.0" rel="noopener">Herunterladen</a><a class="btn btn-ghost btn-sm" href="/de/polyfive/">Handbuch</a></p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============ NUESTROS PROYECTOS ============ -->
+  <section class="section" id="proyectos">
+    <header class="section-head reveal">
+      <p class="eyebrow">Unsere Projekte</p>
+      <h2>Gemacht in Syntotec</h2>
+      <p class="lead">Öffne sie in der App, drück Play und sieh dir an, wie jedes aufgebaut ist: die Kabel, die Instrumente, die Automationen.</p>
+    </header>
+    <div class="grid featured" id="featured" aria-live="polite">
+      <div class="skeleton card-skeleton" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- ============ GALERÍA PÚBLICA ============ -->
+  <section class="section gallery" id="galeria">
+    <header class="section-head reveal">
+      <p class="eyebrow">Galerie</p>
+      <h2>Neueste öffentliche Projekte</h2>
+      <p class="lead">Das veröffentlicht die Community. Öffne eines, hör es dir an und ändere es nach Belieben: Deine Kopie gehört nur dir.</p>
+    </header>
+    <div class="grid projects" id="projects" aria-live="polite" aria-busy="true">
+      <div class="skeleton card-skeleton" aria-hidden="true"></div>
+      <div class="skeleton card-skeleton" aria-hidden="true"></div>
+      <div class="skeleton card-skeleton" aria-hidden="true"></div>
+    </div>
+    <p class="gallery-note" id="gallery-note" hidden></p>
+    <div class="center"><a class="btn btn-ghost" href="/app/">Veröffentliche deins aus der App</a></div>
+  </section>
+
+  <!-- ============ CTA ============ -->
+  <section class="final reveal">
+    <h2>Dein nächster Song beginnt mit einem Kabel.</h2>
+    <p class="lead">Öffne Syntotec, bau ein Rack und drück Play. Keine Registrierung nötig.</p>
+    <a class="btn btn-primary btn-lg" href="/app/">Syntotec öffnen
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="footer-top">
+    <a class="brand" href="#top"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/></svg><span>Syntotec</span></a>
+    <nav aria-label="Fußzeile">
+      <a href="/app/">Die App</a>
+      <a href="#funciones">Funktionen</a>
+      <a href="#plugin">Plugins</a>
+      <a href="#galeria">Galerie</a>
+      <a href="https://github.com/bidego/synth" rel="noopener">Code auf GitHub</a>
+    </nav>
+  </div>
+  <p class="credits">Klangbanken: FluidR3 GM (© Frank Wen, MIT-ähnliche Lizenz) und GeneralUser GS (S. Christian Collins), im <a href="https://github.com/surikov/webaudiofont" rel="noopener">WebAudioFont</a>-Format von S. Surikov. Syntotec funktioniert am besten in Chrome oder Edge; MIDI setzt einen von beiden voraus.</p>
+</footer>
+
+<noscript><p class="noscript">Diese Seite nutzt JavaScript für die Galerie und die Intro. <a href="/app/">Öffne Syntotec</a> direkt.</p></noscript>
+<script src="/landing/landing.js?v=__V__" defer></script>
+</body>
+</html>

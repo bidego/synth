@@ -83,6 +83,8 @@ html.js:not(.no-intro):not(.intro-done) .veil { opacity: 0.35; }
   display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; color: var(--text);
   background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
+.lang-switch { color: var(--dim); text-decoration: none; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; padding: 7px 10px; border: 1px solid var(--border); border-radius: 999px; transition: color 0.2s, background 0.2s; }
+.lang-switch:hover { color: var(--text); background: rgba(255, 255, 255, 0.08); }
 .icon-btn:hover { background: rgba(255, 255, 255, 0.12); }
 .icon-btn.on { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 18px rgba(255, 79, 135, 0.4); }
 

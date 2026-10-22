@@ -12,10 +12,24 @@
 <meta property="og:image" content="/img/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.ico">
+<link rel="alternate" hreflang="es" href="/">
+<link rel="alternate" hreflang="de" href="/de/">
+<link rel="alternate" hreflang="x-default" href="/">
 <link rel="stylesheet" href="/landing/landing.css?v=__V__">
 <script>
 // Los enlaces compartidos viejos (/#s=...) y los nuevos (#c=, #p=, #demo=) abren la app
 if (/^#(s|c|p|demo)=/.test(location.hash)) location.replace('/app/' + location.search + location.hash);
+// Idioma: quien llega con el navegador en aleman ve la version alemana, salvo que ya haya elegido uno con el selector ES / DE
+// (?lang=es fuerza el espanol). Se decide aca, antes de dibujar: sin parpadeo.
+(function () {
+  var pref = null;
+  try { pref = localStorage.getItem('syntotec.lang'); } catch (e) {}
+  var m = /[?&]lang=(es|de)\b/.exec(location.search);
+  if (m) { pref = m[1]; try { localStorage.setItem('syntotec.lang', pref); } catch (e) {} }
+  var langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ''];
+  var de = pref ? pref === 'de' : /^de\b/i.test(langs[0] || '');
+  if (de && !/^#(s|c|p|demo)=/.test(location.hash)) location.replace('/de/' + location.search.replace(/([?&])lang=\w+&?/, '$1').replace(/[?&]$/, '') + location.hash);
+})();
 // La intro se decide ACA, antes de que el navegador dibuje nada: asi la web nunca se ve ni un instante antes de la animacion.
 // Sin intro: ?intro=0, un ancla en la URL o una intro ya vista en esta sesion.
 (function () {
@@ -80,6 +94,7 @@ if (/^#(s|c|p|demo)=/.test(location.hash)) location.replace('/app/' + location.s
   <button id="music-toggle" class="icon-btn" type="button" aria-label="Escuchar la música de la intro" title="Escuchar Funkito D">
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 18V6l10-2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="16.5" cy="16" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
   </button>
+  <a class="lang-switch" href="/de/" hreflang="de" lang="de" data-lang="de" title="Deutsch" aria-label="Deutsch">DE</a>
   <a class="btn btn-primary btn-sm" href="/app/">Abrir Syntotec</a>
 </header>
 
