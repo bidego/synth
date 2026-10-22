@@ -6,6 +6,7 @@ import { ModelDModule } from './modeld.module';
 import { AcidLineModule } from './acid.module';
 import { PolyFiveModule } from './polyfive.module';
 import { RhythmEightModule } from './rhythmeight.module';
+import { RecorderModule } from './recorder.module';
 import { JunoModule } from './juno.module';
 import { MixerModule } from './mixer.module';
 import { OutputModule } from './output.module';
@@ -35,6 +36,8 @@ export const MODULE_META: ReadonlyArray<ModuleMeta> = [
       description: 'Los parlantes: el final de la cadena' },
     { type: 'mixer', label: 'Mezclador 8 canales', category: 'mixing',
       description: 'Fader, paneo, mute, solo y medidor por canal' },
+    { type: 'recorder', label: 'Grabador 8 pistas', category: 'mixing',
+      description: 'Graba el audio de hasta 8 fuentes cableadas, una toma por pista, y las toca en loop con el transporte' },
     { type: 'delay', label: 'Delay', category: 'effect',
       description: 'Eco con realimentacion, sincronizable al tempo' },
     { type: 'reverb', label: 'Reverb', category: 'effect',
@@ -71,6 +74,7 @@ export function createModule(type: string, env: ModuleEnv): RackModule | null {
         case 'keyboard': return new KeyboardModule(env);
         case 'output': return new OutputModule(env);
         case 'mixer': return new MixerModule(env);
+        case 'recorder': return new RecorderModule(env);
         case 'delay': return new DelayModule(env);
         case 'reverb': return new ReverbModule(env);
         case 'chorus': return new ChorusModule(env);

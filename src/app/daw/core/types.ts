@@ -47,6 +47,7 @@ export interface Clock extends TransportInfo {
     position: number;    // 0..1 dentro del loop
     absBeat: number;
     beatDur: number;
+    startBeat: number;   // beat del loop desde donde arranca la reproduccion
     quantize: number;
     register(client: any): void;
     unregister(client: any): void;

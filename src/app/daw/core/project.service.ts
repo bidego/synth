@@ -10,6 +10,7 @@ import { encodeWav } from '../../services/wav';
 import { SynthStudioModule } from '../modules/synth-studio.module';
 import { SequencerModule } from '../modules/sequencer.module';
 import { RhythmEightModule } from '../modules/rhythmeight.module';
+import { RecorderModule } from '../modules/recorder.module';
 import { SHARE_PREFIX, SHARE_SOFT_LIMIT, encodeShare, decodeShare } from './share';
 
 /** El origen de la web para los enlaces: en la app de escritorio la pagina no es publica (syntotec://), asi que los enlaces apuntan a la web. */
@@ -474,8 +475,9 @@ export class ProjectService {
         const synths = this.rack.synths.filter(s => s.sequencer.hasNotes());
         const seqs = this.rack.sequencers.filter(s => s.sequencer.hasNotes());
         const drums = this.rack.graph.ofType<RhythmEightModule>('rhythmeight').filter(d => d.exportable);
-        if (this.exporting || (!synths.length && !seqs.length && !drums.length)) {
-            this.message = 'No hay nada para exportar (ningun instrumento tiene notas grabadas)';
+        const takes = this.rack.graph.ofType<RecorderModule>('recorder').filter(r => r.exportable);
+        if (this.exporting || (!synths.length && !seqs.length && !drums.length && !takes.length)) {
+            this.message = 'No hay nada para exportar (ningun instrumento tiene notas grabadas ni el grabador tiene tomas)';
             return;
         }
         if (!this.rack.graph.ofType('output').length) {
@@ -509,6 +511,10 @@ export class ProjectService {
             graph.ofType<SynthStudioModule>('synth').forEach(s => s.sequencer.renderPasses(this.exportPasses));
             graph.ofType<SequencerModule>('sequencer').forEach(s => s.sequencer.renderPasses(this.exportPasses));
             graph.ofType<RhythmEightModule>('rhythmeight').forEach(d => d.renderPasses(this.exportPasses));
+            // Las tomas del grabador: se agendan cuando ya estan cargadas (vienen de la memoria o de IndexedDB)
+            const recorders = graph.ofType<RecorderModule>('recorder');
+            await Promise.all(recorders.map(r => r.ready));
+            recorders.forEach(r => r.renderPasses(this.exportPasses));
             // Los dispositivos con AudioWorklet (Model D) tienen que terminar de cargar y recibir sus notas antes de renderizar
             const worklets = graph.modules.map(m => (m as any).ready).filter(Boolean);
             if (worklets.length) {

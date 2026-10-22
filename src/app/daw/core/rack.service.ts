@@ -13,6 +13,7 @@ import { SequencerModule } from '../modules/sequencer.module';
 import { OutputModule } from '../modules/output.module';
 import { MixerModule, MIXER_CHANNELS, AUX_BUSES } from '../modules/mixer.module';
 import { EffectModule } from '../modules/effect.module';
+import { RecorderModule } from '../modules/recorder.module';
 
 /**
  * El rack en vivo: el grafo de dispositivos y cables sobre el AudioContext real, mas lo que la
@@ -130,6 +131,9 @@ export class RackService {
         }
         const defaultName = copy.name;
         copy.setState(JSON.parse(JSON.stringify(src.getState())));
+        // El grabador copia nombres y niveles pero no las tomas de audio (quedan en el original)
+        if (copy.type == 'recorder')
+            (copy as RecorderModule).forgetTakes();
         // Si el original conserva su nombre automatico la copia sigue la numeracion; si no, se marca como copia
         const meta = moduleMeta(src.type);
         copy.name = new RegExp('^' + meta.label + ' \\d+$').test(src.name) ? defaultName : (src.name + ' copia').slice(0, 40);
@@ -140,6 +144,8 @@ export class RackService {
         list.splice(list.indexOf(src) + 1, 0, copy);
         this.message = '';
         if (copy.type == 'synth' || copy.type == 'juno' || copy.type == 'modeld' || copy.type == 'acid' || copy.type == 'polyfive' || copy.type == 'rhythmeight')
+            this.wireAudioOut(copy, 'out');
+        if (copy.type == 'recorder')
             this.wireAudioOut(copy, 'out');
         this.selectedId = copy.id;
         this.changed.next();
@@ -206,6 +212,9 @@ export class RackService {
             const free = this.notePlayers.find(s => s.type != 'sequencer' && !g.cablesOf(s.id, 'notes').length);
             if (free)
                 g.connect(m.id, 'notes', free.id, 'notes');
+        } else if (m.type == 'recorder') {
+            // Las entradas (pistas) las cablea el usuario; la mezcla sale como la de un instrumento
+            this.wireAudioOut(m, 'out');
         } else if (m.type == 'mixer') {
             const out = g.ofType('output')[0];
             if (out && !g.cablesOf(out.id, 'in').length)
