@@ -2,11 +2,11 @@
 #include <array>
 #include <atomic>
 #include <juce_audio_devices/juce_audio_devices.h>
-#if JucePlugin_Build_Standalone
-#include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
-#endif
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "ac_engine.h"
+
+/** Tilda los controladores MIDI nuevos en la app independiente (definida en StandaloneMidi.cpp; en los demas formatos no hace nada). */
+void standaloneAutoEnableMidi(juce::StringArray& known, bool& loaded);
 
 /**
  * En la aplicacion independiente JUCE no abre ningun controlador MIDI por su cuenta: hay que tildarlos en Options > Audio/MIDI Settings.
@@ -19,34 +19,10 @@ public:
     ~StandaloneMidi() override { stopTimer(); }
 
 private:
-#if JucePlugin_Build_Standalone
-    void timerCallback() override
-    {
-        auto* holder = juce::StandalonePluginHolder::getInstance();
-        if (holder == nullptr)
-            return;   // la ventana de la app todavia se esta armando
-        const juce::String key = "knownMidiInputs";
-        if (!loaded_) {
-            loaded_ = true;
-            if (holder->settings != nullptr)
-                known_ = juce::StringArray::fromLines(holder->settings->getValue(key));
-        }
-        bool changed = false;
-        for (const auto& d : juce::MidiInput::getAvailableDevices())
-            if (!known_.contains(d.identifier)) {
-                known_.add(d.identifier);
-                holder->deviceManager.setMidiInputDeviceEnabled(d.identifier, true);
-                changed = true;
-            }
-        if (changed && holder->settings != nullptr)
-            holder->settings->setValue(key, known_.joinIntoString("\n"));
-    }
+    void timerCallback() override { standaloneAutoEnableMidi(known_, loaded_); }
 
     bool loaded_ = false;
     juce::StringArray known_;
-#else
-    void timerCallback() override { stopTimer(); }
-#endif
 };
 
 /** Acid Line como plugin (VST3 / AU / Standalone): una capa fina sobre el motor de engine/. */

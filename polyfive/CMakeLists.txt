@@ -47,7 +47,7 @@ if(POLYFIVE_BUILD_PLUGIN)
     VST3_CATEGORIES Instrument Synth)
 
   target_sources(PolyFive PRIVATE
-    source/PluginProcessor.cpp source/PluginProcessor.h
+    source/PluginProcessor.cpp source/StandaloneMidi.cpp source/PluginProcessor.h
     source/PluginEditor.cpp source/PluginEditor.h source/PfLookAndFeel.h)
   target_compile_definitions(PolyFive PUBLIC
     JUCE_WEB_BROWSER=0
@@ -65,7 +65,7 @@ if(POLYFIVE_BUILD_PLUGIN)
 
   # Genera una captura PNG de la interfaz (para revisar el diseno en el CI): PolyFiveSnapshot salida.png [sonido]
   juce_add_console_app(PolyFiveSnapshot PRODUCT_NAME "PolyFiveSnapshot")
-  target_sources(PolyFiveSnapshot PRIVATE tools/snapshot.cpp source/PluginProcessor.cpp source/PluginEditor.cpp)
+  target_sources(PolyFiveSnapshot PRIVATE tools/snapshot.cpp source/PluginProcessor.cpp source/StandaloneMidi.cpp source/PluginEditor.cpp)
   target_include_directories(PolyFiveSnapshot PRIVATE source)
   target_compile_definitions(PolyFiveSnapshot PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
   target_link_libraries(PolyFiveSnapshot PRIVATE pf_engine juce::juce_audio_utils juce::juce_recommended_config_flags)

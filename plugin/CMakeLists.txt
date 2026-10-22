@@ -46,7 +46,7 @@ if(JUNO_BUILD_PLUGIN)
     AU_MAIN_TYPE kAudioUnitType_MusicDevice
     VST3_CATEGORIES Instrument Synth)
 
-  target_sources(Juno106 PRIVATE source/PluginProcessor.cpp source/PluginProcessor.h
+  target_sources(Juno106 PRIVATE source/PluginProcessor.cpp source/StandaloneMidi.cpp source/PluginProcessor.h
     source/PluginEditor.cpp source/PluginEditor.h source/JunoLookAndFeel.h)
   target_compile_definitions(Juno106 PUBLIC
     JUCE_WEB_BROWSER=0
@@ -64,7 +64,7 @@ if(JUNO_BUILD_PLUGIN)
 
   # Genera una captura PNG de la interfaz (para revisar el diseno en el CI): juno_snapshot salida.png [sonido]
   juce_add_console_app(JunoSnapshot PRODUCT_NAME "juno_snapshot")
-  target_sources(JunoSnapshot PRIVATE tools/snapshot.cpp source/PluginProcessor.cpp source/PluginEditor.cpp)
+  target_sources(JunoSnapshot PRIVATE tools/snapshot.cpp source/PluginProcessor.cpp source/StandaloneMidi.cpp source/PluginEditor.cpp)
   target_include_directories(JunoSnapshot PRIVATE source)
   target_compile_definitions(JunoSnapshot PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
   target_link_libraries(JunoSnapshot PRIVATE juno_engine juce::juce_audio_utils juce::juce_recommended_config_flags)

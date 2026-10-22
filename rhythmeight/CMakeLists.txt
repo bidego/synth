@@ -47,7 +47,7 @@ if(RHYTHMEIGHT_BUILD_PLUGIN)
     VST3_CATEGORIES Instrument Synth)
 
   target_sources(RhythmEight PRIVATE
-    source/PluginProcessor.cpp source/PluginProcessor.h
+    source/PluginProcessor.cpp source/StandaloneMidi.cpp source/PluginProcessor.h
     source/PluginEditor.cpp source/PluginEditor.h source/ReLookAndFeel.h)
   target_compile_definitions(RhythmEight PUBLIC
     JUCE_WEB_BROWSER=0
@@ -65,7 +65,7 @@ if(RHYTHMEIGHT_BUILD_PLUGIN)
 
   # Genera una captura PNG de la interfaz (para revisar el diseno en el CI): RhythmEightSnapshot salida.png [sonido]
   juce_add_console_app(RhythmEightSnapshot PRODUCT_NAME "RhythmEightSnapshot")
-  target_sources(RhythmEightSnapshot PRIVATE tools/snapshot.cpp source/PluginProcessor.cpp source/PluginEditor.cpp)
+  target_sources(RhythmEightSnapshot PRIVATE tools/snapshot.cpp source/PluginProcessor.cpp source/StandaloneMidi.cpp source/PluginEditor.cpp)
   target_include_directories(RhythmEightSnapshot PRIVATE source)
   target_compile_definitions(RhythmEightSnapshot PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
   target_link_libraries(RhythmEightSnapshot PRIVATE re_engine juce::juce_audio_utils juce::juce_recommended_config_flags)
