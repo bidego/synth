@@ -29,4 +29,6 @@ npm start
 - `main.js` sirve la web por un esquema propio (`syntotec://synth/app/`), con las mismas rutas que nginx: `/app/...` son los archivos
   compilados, `/` redirige a `/app/` y `/api/...` se reenvia al servidor publicado (sin conexion responde como nginx sin backend).
 - `preload.js` avisa a la web que corre en el escritorio: los enlaces para compartir apuntan a la web publicada.
-- Solo se concede el permiso de MIDI; los enlaces externos se abren en el navegador.
+- Se conceden los permisos que la app usa: MIDI, pantalla completa y la **entrada de audio** (placa de sonido, para el dispositivo "Entrada de audio"
+  y el grabador); la camara y la ubicacion se deniegan. En macOS la primera vez el sistema pide autorizar el microfono (si se dijo que no:
+  Ajustes del Sistema > Privacidad y seguridad > Microfono). Los enlaces externos se abren en el navegador.

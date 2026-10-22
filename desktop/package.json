@@ -1,7 +1,7 @@
 {
   "name": "syntotec-desktop",
   "productName": "Syntotec",
-  "version": "0.7.34",
+  "version": "0.7.35",
   "description": "Syntotec Synth Studio para escritorio (macOS)",
   "main": "main.js",
   "private": true,
@@ -25,9 +25,11 @@
       "category": "public.app-category.music",
       "icon": "build/icon.png",
       "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "gatekeeperAssess": false,
       "extendInfo": {
-        "NSMicrophoneUsageDescription": "Syntotec usa el audio del equipo para sonar."
+        "NSMicrophoneUsageDescription": "Syntotec usa la entrada de audio de tu placa de sonido para grabar instrumentos y voces."
       }
     },
     "dmg": { "title": "Syntotec ${version}" }

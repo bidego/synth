@@ -48,4 +48,25 @@ function offlineApi(pathname) {
     return { status: 502, body: '{"ok":false,"error":"sin conexion con el servidor"}' };
 }
 
-module.exports = { WEB_ORIGIN, route, offlineApi };
+/**
+ * Permisos de la app. Ademas de los de siempre (MIDI, pantalla completa...) se permite la ENTRADA DE AUDIO (la placa de sonido, para el
+ * dispositivo "Entrada de audio" y el grabador), pero nunca la camara: 'media' solo se concede si lo pedido es audio y nada mas.
+ *   details.mediaTypes (pedido) o details.mediaType (consulta): 'audio' | 'video' | 'unknown'
+ */
+const PERMISSIONS = ['midi', 'midiSysex', 'fullscreen', 'clipboard-sanitized-write', 'pointerLock', 'unknown'];
+
+function permissionAllowed(permission, details) {
+    if (PERMISSIONS.indexOf(permission) >= 0)
+        return true;
+    if (permission !== 'media')
+        return false;
+    const types = details && Array.isArray(details.mediaTypes) ? details.mediaTypes : details && details.mediaType ? [details.mediaType] : [];
+    return types.length > 0 && types.every(t => t === 'audio');
+}
+
+/** Es un pedido de la entrada de audio (para pedirle al sistema el permiso del microfono antes de concederlo). */
+function wantsAudioInput(permission, details) {
+    return permission === 'media' && permissionAllowed(permission, details);
+}
+
+module.exports = { WEB_ORIGIN, route, offlineApi, PERMISSIONS, permissionAllowed, wantsAudioInput };

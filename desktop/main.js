@@ -1,9 +1,9 @@
 'use strict';
-const { app, BrowserWindow, Menu, dialog, net, protocol, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, net, protocol, session, shell, systemPreferences } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { pathToFileURL } = require('url');
-const { WEB_ORIGIN, route, offlineApi } = require('./lib');
+const { WEB_ORIGIN, route, offlineApi, permissionAllowed, wantsAudioInput } = require('./lib');
 
 const APP_DIR = path.join(__dirname, 'app');
 const SCHEME = 'syntotec';
@@ -19,8 +19,7 @@ if (!app.requestSingleInstanceLock()) {
     app.quit();
 }
 
-// Permisos que la app puede usar. Chromium pide MIDI como 'midi' (y 'midiSysex' si la pagina lo pide)
-const PERMISSIONS = ['midi', 'midiSysex', 'fullscreen', 'clipboard-sanitized-write', 'pointerLock', 'unknown'];
+// Los permisos que la app puede usar estan en lib.js (permissionAllowed): MIDI, pantalla completa y la entrada de audio (nunca la camara)
 // Registro de lo que se pidio, para el diagnostico del menu Ayuda
 const permLog = [];
 
@@ -105,7 +104,7 @@ function buildMenu() {
             submenu: [
                 { label: 'Syntotec en la web', click: () => shell.openExternal(WEB_ORIGIN) },
                 {
-                    label: 'Diagnostico de permisos (MIDI)',
+                    label: 'Diagnostico de permisos (MIDI y audio)',
                     click: () => dialog.showMessageBox(win, {
                         type: 'info',
                         message: 'Permisos pedidos por la app',
@@ -121,18 +120,28 @@ function buildMenu() {
 
 app.whenReady().then(() => {
     protocol.handle(SCHEME, handleRequest);
-    // La app solo carga su propio contenido: se conceden los permisos que usa (MIDI y poco mas), nunca camara, microfono ni ubicacion
-    const grant = (kind, permission, origin) => {
-        const ok = (!origin || origin.indexOf(SCHEME + '://') === 0) && PERMISSIONS.indexOf(permission) >= 0;
-        permLog.push(kind + ' ' + permission + ' ' + (origin || '-') + ' -> ' + (ok ? 'permitido' : 'DENEGADO'));
+    // La app solo carga su propio contenido: se conceden los permisos que usa (MIDI, pantalla completa y la entrada de audio), nunca la camara ni la ubicacion
+    const grant = (kind, permission, origin, details) => {
+        const ok = (!origin || origin.indexOf(SCHEME + '://') === 0) && permissionAllowed(permission, details);
+        permLog.push(kind + ' ' + permission + (permission === 'media' ? ' ' + JSON.stringify(details && (details.mediaTypes || details.mediaType) || '-') : '') + ' ' + (origin || '-') + ' -> ' + (ok ? 'permitido' : 'DENEGADO'));
         if (permLog.length > 60)
             permLog.shift();
         return ok;
     };
-    session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) =>
-        cb(grant('pedido', permission, details && details.requestingUrl || (wc && wc.getURL()))));
-    session.defaultSession.setPermissionCheckHandler((wc, permission, origin) =>
-        grant('consulta', permission, origin || (wc && wc.getURL())));
+    session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) => {
+        const ok = grant('pedido', permission, details && details.requestingUrl || (wc && wc.getURL()), details);
+        // En macOS el microfono tambien lo autoriza el sistema: se le pide la primera vez (y si dijo que no, hay que habilitarlo en Ajustes)
+        if (ok && wantsAudioInput(permission, details) && process.platform === 'darwin' && systemPreferences.getMediaAccessStatus('microphone') !== 'granted') {
+            systemPreferences.askForMediaAccess('microphone').then(granted => {
+                permLog.push('sistema microphone -> ' + (granted ? 'permitido' : 'DENEGADO (Ajustes del Sistema > Privacidad y seguridad > Microfono)'));
+                cb(granted);
+            }, () => cb(false));
+            return;
+        }
+        cb(ok);
+    });
+    session.defaultSession.setPermissionCheckHandler((wc, permission, origin, details) =>
+        grant('consulta', permission, origin || (wc && wc.getURL()), details));
     buildMenu();
     createWindow();
     app.on('activate', () => {
