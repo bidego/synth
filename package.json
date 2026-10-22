@@ -1,6 +1,6 @@
 {
   "name": "syntotec-app",
-  "version": "0.7.32",
+  "version": "0.7.33",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

@@ -7,6 +7,7 @@ import { AcidLineModule } from './acid.module';
 import { PolyFiveModule } from './polyfive.module';
 import { RhythmEightModule } from './rhythmeight.module';
 import { RecorderModule } from './recorder.module';
+import { AudioInModule } from './audioin.module';
 import { JunoModule } from './juno.module';
 import { MixerModule } from './mixer.module';
 import { OutputModule } from './output.module';
@@ -32,6 +33,8 @@ export const MODULE_META: ReadonlyArray<ModuleMeta> = [
       description: '4 pistas de notas en loop con piano roll; cada pista sale por su cable a un instrumento' },
     { type: 'keyboard', label: 'Teclado / MIDI', category: 'io',
       description: 'Convierte el teclado de la computadora y el MIDI en notas' },
+    { type: 'audioin', label: 'Entrada de audio', category: 'io',
+      description: 'Toma el audio de una entrada de la placa de sonido (o el microfono) y lo ofrece como fuente por cable, hasta 8 canales' },
     { type: 'output', label: 'Salida de audio', category: 'io', unique: true,
       description: 'Los parlantes: el final de la cadena' },
     { type: 'mixer', label: 'Mezclador 8 canales', category: 'mixing',
@@ -72,6 +75,7 @@ export function createModule(type: string, env: ModuleEnv): RackModule | null {
         case 'modeld': return new ModelDModule(env);
         case 'juno': return new JunoModule(env);
         case 'keyboard': return new KeyboardModule(env);
+        case 'audioin': return new AudioInModule(env);
         case 'output': return new OutputModule(env);
         case 'mixer': return new MixerModule(env);
         case 'recorder': return new RecorderModule(env);

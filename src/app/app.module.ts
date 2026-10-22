@@ -17,6 +17,7 @@ import { AcidDeviceComponent } from './daw/ui/acid-device.component';
 import { PolyFiveDeviceComponent } from './daw/ui/polyfive-device.component';
 import { RhythmEightDeviceComponent } from './daw/ui/rhythmeight-device.component';
 import { RecorderDeviceComponent } from './daw/ui/recorder-device.component';
+import { AudioInDeviceComponent } from './daw/ui/audioin-device.component';
 import { JunoSliderComponent } from './ui/juno-slider.component';
 import { SequencerDeviceComponent } from './daw/ui/sequencer-device.component';
 import { JunoDeviceComponent } from './daw/ui/juno-device.component';
@@ -74,6 +75,7 @@ import { ListenKeys } from './directives/listen.keys';
     PolyFiveDeviceComponent,
     RhythmEightDeviceComponent,
     RecorderDeviceComponent,
+    AudioInDeviceComponent,
     JunoDeviceComponent,
     SequencerDeviceComponent,
     RollEditorComponent,
