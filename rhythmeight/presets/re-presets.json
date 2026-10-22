@@ -1,0 +1,219 @@
+[
+ {
+  "name": "Classic 808",
+  "category": "Basicos",
+  "values": {
+   "tempo": 0.35
+  },
+  "pattern": {
+   "bd": "X.....x...x.....",
+   "sd": "....X.......X...",
+   "ch": "x.x.x.x.x.x.x.x.",
+   "oh": "......x.......x.",
+   "cp": "............x..."
+  }
+ },
+ {
+  "name": "Boom Bap",
+  "category": "Hip hop",
+  "values": {
+   "tempo": 0.25,
+   "shuffle": 0.25,
+   "bdDecay": 0.6,
+   "bdTune": 0.4,
+   "sdTone": 0.6,
+   "sdSnappy": 0.4
+  },
+  "pattern": {
+   "bd": "X.....x...x.x...",
+   "sd": "....X.......X...",
+   "ch": "x.x.x.x.x.x.x.x.",
+   "oh": "..............x.",
+   "rs": ".........x......"
+  }
+ },
+ {
+  "name": "Four on the Floor",
+  "category": "House",
+  "values": {
+   "tempo": 0.42,
+   "bdTone": 0.55,
+   "bdDecay": 0.45,
+   "ohDecay": 0.3
+  },
+  "pattern": {
+   "bd": "X...X...X...X...",
+   "cp": "....x.......x...",
+   "ch": "x.x.x.x.x.x.x.x.",
+   "oh": "..x...x...x...x.",
+   "cy": "x..............."
+  }
+ },
+ {
+  "name": "Electro",
+  "category": "Electro",
+  "values": {
+   "tempo": 0.44,
+   "bdDecay": 0.4,
+   "sdTune": 0.6,
+   "sdSnappy": 0.7,
+   "cbTune": 0.6
+  },
+  "pattern": {
+   "bd": "X..x..x...x..x..",
+   "sd": "....X.......X...",
+   "cp": "....x.......x...",
+   "ch": "x.xxx.xxx.xxx.xx",
+   "cb": ".......x........",
+   "oh": "..x.......x....."
+  }
+ },
+ {
+  "name": "Miami Bass",
+  "category": "Bass",
+  "values": {
+   "tempo": 0.32,
+   "bdTune": 0.25,
+   "bdDecay": 0.9,
+   "bdTone": 0.3,
+   "ltTune": 0.4,
+   "ltDecay": 0.8
+  },
+  "pattern": {
+   "bd": "X..x..x.X.....x.",
+   "sd": "....X.......X...",
+   "cp": "....x.......x...",
+   "ch": "x.x.x.x.x.x.x.x.",
+   "lt": "..............x.",
+   "cb": "...x.......x...."
+  }
+ },
+ {
+  "name": "Trap",
+  "category": "Trap",
+  "values": {
+   "tempo": 0.5,
+   "bdTune": 0.2,
+   "bdDecay": 0.95,
+   "sdTone": 0.7,
+   "sdTune": 0.65,
+   "chLevel": 0.6
+  },
+  "pattern": {
+   "bd": "X.......x..x....",
+   "sd": "........X.......",
+   "cp": "........x.......",
+   "ch": "x.x.xxx.x.x.x.xx",
+   "oh": ".............x..",
+   "ht": "...............x"
+  }
+ },
+ {
+  "name": "Techno",
+  "category": "Techno",
+  "values": {
+   "tempo": 0.45,
+   "bdTone": 0.6,
+   "bdDecay": 0.4,
+   "cyDecay": 0.7,
+   "cyTone": 0.6
+  },
+  "pattern": {
+   "bd": "X...X...X...X...",
+   "cp": "....x.......x...",
+   "ch": ".x.x.x.x.x.x.x.x",
+   "oh": "x...............",
+   "cy": "..............x.",
+   "rs": "...x.......x...."
+  }
+ },
+ {
+  "name": "Latin",
+  "category": "Latin",
+  "values": {
+   "tempo": 0.3,
+   "cbTune": 0.45,
+   "maLevel": 0.6,
+   "htTune": 0.6,
+   "mtTune": 0.45
+  },
+  "pattern": {
+   "bd": "X.......X.......",
+   "cl": "X..x..x...x.x...",
+   "ma": "x.x.x.x.x.x.x.x.",
+   "cb": "..x...x...x...x.",
+   "ht": "...x............",
+   "mt": ".......x........",
+   "lt": ".............x.."
+  }
+ },
+ {
+  "name": "Funk Shuffle",
+  "category": "Funk",
+  "values": {
+   "tempo": 0.29,
+   "shuffle": 0.6,
+   "sdSnappy": 0.35,
+   "bdDecay": 0.4
+  },
+  "pattern": {
+   "bd": "X..x..x...x....x",
+   "sd": "....X..x....X...",
+   "ch": "x.x.x.x.x.x.x.x.",
+   "oh": "......x.......x.",
+   "cp": ".x.............."
+  }
+ },
+ {
+  "name": "Breakbeat",
+  "category": "Breaks",
+  "values": {
+   "tempo": 0.475,
+   "sdTone": 0.55,
+   "sdSnappy": 0.6
+  },
+  "pattern": {
+   "bd": "X.....x...x.....",
+   "sd": "....X..x.x..X...",
+   "ch": "x.x.x.x.x.x.x.x.",
+   "oh": "..............x.",
+   "cy": "x..............."
+  }
+ },
+ {
+  "name": "Tom Fill",
+  "category": "Fills",
+  "values": {
+   "tempo": 0.4,
+   "ltDecay": 0.7,
+   "mtDecay": 0.6,
+   "htDecay": 0.5
+  },
+  "pattern": {
+   "bd": "X...............",
+   "sd": "X.x.x.x.........",
+   "ht": "..x.x.x.........",
+   "mt": "......x.x.......",
+   "lt": "............x.x.",
+   "cy": "x..............."
+  }
+ },
+ {
+  "name": "Rim Groove",
+  "category": "Groove",
+  "values": {
+   "tempo": 0.36,
+   "bdDecay": 0.35,
+   "rsLevel": 0.85,
+   "clLevel": 0.8
+  },
+  "pattern": {
+   "bd": "X..x....x..x....",
+   "rs": "....x..x....x...",
+   "cl": "..x...x...x.x...",
+   "ch": "x.x.x.x.x.x.x.x.",
+   "ma": ".x.x.x.x.x.x.x.x",
+   "oh": "..x...........x."
+  }
+ }
+]

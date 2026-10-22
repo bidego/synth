@@ -9,6 +9,7 @@ import { SampleLibrary } from '../../services/sample-library';
 import { encodeWav } from '../../services/wav';
 import { SynthStudioModule } from '../modules/synth-studio.module';
 import { SequencerModule } from '../modules/sequencer.module';
+import { RhythmEightModule } from '../modules/rhythmeight.module';
 import { SHARE_PREFIX, SHARE_SOFT_LIMIT, encodeShare, decodeShare } from './share';
 
 /** El origen de la web para los enlaces: en la app de escritorio la pagina no es publica (syntotec://), asi que los enlaces apuntan a la web. */
@@ -472,7 +473,8 @@ export class ProjectService {
     async exportWav() {
         const synths = this.rack.synths.filter(s => s.sequencer.hasNotes());
         const seqs = this.rack.sequencers.filter(s => s.sequencer.hasNotes());
-        if (this.exporting || (!synths.length && !seqs.length)) {
+        const drums = this.rack.graph.ofType<RhythmEightModule>('rhythmeight').filter(d => d.exportable);
+        if (this.exporting || (!synths.length && !seqs.length && !drums.length)) {
             this.message = 'No hay nada para exportar (ningun instrumento tiene notas grabadas)';
             return;
         }
@@ -506,6 +508,7 @@ export class ProjectService {
             graph.setState(this.rack.getState());
             graph.ofType<SynthStudioModule>('synth').forEach(s => s.sequencer.renderPasses(this.exportPasses));
             graph.ofType<SequencerModule>('sequencer').forEach(s => s.sequencer.renderPasses(this.exportPasses));
+            graph.ofType<RhythmEightModule>('rhythmeight').forEach(d => d.renderPasses(this.exportPasses));
             // Los dispositivos con AudioWorklet (Model D) tienen que terminar de cargar y recibir sus notas antes de renderizar
             const worklets = graph.modules.map(m => (m as any).ready).filter(Boolean);
             if (worklets.length) {

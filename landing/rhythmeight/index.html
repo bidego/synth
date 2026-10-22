@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rhythm Eight · Plugin para macOS · Syntotec</title>
+<meta name="description" content="Instalación y manual del plugin Rhythm Eight de Syntotec, una caja de ritmos analógica de 13 voces con secuenciador de 16 pasos, acento y shuffle: VST3, Audio Unit y aplicación independiente para macOS (Intel y Apple Silicon).">
+<meta name="theme-color" content="#06070d">
+<link rel="alternate" hreflang="es" href="/rhythmeight/">
+<link rel="alternate" hreflang="de" href="/de/rhythmeight/">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/landing/landing.css">
+<style>
+  /* Página de documentación: usa los colores y la tipografía de la landing, sin la intro ni el arte VJ */
+  body { background: radial-gradient(900px 500px at 70% -10%, rgba(139, 92, 246, 0.16), transparent 70%), radial-gradient(700px 420px at 0% 0%, rgba(255, 79, 135, 0.12), transparent 70%); min-height: 100vh; }
+  .doc { width: min(860px, 92vw); margin: 0 auto; padding: 120px 0 40px; }
+  .doc h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.1; letter-spacing: -0.02em; margin: 6px 0 14px; }
+  .doc h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); margin: 54px 0 12px; letter-spacing: -0.01em; scroll-margin-top: 90px; }
+  .doc h3 { font-size: 1.08rem; margin: 26px 0 6px; }
+  .doc p, .doc li { color: var(--dim); }
+  .doc p strong, .doc li strong, .doc td strong { color: var(--text); }
+  .doc a:not(.btn) { color: var(--info); }
+  .doc code { font-family: var(--mono); font-size: 0.9em; background: rgba(255, 255, 255, 0.07); padding: 2px 6px; border-radius: 6px; color: var(--text); }
+  .doc pre { background: rgba(8, 9, 18, 0.8); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; overflow-x: auto; margin: 12px 0; }
+  .doc pre code { background: none; padding: 0; font-size: 0.86rem; }
+  .tw { overflow-x: auto; margin: 14px 0; }
+  .doc table { width: 100%; border-collapse: collapse; margin: 0; font-size: 0.95rem; }
+  .doc th, .doc td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--dim); }
+  .doc th { color: var(--text); font-weight: 600; white-space: nowrap; }
+  .doc td:first-child { color: var(--text); white-space: nowrap; }
+  .doc .note { border-left: 3px solid var(--warn); background: rgba(255, 200, 87, 0.08); padding: 10px 16px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+  .doc .note p { margin: 0; }
+  .dl { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0 6px; }
+  .toc { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 22px 0 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); }
+  .toc a { text-decoration: none; color: var(--dim); }
+  .toc a:hover { color: var(--text); }
+  .nav .btn-sm { margin-left: auto; }
+  .nav .lang-switch { margin-left: auto; }
+  .nav .lang-switch + .btn-sm { margin-left: 0; }
+  @media (max-width: 640px) { .doc td:first-child, .doc th { white-space: normal; } .doc { padding-top: 96px; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4f87"/><stop offset="1" stop-color="#5cc8ff"/></linearGradient></defs>
+</svg>
+
+<header class="nav scrolled">
+  <a class="brand" href="/" aria-label="Syntotec, inicio">
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <span>Syntotec</span>
+  </a>
+  <a class="lang-switch" href="/de/rhythmeight/" hreflang="de" lang="de" data-lang="de" title="Deutsch" aria-label="Deutsch">DE</a>
+  <a class="btn btn-primary btn-sm" href="/app/">Abrir Syntotec</a>
+</header>
+
+<main class="doc" id="contenido">
+  <p class="eyebrow"><span class="dot"></span> Plugin · beta 0.1.0 · macOS</p>
+  <h1>Rhythm Eight</h1>
+  <p class="lead">Una <strong>caja de ritmos analógica de 13 voces</strong> con <strong>secuenciador de 16 pasos</strong>, acento y shuffle, inspirada en las cajas de ritmos analógicas de los 80. Cada voz tiene su propia síntesis, como los circuitos de aquellas máquinas. Como plugin de verdad: <strong>VST3</strong>, <strong>Audio Unit</strong> (Logic y GarageBand) y <strong>aplicación independiente</strong>, para Mac con chip Apple o Intel. <strong>Pro Tools no está soportado</strong>: solo carga plugins AAX.</p>
+
+  <div class="dl">
+    <a class="btn btn-primary btn-lg" href="https://github.com/bidego/synth/releases/tag/rhythmeight-v0.1.0" rel="noopener">Descargar 0.1.0</a>
+    <a class="btn btn-ghost btn-lg" href="https://github.com/bidego/synth/tree/syntotec-app/rhythmeight" rel="noopener">Código fuente</a>
+  </div>
+
+  <!-- TODO: img/rhythmeight.webp cuando el CI genere la captura del panel -->
+
+  <nav class="toc" aria-label="En esta página">
+    <a href="#sonido">Sonido</a><a href="#web">En Syntotec</a><a href="#instalar">Instalar</a><a href="#uso">Primer uso</a><a href="#controles">Controles</a><a href="#secuenciador">Secuenciador</a><a href="#midi">MIDI</a><a href="#sonidos">Sonidos</a><a href="#compilar">Compilar</a>
+  </nav>
+
+  <h2 id="sonido">Qué trae</h2>
+  <ul>
+    <li><strong>13 voces</strong>: bombo con barrido de tono, caja (dos tonos más ruido), tres toms (grave, medio y agudo), rim shot, claves, palmas (ráfagas de ruido), maracas, cowbell de dos ondas cuadradas, platillo y dos hi-hats (cerrado y abierto) construidos con seis cuadradas. Como en las máquinas originales, el hi-hat cerrado corta al abierto.</li>
+    <li><strong>Secuenciador de 16 pasos</strong> con una fila por voz, <strong>acento</strong> global y <strong>shuffle</strong>. El patrón puede medir 16, 12, 8 o 4 pasos.</li>
+    <li><strong>Tempo propio</strong> (<em>Sync Internal</em>, de 40 a 240 BPM) o <strong>el de la DAW</strong> (<em>Sync Host</em>): sigue el transporte, el tempo y la posición del proyecto.</li>
+    <li><strong>Responde a notas MIDI</strong> de batería General MIDI, así que también podés tocarla desde un teclado, pads o el piano roll de la DAW, con o sin el secuenciador interno.</li>
+    <li><strong>12 patrones con su sonido</strong>, de Classic 808 a Trap, para arrancar enseguida.</li>
+  </ul>
+
+  <h2 id="web">También en Syntotec</h2>
+  <p>Rhythm Eight es además un dispositivo del rack de Syntotec: abrí la app, en <em>Dispositivos</em> elegí <strong>Rhythm Eight</strong> y cablealo al mezclador. Es el mismo motor del plugin, con los mismos 12 patrones.</p>
+
+  <h2 id="instalar">Instalar</h2>
+  <p>Bajá los archivos de la <a href="https://github.com/bidego/synth/releases/tag/rhythmeight-v0.1.0" rel="noopener">página de descargas</a>, descomprimilos y copiá cada uno a su carpeta. Son universales: andan en Mac con chip Apple y con Intel.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Formato</th><th>Archivo</th><th>Carpeta</th></tr></thead>
+    <tbody>
+      <tr><td>VST3</td><td><a href="https://github.com/bidego/synth/releases/download/rhythmeight-v0.1.0/RhythmEight-VST3-macOS.zip" rel="noopener"><code>RhythmEight-VST3-macOS.zip</code></a></td><td><code>~/Library/Audio/Plug-Ins/VST3/</code></td></tr>
+      <tr><td>Audio Unit</td><td><a href="https://github.com/bidego/synth/releases/download/rhythmeight-v0.1.0/RhythmEight-AU-macOS.zip" rel="noopener"><code>RhythmEight-AU-macOS.zip</code></a></td><td><code>~/Library/Audio/Plug-Ins/Components/</code></td></tr>
+      <tr><td>Independiente</td><td><a href="https://github.com/bidego/synth/releases/download/rhythmeight-v0.1.0/RhythmEight-Standalone-macOS.zip" rel="noopener"><code>RhythmEight-Standalone-macOS.zip</code></a></td><td>donde quieras (es una app)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><p><strong>macOS puede bloquearlo la primera vez.</strong> Los plugins van firmados «ad hoc», sin cuenta de Apple Developer. Si dice que no se puede abrir o que está dañado, abrí la Terminal y ejecutá <code>xattr -cr "Rhythm Eight.vst3"</code> (lo mismo para <code>.component</code> y <code>.app</code>). En la app independiente también sirve clic derecho → Abrir.</p></div>
+  <p>Después reiniciá la DAW y volvé a escanear los plugins. <strong>Logic</strong> valida los Audio Units al abrirse; para forzarlo o ver el motivo de un error: <code>auval -v aumu Re01 Synt</code>.</p>
+
+  <h2 id="uso">Primer uso</h2>
+  <ol>
+    <li>Probá primero la <strong>aplicación independiente</strong>: abrila y, desde <em>Options → Audio/MIDI Settings</em>, elegí tu salida de audio.</li>
+    <li>Elegí un patrón (con anterior y siguiente), activá <em>Run</em> y escuchá el groove con el tempo propio. Con <em>Sync Internal</em> el secuenciador arranca desde el paso 1 cada vez que lo activás.</li>
+    <li>En la DAW, creá una pista de instrumento y elegí <strong>Rhythm Eight</strong> (<em>Syntotec</em> en la lista de fabricantes). Poné <em>Sync</em> en <em>Host</em> para que el patrón arranque y pare con el Play de la DAW y siga su tempo.</li>
+    <li>Si preferís programar vos el ritmo, dejá el secuenciador parado y mandale notas de batería desde la DAW (tabla de <a href="#midi">MIDI</a>).</li>
+  </ol>
+  <p>Un par de ideas: para un bombo largo estilo Miami Bass, bajá <em>Bass Drum → Tune</em> y subí <em>Decay</em>. Para un groove más suelto, subí <em>Shuffle</em>; para resaltar los golpes fuertes, subí <em>Accent</em>.</p>
+
+  <h2 id="controles">Controles</h2>
+  <p>Todas las perillas van de 0 a 1 y se automatizan desde la DAW. Cada voz tiene su <em>Level</em>; los demás controles dependen de la voz:</p>
+  <div class="tw"><table>
+    <thead><tr><th>Voz</th><th>Controles</th></tr></thead>
+    <tbody>
+      <tr><td>Bass Drum</td><td>Level, Tune, Decay y Tone</td></tr>
+      <tr><td>Snare</td><td>Level, Tune, Tone y Snappy (cuánto ruido lleva)</td></tr>
+      <tr><td>Low / Mid / Hi Tom</td><td>Level, Tune y Decay de cada uno</td></tr>
+      <tr><td>Rim Shot, Claves, Hand Clap, Maracas</td><td>Level</td></tr>
+      <tr><td>Cowbell</td><td>Level y Tune</td></tr>
+      <tr><td>Cymbal</td><td>Level, Tone y Decay</td></tr>
+      <tr><td>Open Hat</td><td>Level y Decay</td></tr>
+      <tr><td>Closed Hat</td><td>Level</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tw"><table>
+    <thead><tr><th>Sección</th><th>Controles</th></tr></thead>
+    <tbody>
+      <tr><td>Secuenciador</td><td>Accent, Shuffle, Tempo (solo con Sync Internal), Pattern Length (16, 12, 8 o 4), Sync (Internal o Host) y Run (Stop o Run)</td></tr>
+      <tr><td>Salida</td><td>Volume (nivel general)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="secuenciador">Secuenciador</h2>
+  <ul>
+    <li><strong>Pasos</strong>: el patrón es una grilla de 13 voces por 16 pasos. Cada casilla puede estar vacía, tener un <strong>golpe</strong> o tener un <strong>acento</strong>. Cada paso es una semicorchea.</li>
+    <li><strong>Acento</strong>: los pasos con acento suenan más fuerte que los comunes. La perilla <em>Accent</em> decide cuánto más: al máximo, un 70 % de volumen extra.</li>
+    <li><strong>Shuffle</strong>: retrasa los pasos pares (el segundo de cada pareja) hasta medio paso. En 0 el ritmo es recto; al máximo, el balanceo es muy marcado.</li>
+    <li><strong>Largo</strong>: <em>Pattern Length</em> acorta el patrón a 12 pasos (compás de 3/4), 8 o 4 pasos; el patrón se repite en bucle.</li>
+    <li><strong>Sync Internal</strong>: el tempo lo marca la perilla <em>Tempo</em> (de 40 a 240 BPM) y el secuenciador lo arranca y lo para el interruptor <em>Run</em>, sin depender de la DAW.</li>
+    <li><strong>Sync Host</strong>: el secuenciador sigue el transporte de la DAW: arranca y para con el Play, toma su tempo y se mantiene alineado con la posición del proyecto. <em>Run</em> y <em>Tempo</em> no se usan en este modo.</li>
+    <li><strong>Editar el patrón</strong>: en la grilla de la interfaz, hacé clic en una casilla para recorrer vacío, golpe y acento. Mientras suena, un indicador muestra el paso actual. El patrón se guarda con el proyecto de la DAW.</li>
+  </ul>
+
+  <h2 id="midi">MIDI</h2>
+  <p>Rhythm Eight responde a las notas de batería General MIDI, aunque el secuenciador esté parado o en marcha. Cada voz tiene una nota principal y algunos alias comunes:</p>
+  <div class="tw"><table>
+    <thead><tr><th>Voz</th><th>Nota principal</th><th>También responde a</th></tr></thead>
+    <tbody>
+      <tr><td>Bass Drum</td><td>36</td><td>35</td></tr>
+      <tr><td>Snare</td><td>38</td><td>40</td></tr>
+      <tr><td>Low Tom</td><td>41</td><td>43</td></tr>
+      <tr><td>Mid Tom</td><td>45</td><td>47</td></tr>
+      <tr><td>Hi Tom</td><td>48</td><td>50</td></tr>
+      <tr><td>Rim Shot</td><td>37</td><td>-</td></tr>
+      <tr><td>Claves</td><td>75</td><td>-</td></tr>
+      <tr><td>Hand Clap</td><td>39</td><td>-</td></tr>
+      <tr><td>Maracas</td><td>70</td><td>69</td></tr>
+      <tr><td>Cowbell</td><td>56</td><td>-</td></tr>
+      <tr><td>Cymbal</td><td>49</td><td>51, 52, 55, 57, 59</td></tr>
+      <tr><td>Open Hat</td><td>46</td><td>-</td></tr>
+      <tr><td>Closed Hat</td><td>42</td><td>44</td></tr>
+    </tbody>
+  </table></div>
+  <p>La velocidad de la nota regula el volumen del golpe. Las demás notas se ignoran. Todos los controles son parámetros del plugin: se automatizan desde la DAW y el <strong>MIDI Learn</strong> de la DAW sirve para asignarles las perillas de tu controlador.</p>
+
+  <h2 id="sonidos">Sonidos de partida</h2>
+  <p>12 patrones, cada uno con los ajustes de sonido y tempo que le van:</p>
+  <ul>
+    <li><strong>Classic 808</strong> (Básicos): el patrón de toda la vida, con bombo, caja en los tiempos 2 y 4, hi-hat cerrado corrido y palmas.</li>
+    <li><strong>Boom Bap</strong> (Hip hop): tempo lento, con shuffle suave y un bombo largo y grave.</li>
+    <li><strong>Four on the Floor</strong> (House): bombo en cada negra, palmas, hi-hats y platillo al inicio.</li>
+    <li><strong>Electro</strong> (Electro): bombo sincopado, caja y palmas, con cowbell y caja más afinada.</li>
+    <li><strong>Miami Bass</strong> (Bass): bombo larguísimo y grave, tom grave y cowbell.</li>
+    <li><strong>Trap</strong> (Trap): tempo alto, bombo profundo, caja a mitad de compás y hi-hats en ráfagas.</li>
+    <li><strong>Techno</strong> (Techno): bombo a negras, hi-hat abierto contratiempo y rim shot, con platillo brillante.</li>
+    <li><strong>Latin</strong> (Latin): claves, maracas y cowbell con toms agudo y medio.</li>
+    <li><strong>Funk Shuffle</strong> (Funk): shuffle marcado, bombo sincopado y caja con notas fantasma.</li>
+    <li><strong>Breakbeat</strong> (Breaks): bombo y caja quebrados al estilo de los breaks, con platillo al inicio.</li>
+    <li><strong>Tom Fill</strong> (Fills): una frase de toms de agudo a grave para usar como pase.</li>
+    <li><strong>Rim Groove</strong> (Groove): rim shot y claves con maracas continuas y bombo sincopado.</li>
+  </ul>
+  <p>El estado del plugin, incluido el patrón, se guarda con el proyecto de la DAW.</p>
+
+  <h2 id="compilar">Compilar desde el código</h2>
+  <p>El motor de audio es C++ puro y se prueba solo, sin JUCE, en cualquier sistema:</p>
+  <pre><code>cd rhythmeight
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target re_tests
+./build/re_tests              # pruebas del motor
+./build/re_tests --wav /tmp   # WAV de demostración de cada patrón y de cada voz</code></pre>
+  <p>Para el plugin completo en macOS (JUCE se baja solo):</p>
+  <pre><code>cmake -S . -B build -DRHYTHMEIGHT_BUILD_PLUGIN=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13
+cmake --build build --config Release</code></pre>
+  <p>Los builds de GitHub se corren desde <em>Actions → Rhythm Eight plugin (macOS)</em>, o subiendo una etiqueta <code>rhythmeight-v*</code>, que además publica el release. Pendiente: Windows y Linux, AAX para Pro Tools (hoy no carga) y firma con cuenta de Apple Developer.</p>
+  <p>Rhythm Eight es un proyecto independiente, inspirado en las cajas de ritmos analógicas de los 80 y sin relación con ninguna marca. ¿Algo no anda? Contanos en las <a href="https://github.com/bidego/synth/issues" rel="noopener">incidencias de GitHub</a>.</p>
+</main>
+
+<footer class="footer">
+  <div class="footer-top">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><rect width="32" height="32" rx="8" fill="url(#lg)"/><path d="M4 17c2-8 4-8 6 0s4 8 6 0 4-8 6 0 3 5 6 0" fill="none" stroke="#0b0c16" stroke-width="2.4" stroke-linecap="round"/></svg><span>Syntotec</span></a>
+    <nav aria-label="Pie">
+      <a href="/">Inicio</a>
+      <a href="/app/">La app</a>
+      <a href="/#plugin">Plugin</a>
+      <a href="https://github.com/bidego/synth" rel="noopener">Código en GitHub</a>
+    </nav>
+  </div>
+</footer>
+<script>
+document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest(".lang-switch");if(a){try{localStorage.setItem("syntotec.lang",a.getAttribute("data-lang"))}catch(_){}}});
+</script>
+</body>
+</html>

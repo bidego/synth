@@ -85,6 +85,7 @@ export abstract class WorkletSynthModule extends RackModule {
             const Node = (window as any).AudioWorkletNode;
             this.node = new Node(env.ctx, config.processor, { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] });
             this.node.connect(this.out);
+            this.node.port.onmessage = (e: MessageEvent) => this.env.run(() => this.onNodeMessage(e.data));
             this.node.port.postMessage({ type: 'params', values: this.allValues() });
             this.queue.forEach(m => this.node.port.postMessage(m));
             this.queue = [];
@@ -93,7 +94,10 @@ export abstract class WorkletSynthModule extends RackModule {
         });
     }
 
-    private allValues(): Array<number> {
+    /** Lo que el worklet manda por su puerto (los sintes que no mandan nada no lo usan). */
+    protected onNodeMessage(msg: any) {}
+
+    protected allValues(): Array<number> {
         return this.config.params.map(p => this.values[p.id]);
     }
 
