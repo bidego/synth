@@ -3,22 +3,51 @@
 #include <atomic>
 #include <cstdint>
 #include <juce_audio_devices/juce_audio_devices.h>
+#if JucePlugin_Build_Standalone
+#include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
+#endif
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "re_engine.h"
 
-/** En la aplicacion independiente abre solos los controladores MIDI (tambien los que se enchufen despues). */
-class StandaloneMidi : private juce::MidiInputCallback, private juce::Timer {
+/**
+ * En la aplicacion independiente JUCE no abre ningun controlador MIDI por su cuenta: hay que tildarlos en Options > Audio/MIDI Settings.
+ * Esto los tilda solo, UNA vez por controlador (la lista de los ya vistos se guarda con los ajustes de la app, tambien para los que se
+ * enchufen despues), y desde ahi manda Options: si lo destildas, queda destildado. Los mensajes los entrega JUCE al procesador.
+ */
+class StandaloneMidi : private juce::Timer {
 public:
-    explicit StandaloneMidi(juce::MidiMessageCollector& collector);
-    ~StandaloneMidi() override;
+    StandaloneMidi() { startTimer(1000); }
+    ~StandaloneMidi() override { stopTimer(); }
 
 private:
-    void timerCallback() override { rescan(); }
-    void rescan();
-    void handleIncomingMidiMessage(juce::MidiInput*, const juce::MidiMessage& message) override { collector_.addMessageToQueue(message); }
+#if JucePlugin_Build_Standalone
+    void timerCallback() override
+    {
+        auto* holder = juce::StandalonePluginHolder::getInstance();
+        if (holder == nullptr)
+            return;   // la ventana de la app todavia se esta armando
+        const juce::String key = "knownMidiInputs";
+        if (!loaded_) {
+            loaded_ = true;
+            if (holder->settings != nullptr)
+                known_ = juce::StringArray::fromLines(holder->settings->getValue(key));
+        }
+        bool changed = false;
+        for (const auto& d : juce::MidiInput::getAvailableDevices())
+            if (!known_.contains(d.identifier)) {
+                known_.add(d.identifier);
+                holder->deviceManager.setMidiInputDeviceEnabled(d.identifier, true);
+                changed = true;
+            }
+        if (changed && holder->settings != nullptr)
+            holder->settings->setValue(key, known_.joinIntoString("\n"));
+    }
 
-    juce::MidiMessageCollector& collector_;
-    std::vector<std::unique_ptr<juce::MidiInput>> inputs_;
+    bool loaded_ = false;
+    juce::StringArray known_;
+#else
+    void timerCallback() override { stopTimer(); }
+#endif
 };
 
 /** Rhythm Eight como plugin (VST3 / AU / Standalone): una capa fina sobre el motor de engine/. */
@@ -83,7 +112,6 @@ private:
     std::atomic<int> revision_ { 0 };
     std::atomic<uint32_t> pendingHits_ { 0 };   // bit i = golpe de la voz i pedido desde la interfaz
     int program_ = 0;
-    juce::MidiMessageCollector midiCollector_;
     std::unique_ptr<StandaloneMidi> standaloneMidi_;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(RhythmEightProcessor)

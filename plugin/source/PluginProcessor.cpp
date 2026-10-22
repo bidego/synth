@@ -2,60 +2,6 @@
 #include "PluginEditor.h"
 #include <cmath>
 
-StandaloneMidi::StandaloneMidi(juce::MidiMessageCollector& collector) : collector_(collector)
-{
-    rescan();
-    startTimer(1500);   // controladores que se enchufan o se sacan con la app abierta
-}
-
-StandaloneMidi::~StandaloneMidi()
-{
-    stopTimer();
-    for (auto& in : inputs_)
-        in->stop();
-}
-
-void StandaloneMidi::timerCallback()
-{
-    rescan();
-}
-
-void StandaloneMidi::rescan()
-{
-    const auto devices = juce::MidiInput::getAvailableDevices();
-    // Se cierran los que ya no estan...
-    for (auto it = inputs_.begin(); it != inputs_.end();) {
-        bool present = false;
-        for (const auto& d : devices)
-            if (d.identifier == (*it)->getIdentifier())
-                present = true;
-        if (present) {
-            ++it;
-        } else {
-            (*it)->stop();
-            it = inputs_.erase(it);
-        }
-    }
-    // ... y se abren los nuevos
-    for (const auto& d : devices) {
-        bool open = false;
-        for (const auto& in : inputs_)
-            if (in->getIdentifier() == d.identifier)
-                open = true;
-        if (open)
-            continue;
-        if (auto in = juce::MidiInput::openDevice(d.identifier, this)) {
-            in->start();
-            inputs_.push_back(std::move(in));
-        }
-    }
-}
-
-void StandaloneMidi::handleIncomingMidiMessage(juce::MidiInput*, const juce::MidiMessage& message)
-{
-    collector_.addMessageToQueue(message);
-}
-
 JunoProcessor::JunoProcessor()
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       apvts(*this, nullptr, "JUNO106", createLayout())
@@ -67,8 +13,7 @@ JunoProcessor::JunoProcessor()
     engine_.prepare(44100.0);
     // Como instrumento dentro de una DAW el MIDI lo entrega el anfitrion; solo la app independiente lo abre ella misma
     if (wrapperType == wrapperType_Standalone) {
-        midiCollector_.reset(44100.0);
-        standaloneMidi_ = std::make_unique<StandaloneMidi>(midiCollector_);
+        standaloneMidi_ = std::make_unique<StandaloneMidi>();
     }
 }
 
@@ -95,7 +40,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout JunoProcessor::createLayout(
 void JunoProcessor::prepareToPlay(double sampleRate, int)
 {
     engine_.prepare(sampleRate);
-    midiCollector_.reset(sampleRate);
     for (auto& a : applied_)
         a = std::nanf("");
 }
@@ -143,8 +87,6 @@ void JunoProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuf
     if (buffer.getNumChannels() < 2)
         return;
     syncParams();
-    if (standaloneMidi_)
-        midiCollector_.removeNextBlockOfMessages(midi, n);
     // El teclado en pantalla y las ruedas de la interfaz
     keyboardState.processNextMidiBuffer(midi, 0, n, true);
     const float ub = uiBend_.load(), um = uiMod_.load();

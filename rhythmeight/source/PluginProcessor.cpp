@@ -3,48 +3,6 @@
 #include <cmath>
 #include <cstring>
 
-StandaloneMidi::StandaloneMidi(juce::MidiMessageCollector& collector) : collector_(collector)
-{
-    rescan();
-    startTimer(1500);   // controladores que se enchufan o se sacan con la app abierta
-}
-
-StandaloneMidi::~StandaloneMidi()
-{
-    stopTimer();
-    for (auto& in : inputs_)
-        in->stop();
-}
-
-void StandaloneMidi::rescan()
-{
-    const auto devices = juce::MidiInput::getAvailableDevices();
-    for (auto it = inputs_.begin(); it != inputs_.end();) {
-        bool present = false;
-        for (const auto& d : devices)
-            if (d.identifier == (*it)->getIdentifier())
-                present = true;
-        if (present) {
-            ++it;
-        } else {
-            (*it)->stop();
-            it = inputs_.erase(it);
-        }
-    }
-    for (const auto& d : devices) {
-        bool open = false;
-        for (const auto& in : inputs_)
-            if (in->getIdentifier() == d.identifier)
-                open = true;
-        if (open)
-            continue;
-        if (auto in = juce::MidiInput::openDevice(d.identifier, this)) {
-            in->start();
-            inputs_.push_back(std::move(in));
-        }
-    }
-}
-
 RhythmEightProcessor::RhythmEightProcessor()
     : AudioProcessor(BusesProperties().withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       apvts(*this, nullptr, "RHYTHMEIGHT", createLayout())
@@ -58,8 +16,7 @@ RhythmEightProcessor::RhythmEightProcessor()
     appliedPattern_.fill(0xff);   // idem para el patron
     engine_.prepare(44100.0);
     if (wrapperType == wrapperType_Standalone) {
-        midiCollector_.reset(44100.0);
-        standaloneMidi_ = std::make_unique<StandaloneMidi>(midiCollector_);
+        standaloneMidi_ = std::make_unique<StandaloneMidi>();
     }
     setCurrentProgram(0);   // arranca con el primer sonido (parametros y patron)
 }
@@ -93,7 +50,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout RhythmEightProcessor::create
 void RhythmEightProcessor::prepareToPlay(double sampleRate, int)
 {
     engine_.prepare(sampleRate);
-    midiCollector_.reset(sampleRate);
     for (auto& a : applied_)
         a = std::nanf("");
     appliedPattern_.fill(0xff);   // prepare() no borra el patron, pero se recarga por las dudas
@@ -145,8 +101,6 @@ void RhythmEightProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::
         return;
     syncParams();
     syncPattern();
-    if (standaloneMidi_)
-        midiCollector_.removeNextBlockOfMessages(midi, n);
 
     // Con Sync = Host el secuenciador sigue el transporte del anfitrion
     if (params_[size_t(re::Sync)]->load() >= 0.5f) {
